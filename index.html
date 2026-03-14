@@ -376,7 +376,7 @@ body{font-family:'Zain',sans-serif;background:var(--bg);color:var(--text);direct
           <div style="color:rgba(232,207,168,.6);font-size:11px;margin-bottom:4px">البريد الإلكتروني</div>
           <div style="color:#fff;font-weight:700;font-size:13px" id="contact-email"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="3d54535b527d495c5c4e58585113585948">[email&#160;protected]</a></div>
         </div>
-        <div class="card" style="background:rgba(255,255,255,.07);border-color:rgba(212,180,142,.2);padding:22px 28px;min-width:175px;text-align:center;backdrop-filter:blur(12px)">
+        <div class="card" style="background:rgba(255,255,255,.07);border-color:rgba(212,180,142,.2);padding:22px 28px;min-width:175px;text-align:center;backdrop-filter:blur(12px);cursor:pointer" id="contact-telegram-card" onclick="openTelegram()">
           <i data-lucide="send" style="width:28px;height:28px;color:var(--gold);margin-bottom:8px"></i>
           <div style="color:rgba(232,207,168,.6);font-size:11px;margin-bottom:4px">تيليجرام</div>
           <div style="color:#fff;font-weight:700;font-size:13px" id="contact-telegram">@TaaseelInstitute</div>
@@ -386,11 +386,21 @@ body{font-family:'Zain',sans-serif;background:var(--bg);color:var(--text);direct
           <div style="color:rgba(232,207,168,.6);font-size:11px;margin-bottom:4px">الهاتف</div>
           <div style="color:#fff;font-weight:700;font-size:13px" id="contact-phone">+966 50 000 0000</div>
         </div>
+        <div class="card" style="background:rgba(255,255,255,.07);border-color:rgba(212,180,142,.2);padding:22px 28px;min-width:175px;text-align:center;backdrop-filter:blur(12px);cursor:pointer" id="sheikh-channel-card" onclick="openSheikhChannel()">
+          <i data-lucide="radio" style="width:28px;height:28px;color:var(--gold);margin-bottom:8px"></i>
+          <div style="color:rgba(232,207,168,.6);font-size:11px;margin-bottom:4px">قناة الشيخ مصعب بن صلاح</div>
+          <div style="color:#fff;font-weight:700;font-size:13px" id="sheikh-channel-link">اضغط للانتقال للقناة</div>
+        </div>
       </div>
     </div>
   </div>
-  <div style="text-align:center;padding:16px;background:var(--purple-d);color:rgba(255,255,255,.3);font-size:12px">
-    © 2024 معهد التأصيل العلمي — جميع الحقوق محفوظة
+  <div style="text-align:center;padding:20px 24px;background:var(--purple-d);color:rgba(255,255,255,.3);font-size:12px">
+    <div style="margin-bottom:8px">© 2024 معهد التأصيل العلمي — جميع الحقوق محفوظة</div>
+    <div id="footer-sheikh-channel" style="display:none">
+      <a id="footer-sheikh-link" href="#" onclick="openSheikhChannel();return false;" style="color:var(--gold);text-decoration:none;font-size:12px;display:inline-flex;align-items:center;gap:5px">
+        <i data-lucide="radio" style="width:12px;height:12px"></i> قناة الشيخ مصعب بن صلاح
+      </a>
+    </div>
   </div>
 </div><!-- /page-landing -->
 
@@ -448,6 +458,11 @@ body{font-family:'Zain',sans-serif;background:var(--bg);color:var(--text);direct
       <div id="login-form">
         <div class="inp-group"><label>البريد الإلكتروني</label><input type="email" id="l-email" placeholder="example@email.com"/></div>
         <div class="inp-group"><label>كلمة المرور</label><input type="password" id="l-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+        <!-- تذكرني -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+          <label class="toggle" style="flex-shrink:0"><input type="checkbox" id="l-remember" onchange="toggleRememberMe(this.checked)"><span class="toggle-slider"></span></label>
+          <span style="font-size:13px;color:var(--text);cursor:pointer" onclick="document.getElementById('l-remember').click()">تذكرني — تسجيل دخول تلقائي</span>
+        </div>
         <div id="login-err" style="display:none;color:#dc3545;font-size:13px;padding:9px 13px;background:#fff5f5;border-radius:9px;margin-bottom:12px;border:1px solid #ffcccc"></div>
         <button id="btn-email-login" class="btn btn-primary" onclick="doLogin()" style="width:100%;justify-content:center;font-size:14px;padding:13px;margin-bottom:10px">
           <i data-lucide="log-in" style="width:16px;height:16px"></i> دخول
@@ -495,7 +510,7 @@ body{font-family:'Zain',sans-serif;background:var(--bg);color:var(--text);direct
         <div class="inp-group"><label>معرف التيليجرام</label><input type="text" id="r-tg" placeholder="@username"/></div>
         <div class="inp-group">
           <label>المستوى الدراسي</label>
-          <select id="r-level"><option value="">اختر المستوى</option><option>المستوى الأول</option><option>المستوى الثاني</option><option>المستوى الثالث</option><option>المستوى الرابع</option></select>
+          <select id="r-level"><option value="">اختر المرحلة الدراسية</option><option>ابتدائي</option><option>متوسط</option><option>ثانوي</option><option>دبلوم</option><option>بكالوريس</option><option>ماجستير</option><option>دكتوراه</option><option>موظف</option></select>
         </div>
         <div class="inp-group"><label>البريد الإلكتروني *</label><input type="email" id="r-email" placeholder="example@email.com"/></div>
         <div class="inp-group"><label>كلمة المرور *</label><input type="password" id="r-pass" placeholder="••••••••"/></div>
@@ -853,6 +868,8 @@ let APP = {
     contactEmail:"info@taaseel.edu",
     contactTelegram:"@TaaseelInstitute",
     contactPhone:"+966 50 000 0000",
+    sheikhChannel:"",
+    privateChannel:"",
     team:[],
   },
   currentCourse: null,
@@ -1058,16 +1075,48 @@ async function doAdminLogin(){
   }
 }
 
-// ── Student email/password login (Firebase Auth) ──
+// ── تذكرني ──
+const RM_KEY = "ti_rm";
+function toggleRememberMe(checked){
+  if(!checked){ localStorage.removeItem(RM_KEY); }
+}
+function saveRememberMe(email, pass){
+  try{ localStorage.setItem(RM_KEY, btoa(JSON.stringify({e:email,p:pass}))); }catch(e){}
+}
+function loadRememberMe(){
+  try{
+    const raw = localStorage.getItem(RM_KEY);
+    if(!raw) return null;
+    return JSON.parse(atob(raw));
+  }catch(e){ localStorage.removeItem(RM_KEY); return null; }
+}
+async function tryAutoLogin(){
+  const saved = loadRememberMe();
+  if(!saved||!saved.e||!saved.p) return false;
+  try{
+    const cred = await FB_AUTH.signInWithEmailAndPassword(saved.e, saved.p);
+    await _handleStudentFirebaseLogin(cred.user);
+    return true;
+  }catch(e){
+    // بيانات قديمة — احذف التذكر
+    localStorage.removeItem(RM_KEY);
+    return false;
+  }
+}
+
+// ── Student email/password login ──
 async function doLogin(){
   const email=document.getElementById("l-email").value.trim();
   const pass=document.getElementById("l-pass").value;
+  const remember=document.getElementById("l-remember")?.checked||false;
   const err=document.getElementById("login-err");
   err.style.display="none";
   if(!email||!pass){err.textContent="يرجى إدخال البريد وكلمة المرور";err.style.display="";return;}
   setBtnLoading("btn-email-login",true,"جاري الدخول...");
   try{
     const cred=await FB_AUTH.signInWithEmailAndPassword(email,pass);
+    if(remember){ saveRememberMe(email, pass); }
+    else { localStorage.removeItem(RM_KEY); }
     await _handleStudentFirebaseLogin(cred.user);
   }catch(e){
     err.textContent=_fbErrMsg(e.code); err.style.display="";
@@ -1292,6 +1341,8 @@ function loginUser(u){
 }
 
 async function doLogout(){
+  // عند تسجيل الخروج اليدوي — احذف التذكر
+  localStorage.removeItem(RM_KEY);
   APP.user=null;
   _adminSessionEmail = "";
   _adminSessionPass  = "";
@@ -1372,6 +1423,35 @@ function renderNotifPanel(){
   `).join("");
 }
 function clearNotifs(){ APP.notifications=[]; saveState(); updateNotifBadge(); renderNotifPanel(); }
+
+// ── روابط التيليجرام والقنوات ──
+function _tgHandle(val){
+  // يحوّل @username أو t.me/... إلى رابط t.me
+  if(!val) return "";
+  val=val.trim();
+  if(val.startsWith("http")) return val;
+  if(val.startsWith("@")) return `https://t.me/${val.slice(1)}`;
+  return `https://t.me/${val}`;
+}
+function _openTgLink(val){
+  if(!val){ toast("لم يتم تعيين رابط بعد","info"); return; }
+  const url=_tgHandle(val);
+  // محاولة فتح التطبيق أولاً
+  const appUrl = url.replace("https://t.me/","tg://resolve?domain=");
+  const a=document.createElement("a"); a.href=appUrl; a.style.display="none"; document.body.appendChild(a);
+  a.click(); document.body.removeChild(a);
+  // فتح الرابط العادي كاحتياط
+  setTimeout(()=>{ window.open(url,"_blank"); }, 300);
+}
+function openTelegram(){
+  _openTgLink(APP.siteConfig.contactTelegram);
+}
+function openSheikhChannel(){
+  _openTgLink(APP.siteConfig.sheikhChannel);
+}
+function openPrivateChannel(){
+  _openTgLink(APP.siteConfig.privateChannel);
+}
 
 // ══════════════════════════════════════════════════════════
 // MODALS
@@ -1481,6 +1561,27 @@ function renderDashboard(){
           <i data-lucide="help-circle" style="width:13px;height:13px"></i> الأسئلة والاستفسارات
         </button>
       </div>
+
+      ${APP.siteConfig.privateChannel?`
+      <!-- قناة المعهد الخاصة -->
+      <div class="card fu" style="margin-top:24px;padding:20px;border:2px solid rgba(212,180,142,.35);background:linear-gradient(135deg,rgba(59,27,64,.03),rgba(212,180,142,.06))">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+          <div style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#229ED9,#1a7bbf);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <i data-lucide="send" style="width:20px;height:20px;color:#fff"></i>
+          </div>
+          <div>
+            <div style="font-size:15px;font-weight:800;color:var(--purple)">قناة المعهد الخاصة</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">مخصصة لطلاب معهد التأصيل العلمي</div>
+          </div>
+        </div>
+        <div style="background:rgba(220,53,69,.07);border:1px solid rgba(220,53,69,.2);border-radius:9px;padding:9px 13px;margin-bottom:12px;display:flex;align-items:flex-start;gap:7px">
+          <i data-lucide="alert-circle" style="width:13px;height:13px;color:#dc3545;flex-shrink:0;margin-top:1px"></i>
+          <span style="font-size:12px;color:#dc3545;font-weight:600">يُمنع نشر القناة — فهي خاصة بطلاب المعهد</span>
+        </div>
+        <button class="btn btn-primary" onclick="openPrivateChannel()" style="width:100%;justify-content:center">
+          <i data-lucide="send" style="width:14px;height:14px"></i> الانتقال إلى قناة المعهد
+        </button>
+      </div>`:""}
     </div>
   </div>`;
   lucide.createIcons();
@@ -2325,9 +2426,18 @@ function renderAboutPublic(){
     if(np) np.style.display="none";
   }
   // Contact
-  const ce=document.getElementById("contact-email");if(ce)ce.textContent=cfg.contactEmail||"";
-  const ct=document.getElementById("contact-telegram");if(ct)ct.textContent=cfg.contactTelegram||"";
-  const cp=document.getElementById("contact-phone");if(cp)cp.textContent=cfg.contactPhone||"";
+  const ce=document.getElementById("contact-email"); if(ce)ce.textContent=cfg.contactEmail||"";
+  const ct=document.getElementById("contact-telegram");
+  if(ct){ ct.textContent=cfg.contactTelegram||""; ct.style.cursor="pointer"; }
+  const cp=document.getElementById("contact-phone"); if(cp)cp.textContent=cfg.contactPhone||"";
+  // Sheikh channel card
+  const sc=document.getElementById("sheikh-channel-link");
+  if(sc) sc.textContent=cfg.sheikhChannel||(cfg.sheikhChannel?"":"اضغط للانتقال");
+  const scc=document.getElementById("sheikh-channel-card");
+  if(scc) scc.style.display=cfg.sheikhChannel?"":"none";
+  // Footer sheikh channel
+  const fc=document.getElementById("footer-sheikh-channel");
+  if(fc) fc.style.display=cfg.sheikhChannel?"":"none";
   // Study plan public
   renderPublicPlan();
 }
@@ -2485,8 +2595,14 @@ function renderAdmin(){
       <h3><i data-lucide="globe" style="width:16px;height:16px;color:var(--gold)"></i> إعدادات الموقع</h3>
       <div class="inp-group"><label>رابط فيديو التعريف (YouTube Embed)</label><input type="text" id="cfg-video" value="${APP.siteConfig.introVideo||""}" placeholder="https://www.youtube.com/embed/..."/></div>
       <div class="inp-group"><label>بريد التواصل</label><input type="text" id="cfg-email" value="${APP.siteConfig.contactEmail||""}"/></div>
-      <div class="inp-group"><label>تيليجرام</label><input type="text" id="cfg-tg" value="${APP.siteConfig.contactTelegram||""}"/></div>
+      <div class="inp-group"><label>تيليجرام المعهد (يُفتح بالتطبيق)</label><input type="text" id="cfg-tg" value="${APP.siteConfig.contactTelegram||""}" placeholder="@TaaseelInstitute"/></div>
       <div class="inp-group"><label>الهاتف</label><input type="text" id="cfg-phone" value="${APP.siteConfig.contactPhone||""}"/></div>
+      <div class="inp-group"><label>قناة الشيخ مصعب بن صلاح (تيليجرام)</label><input type="text" id="cfg-sheikh-channel" value="${APP.siteConfig.sheikhChannel||""}" placeholder="@channelname أو رابط t.me/..."/></div>
+      <div class="inp-group">
+        <label>قناة المعهد الخاصة (للطلاب فقط)</label>
+        <input type="text" id="cfg-private-channel" value="${APP.siteConfig.privateChannel||""}" placeholder="@channelname أو رابط t.me/..."/>
+        <span style="font-size:11px;color:#dc3545;margin-top:4px;display:block">⚠️ ستظهر في لوحة الطالب مع تحذير عدم النشر</span>
+      </div>
       <button class="btn btn-gold" onclick="saveConfig()"><i data-lucide="save" style="width:14px;height:14px"></i> حفظ الإعدادات</button>
     </div>
 
@@ -2816,6 +2932,8 @@ function saveConfig(){
   APP.siteConfig.contactEmail=document.getElementById("cfg-email")?.value.trim()||"";
   APP.siteConfig.contactTelegram=document.getElementById("cfg-tg")?.value.trim()||"";
   APP.siteConfig.contactPhone=document.getElementById("cfg-phone")?.value.trim()||"";
+  APP.siteConfig.sheikhChannel=document.getElementById("cfg-sheikh-channel")?.value.trim()||"";
+  APP.siteConfig.privateChannel=document.getElementById("cfg-private-channel")?.value.trim()||"";
   saveState();toast("تم حفظ الإعدادات ✅","success");
 }
 function saveAbout(){
@@ -2887,18 +3005,32 @@ function adminEditCourse(id){
     <button class="btn btn-primary" onclick="saveCourse(${id})"><i data-lucide="save" style="width:14px;height:14px"></i> حفظ التعديلات</button>
   `,"تعديل المقرر");
 }
-function saveCourse(id){
-  const title=document.getElementById("nc-title")?.value.trim();if(!title){toast("اسم المقرر مطلوب","error");return;}
-  const data={title,description:document.getElementById("nc-desc")?.value.trim()||"",info:document.getElementById("nc-info")?.value.trim()||"",icon:document.getElementById("nc-icon")?.value.trim()||"book",color:document.getElementById("nc-color")?.value||"#3B1B40"};
+function saveCourse(rawId){
+  const id = (rawId===null||rawId==="null"||rawId===undefined) ? null : rawId;
+  const title=document.getElementById("nc-title")?.value.trim();
+  if(!title){toast("اسم المقرر مطلوب","error");return;}
+  const data={
+    title,
+    description: document.getElementById("nc-desc")?.value.trim()||"",
+    info:        document.getElementById("nc-info")?.value.trim()||"",
+    icon:        document.getElementById("nc-icon")?.value.trim()||"book",
+    color:       document.getElementById("nc-color")?.value||"#3B1B40"
+  };
   if(id){
-    const c=findById(APP.courses,id);if(c) Object.assign(c,data);
-    toast("تم تحديث المقرر ✅","success");
+    const c=findById(APP.courses,id);
+    if(c){ Object.assign(c,data); toast("تم تحديث المقرر ✅","success"); }
+    else { toast("لم يتم العثور على المقرر","error"); return; }
   } else {
-    APP.courses.push({id:uid(),...data,visible:true,lessons:[]});
+    const newCourse={id:uid(),...data,visible:true,lessons:[]};
+    APP.courses.push(newCourse);
     addNotif(`تم إضافة مقرر جديد: ${title}`,"info");
     toast(`تم إضافة مقرر: ${title} ✅`,"success");
   }
-  saveState();closeModal();renderAdmin();renderCourses();
+  saveState();
+  closeModal();
+  // إعادة تصيير المناطق المتأثرة
+  if(document.getElementById("app-page-admin")?.classList.contains("active")) renderAdmin();
+  if(document.getElementById("app-page-courses")?.classList.contains("active")) renderCourses();
 }
 function adminDeleteCourse(id){
   confirm2("هل تريد حذف هذا المقرر نهائياً؟",()=>{
@@ -3186,6 +3318,19 @@ window.addEventListener("DOMContentLoaded", async ()=>{
   showPage("landing");
   renderPublicPlan();
   renderAboutPublic();
+
+  // ── تذكرني: تسجيل دخول تلقائي ──
+  const savedCreds = loadRememberMe();
+  if(savedCreds){
+    // ملء الحقول وتفعيل مؤشر التحميل
+    const emailEl=document.getElementById("l-email");
+    const passEl=document.getElementById("l-pass");
+    const remEl=document.getElementById("l-remember");
+    if(emailEl) emailEl.value=savedCreds.e||"";
+    if(remEl) remEl.checked=true;
+    // محاولة تسجيل الدخول التلقائي
+    tryAutoLogin();
+  }
 
   // معالجة نتيجة redirect من Google/Apple
   await _handleRedirectResult();
