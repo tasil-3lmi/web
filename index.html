@@ -115,7 +115,7 @@ body{font-family:'Zain',sans-serif;background:var(--bg);color:var(--text);direct
 /* ── Logo ── */
 .logo-wrap{display:flex;align-items:center;gap:8px;cursor:pointer;text-decoration:none}
 .logo-emblem{width:44px;height:44px;border-radius:0;background:transparent;display:flex;align-items:center;justify-content:center;}
-.logo-emblem svg{filter:drop-shadow(0 1px 2px rgba(0,0,0,.3))}
+
 .logo-text{line-height:1.1}
 .logo-text .t1{color:var(--purple);font-size:13px;font-weight:800;font-family:'Amiri',serif}
 .logo-text .t2{color:var(--gold-d);font-size:11px;font-weight:700}
@@ -284,12 +284,6 @@ body{font-family:'Zain',sans-serif;background:var(--bg);color:var(--text);direct
 
     <!-- Video intro -->
     <div id="hero-video-wrap" style="max-width:800px;width:100%;margin:0 auto 40px;padding:0 24px;position:relative;z-index:1" class="fu d6">
-      <div id="hero-video-title" style="text-align:center;margin-bottom:18px;display:none">
-        <span style="display:inline-flex;align-items:center;gap:10px;background:rgba(212,180,142,.12);border:1px solid rgba(212,180,142,.3);border-radius:22px;padding:8px 24px;backdrop-filter:blur(8px)">
-          <i data-lucide="play-circle" style="width:18px;height:18px;color:var(--gold)"></i>
-          <span style="color:#e8cfa8;font-size:15px;font-weight:700;font-family:'Amiri',serif" id="hero-video-title-text">مقطع تعريفي بمعهد التأصيل العلمي</span>
-        </span>
-      </div>
       <div id="landing-video-container" style="display:none">
         <div class="video-hero" id="landing-video-frame"></div>
       </div>
@@ -327,7 +321,7 @@ body{font-family:'Zain',sans-serif;background:var(--bg);color:var(--text);direct
       <div style="text-align:center;margin-bottom:50px">
         <h2 style="color:var(--purple);font-size:34px;font-weight:800;margin-bottom:10px">عن المعهد</h2>
         <div id="about-short-text" style="color:var(--muted);font-size:15px;max-width:600px;margin:0 auto 20px;line-height:1.9">
-          معهد التأصيل العلمي منصة تعليمية متخصصة في نشر العلوم الشرعية وفق منهج أهل السنة والجماعة، يجمع بين الأصالة في المنهج والحداثة في الأسلوب.
+          البرنامج العلمي الميسَّر للشيخ مصعب بن صلاح — منهج علمي متكامل لمدة سنة واحدة، يُعنى بدراسة المتون المعتمدة وتكوين الملكة العلمية في الفنون الشرعية.
         </div>
         <div style="width:66px;height:3px;background:linear-gradient(90deg,var(--gold),var(--gold-d));margin:0 auto 28px;border-radius:2px"></div>
         <button class="btn btn-outline" onclick="showPage('about-public')">
@@ -498,14 +492,9 @@ body{font-family:'Zain',sans-serif;background:var(--bg);color:var(--text);direct
             <i data-lucide="shield" style="width:13px;height:13px;color:var(--gold)"></i> دخول المسؤولين والمشرفين
           </div>
         </div>
-        <div class="inp-group"><label>البريد الإلكتروني</label><input type="email" id="al-email" placeholder="example@email.com" onkeydown="if(event.key='Enter')doAdminLogin()"/></div>
-        <div class="inp-group"><label>كلمة المرور</label><input type="password" id="al-pass" placeholder="••••••••" onkeydown="if(event.key='Enter')doAdminLogin()"/></div>
+        <div class="inp-group"><label>البريد الإلكتروني</label><input type="email" id="al-email" placeholder="example@email.com" onkeydown="if(event.key==='Enter')doAdminLogin()"/></div>
+        <div class="inp-group"><label>كلمة المرور</label><input type="password" id="al-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doAdminLogin()"/></div>
         <div id="admin-login-err" style="display:none;color:#dc3545;font-size:13px;padding:9px 13px;background:#fff5f5;border-radius:9px;margin-bottom:12px;border:1px solid #ffcccc"></div>
-        <!-- تذكرني للمسؤول -->
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
-          <label class="toggle" style="flex-shrink:0"><input type="checkbox" id="al-remember"><span class="toggle-slider"></span></label>
-          <span style="font-size:13px;color:var(--text);cursor:pointer" onclick="document.getElementById('al-remember').click()">تذكرني — تسجيل دخول تلقائي</span>
-        </div>
         <button id="btn-admin-login" class="btn btn-primary" onclick="doAdminLogin()" style="width:100%;justify-content:center;font-size:14px;padding:13px;margin-bottom:10px">
           <i data-lucide="shield-check" style="width:16px;height:16px"></i> دخول المسؤول
         </button>
@@ -718,8 +707,8 @@ const DEFAULT_PERMISSIONS = {
   canApproveUsers:  true,
   canRejectUsers:   true,
   canDeleteUsers:   false,
-  canManageCourses: false,
-  canManageTests:   false,
+  canManageCourses: true,
+  canManageTests:   true,
   canAnswerQA:      true,
   canViewAdmins:    false,
 };
@@ -738,6 +727,8 @@ function hasPerm(perm){
   if(APP.user.adminRole==="super") return true;
   return APP.user.adminPermissions?.[perm] === true;
 }
+function canManageCourses(){ return isAdmin() && (isSuperAdmin() || hasPerm("canManageCourses")); }
+function canManageTests(){ return isAdmin() && (isSuperAdmin() || hasPerm("canManageTests")); }
 
 // إنشاء حساب المشرف العام إن لم يكن موجوداً
 async function ensureSuperAdmin(){
@@ -807,7 +798,7 @@ let APP = {
      info:"يبدأ من الأجرومية ويصل إلى ألفية ابن مالك",lessons:[]},
   ],
   tests: LS("ti_tests") || [
-    {id:1,title:"اختبار الربع الأول - العقيدة",questions:[
+    {id:1,title:"اختبار الربع الأول - العقيدة",visible:true,locked:false,questions:[
       {q:"ما معنى التوحيد؟",options:["إفراد الله بالعبادة","الإيمان بالملائكة","قراءة القرآن","أداء الصلاة"],answer:0},
       {q:"ما أول ما يُسأل عنه العبد؟",options:["الزكاة","الصيام","الصلاة","الحج"],answer:2},
     ]},
@@ -1057,44 +1048,10 @@ function switchTab(t){
   else           { tr2.style.cssText=act; tl.style.cssText=inact; }
 }
 
-// ── Admin Remember Me ──
-const ARM_KEY = "ti_arm";
-function saveAdminRememberMe(email, pass){
-  try{ localStorage.setItem(ARM_KEY, btoa(JSON.stringify({e:email,p:pass}))); }catch(e){}
-}
-function loadAdminRememberMe(){
-  try{
-    const raw = localStorage.getItem(ARM_KEY);
-    if(!raw) return null;
-    return JSON.parse(atob(raw));
-  }catch(e){ localStorage.removeItem(ARM_KEY); return null; }
-}
-async function tryAutoAdminLogin(){
-  const saved = loadAdminRememberMe();
-  if(!saved||!saved.e||!saved.p) return false;
-  try{
-    const cred = await FB_AUTH.signInWithEmailAndPassword(saved.e, saved.p);
-    const uid = cred.user.uid;
-    const adminProfile = await fsGetAdmin(uid);
-    if(!adminProfile){ localStorage.removeItem(ARM_KEY); await FB_AUTH.signOut(); return false; }
-    _adminSessionEmail = saved.e;
-    _adminSessionPass  = saved.p;
-    loginUser({
-      id: uid, name: adminProfile.fullName||adminProfile.username,
-      adminLabel: adminProfile.username, adminFullName: adminProfile.fullName,
-      adminUsername: adminProfile.username, isAdmin: true,
-      adminRole: adminProfile.role, adminPermissions: adminProfile.permissions||{},
-      completedLessons:[], testResults:[],
-    });
-    return true;
-  }catch(e){ localStorage.removeItem(ARM_KEY); return false; }
-}
-
 // ── Admin login — Firebase Auth + Firestore ──
 async function doAdminLogin(){
   const email = document.getElementById("al-email").value.trim();
   const pass  = document.getElementById("al-pass").value;
-  const remember = document.getElementById("al-remember")?.checked||false;
   const err   = document.getElementById("admin-login-err");
   err.style.display="none";
   if(!email||!pass){ err.textContent="يرجى إدخال البريد وكلمة المرور"; err.style.display=""; return; }
@@ -1107,17 +1064,14 @@ async function doAdminLogin(){
     // 2. التحقق من وجود الحساب في مجموعة "admins"
     const adminProfile = await fsGetAdmin(uid);
     if(!adminProfile){
+      // ليس مسؤولاً — أخرجه فوراً
       await FB_AUTH.signOut();
       err.textContent = "هذا الحساب ليس حساب مسؤول";
       err.style.display = "";
       return;
     }
 
-    // 3. تذكرني
-    if(remember){ saveAdminRememberMe(email, pass); }
-    else { localStorage.removeItem(ARM_KEY); }
-
-    // 4. تسجيل الدخول كمسؤول
+    // 3. تسجيل الدخول كمسؤول
     _adminSessionEmail = email;
     _adminSessionPass  = pass;
     loginUser({
@@ -1409,8 +1363,6 @@ function loginUser(u){
 async function doLogout(){
   // عند تسجيل الخروج اليدوي — احذف التذكر
   localStorage.removeItem(RM_KEY);
-  localStorage.removeItem(ARM_KEY);
-  localStorage.removeItem(ARM_KEY);
   APP.user=null;
   _adminSessionEmail = "";
   _adminSessionPass  = "";
@@ -1617,7 +1569,13 @@ function renderDashboard(){
           </div>
           <h4 style="color:var(--purple);font-size:14px;font-weight:700;margin-bottom:6px">${c.title}</h4>
           <p style="color:var(--muted);font-size:12px;line-height:1.65;margin-bottom:12px">${c.description}</p>
-          <span class="tag tag-gold">${c.lessons.filter(l=>l.visible!==false).length} درس</span>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span class="tag tag-gold">${c.lessons.filter(l=>l.visible!==false).length} درس</span>
+            ${canManageCourses()?`<div style="display:flex;gap:4px" onclick="event.stopPropagation()">
+              <button class="btn-icon btn-sm" title="تعديل" onclick="adminEditCourse('${c.id}');event.stopPropagation()"><i data-lucide="edit-2" style="width:12px;height:12px"></i></button>
+              <button class="btn-icon btn-sm" style="color:#dc3545" title="حذف" onclick="adminDeleteCourse('${c.id}');event.stopPropagation()"><i data-lucide="trash-2" style="width:12px;height:12px"></i></button>
+            </div>`:""}
+          </div>
         </div>`).join("")}
       </div>
 
@@ -2134,7 +2092,7 @@ function processFiles(files, cid, lid){
 function deleteAttachment(cid,lid,ai){
   const c=findById(APP.courses,cid);const l=c?findById(c.lessons,lid):null;
   if(!l) return;
-  l.attachments.splice(ai,1);fbSaveCourses();
+  l.attachments.splice(ai,1);saveState();
   selectLesson(cid,lid);toast("تم حذف المرفق","info");
 }
 
@@ -2142,30 +2100,48 @@ function deleteAttachment(cid,lid,ai){
 // TESTS
 // ══════════════════════════════════════════════════════════
 function renderTests(){
+  const visibleTests = isAdmin() ? APP.tests : APP.tests.filter(t=>t.visible!==false);
   document.getElementById("app-page-tests").innerHTML=`
-  <div class="pg" style="padding:28px">
+  <div class="pg" style="padding:28px;max-width:800px;margin:0 auto">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px">
       <h2 style="color:var(--purple);font-size:22px;font-weight:800;display:flex;align-items:center;gap:8px">
         <i data-lucide="file-text" style="width:22px;height:22px;color:var(--gold)"></i> الاختبارات
       </h2>
-      ${isAdmin()?`<button class="btn btn-gold" onclick="adminAddTest()"><i data-lucide="plus" style="width:15px;height:15px"></i> اختبار جديد</button>`:""}
+      ${canManageTests()?`<button class="btn btn-gold" onclick="adminAddTest()"><i data-lucide="plus" style="width:15px;height:15px"></i> اختبار جديد</button>`:""}
     </div>
-    ${APP.tests.length===0?`<div style="text-align:center;padding:60px;color:var(--muted)">لا توجد اختبارات حالياً</div>`:""}
+    ${visibleTests.length===0?`<div style="text-align:center;padding:60px 20px;color:var(--muted)"><i data-lucide="inbox" style="width:40px;height:40px;opacity:.3;margin-bottom:12px"></i><p>لا توجد اختبارات متاحة حالياً</p></div>`:""}
     <div style="display:grid;gap:14px">
-      ${APP.tests.map((t,i)=>`
-      <div class="card fu" style="animation-delay:${i*70}ms;padding:22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
-        <div>
-          <h3 style="color:var(--purple);font-size:15px;font-weight:700;margin-bottom:5px">${t.title}</h3>
-          <span class="tag tag-gold"><i data-lucide="help-circle" style="width:10px;height:10px"></i> ${t.questions.length} سؤال</span>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btn-primary" onclick="startTest(${t.id})">
-            <i data-lucide="play" style="width:13px;height:13px"></i> ابدأ
-          </button>
-          ${isAdmin()?`
-          <button class="btn btn-ghost btn-sm" onclick="adminEditTest('${t.id}')"><i data-lucide="edit-2" style="width:13px;height:13px"></i></button>
-          <button class="btn btn-danger btn-sm" onclick="adminDeleteTest('${t.id}')"><i data-lucide="trash-2" style="width:13px;height:13px"></i></button>
-          `:""}
+      ${visibleTests.map((t,i)=>`
+      <div class="card fu" style="animation-delay:${i*70}ms;padding:22px;border:1.5px solid ${t.locked?"rgba(220,53,69,.25)":"rgba(212,180,142,.2)"}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+              <h3 style="color:var(--purple);font-size:16px;font-weight:700">${t.title}</h3>
+              ${!isAdmin()&&t.locked?`<span class="tag" style="background:rgba(220,53,69,.1);color:#dc3545;border:1px solid rgba(220,53,69,.2)">🔒 مقفل</span>`:""}
+              ${isAdmin()?`
+              <span class="tag ${t.visible!==false?"tag-green":"tag-red"}" style="font-size:10px">${t.visible!==false?"ظاهر":"مخفي"}</span>
+              <span class="tag ${t.locked?"tag-red":"tag-blue"}" style="font-size:10px">${t.locked?"🔒 مقفل":"🔓 مفتوح"}</span>`:""}
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <span class="tag tag-gold"><i data-lucide="help-circle" style="width:10px;height:10px"></i> ${t.questions.length} سؤال</span>
+              ${(APP.user.testResults||[]).filter(r=>toId(r.testId)===toId(t.id)).length>0?`<span class="tag tag-green">✓ أديتَ هذا الاختبار</span>`:""}
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            ${isAdmin()?`
+            <label class="toggle" title="إظهار/إخفاء" style="flex-shrink:0"><input type="checkbox" ${t.visible!==false?"checked":""} onchange="adminToggleTestVisible('${t.id}',this.checked)"><span class="toggle-slider"></span></label>
+            <label class="toggle" title="قفل/فتح" style="flex-shrink:0"><input type="checkbox" ${t.locked?"checked":""} onchange="adminToggleTestLocked('${t.id}',this.checked)"><span class="toggle-slider"></span></label>
+            <button class="btn btn-ghost btn-sm" onclick="adminEditTest('${t.id}')"><i data-lucide="edit-2" style="width:13px;height:13px"></i></button>
+            <button class="btn btn-danger btn-sm" onclick="adminDeleteTest('${t.id}')"><i data-lucide="trash-2" style="width:13px;height:13px"></i></button>
+            `:""}
+            ${t.locked&&!isAdmin()?`
+            <button class="btn btn-ghost btn-sm" style="color:#dc3545;border-color:rgba(220,53,69,.3)" onclick="toast('🔒 هذا الاختبار مقفل حالياً — تواصل مع المشرف','error',4000)">
+              <i data-lucide="lock" style="width:13px;height:13px"></i> مقفل
+            </button>`:`
+            <button class="btn btn-primary" onclick="startTest('${t.id}')">
+              <i data-lucide="play" style="width:13px;height:13px"></i> ابدأ الاختبار
+            </button>`}
+          </div>
         </div>
       </div>`).join("")}
     </div>
@@ -2175,8 +2151,10 @@ function renderTests(){
 
 let _testState={id:null,answers:{},submitted:false};
 function startTest(tid){
-  const t=findById(APP.tests,tid);
-  if(!t) return;
+  const t=findById(APP.tests,String(tid));
+  if(!t){ toast("لم يتم العثور على الاختبار","error"); return; }
+  if(t.locked && !isAdmin()){ toast("🔒 هذا الاختبار مقفل حالياً — تواصل مع المشرف","error",4000); return; }
+  if(t.visible===false && !isAdmin()){ toast("هذا الاختبار غير متاح حالياً","error"); return; }
   _testState={id:tid,answers:{},multiAnswers:{},submitted:false};
   document.getElementById("app-page-tests").innerHTML=`
   <div class="pg" style="padding:28px">
@@ -2327,7 +2305,7 @@ function submitQuestion(){
   const b=document.getElementById("q-body")?.value.trim();
   if(!s||!b){toast("يرجى ملء جميع الحقول","error");return;}
   APP.questions.push({id:uid(),userId:APP.user.id,userName:APP.user.name,subject:s,body:b,answer:null,date:new Date().toLocaleDateString("ar")});
-  fbSaveQuestions();
+  saveState();
   toast("تم إرسال سؤالك بنجاح!","success");
   renderQA();
 }
@@ -2382,7 +2360,7 @@ function submitAnswer(qid){
   const txt=document.getElementById(`ans-${qid}`)?.value.trim();
   if(!txt){toast("يرجى كتابة الرد","error");return;}
   const q=findById(APP.questions,qid);
-  if(q){ q.answer=txt; fbSaveQuestions().then(()=>{ toast("تم إرسال الرد بنجاح!","success"); renderAdminQA(); }); }
+  if(q){ q.answer=txt; saveState(); toast("تم إرسال الرد بنجاح!","success"); renderAdminQA(); }
 }
 function editAnswer(qid){
   const q=findById(APP.questions,qid);
@@ -2395,10 +2373,10 @@ function editAnswer(qid){
 function saveEditAnswer(qid){
   const txt=document.getElementById("edit-ans")?.value.trim();
   const q=findById(APP.questions,qid);
-  if(q&&txt){q.answer=txt;fbSaveQuestions().then(()=>{closeModal();toast("تم تحديث الرد","success");renderAdminQA();});}
+  if(q&&txt){q.answer=txt;saveState();closeModal();toast("تم تحديث الرد","success");renderAdminQA();}
 }
 function deleteQuestion(qid){
-  APP.questions=APP.questions.filter(x=>x.id!==qid);fbSaveQuestions().then(()=>renderAdminQA());toast("تم الحذف","info");
+  APP.questions=APP.questions.filter(x=>x.id!==qid);saveState();renderAdminQA();toast("تم الحذف","info");
 }
 
 // ══════════════════════════════════════════════════════════
@@ -2474,18 +2452,14 @@ function renderProfile(){
       <h3 style="color:var(--purple);font-size:14px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:6px">
         <i data-lucide="shield" style="width:14px;height:14px;color:var(--gold)"></i> بيانات حساب المسؤول
       </h3>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:18px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
         <div style="background:var(--bg);border-radius:10px;padding:12px">
           <div style="font-size:11px;color:var(--muted);margin-bottom:3px">الاسم الثلاثي</div>
-          <div style="font-size:13px;font-weight:700;color:var(--purple)">${u.adminFullName||u.name}</div>
+          <div style="font-size:14px;font-weight:700;color:var(--purple)">${u.adminFullName||u.name}</div>
         </div>
         <div style="background:var(--bg);border-radius:10px;padding:12px">
           <div style="font-size:11px;color:var(--muted);margin-bottom:3px">اسم المستخدم</div>
-          <div style="font-size:13px;font-weight:700;color:var(--purple)">${u.adminUsername||"—"}</div>
-        </div>
-        <div style="background:var(--bg);border-radius:10px;padding:12px">
-          <div style="font-size:11px;color:var(--muted);margin-bottom:3px">البريد الإلكتروني</div>
-          <div style="font-size:12px;font-weight:600;color:var(--muted);word-break:break-all">${u.email||_adminSessionEmail||"—"}</div>
+          <div style="font-size:14px;font-weight:700;color:var(--purple)">${u.adminUsername||"—"}</div>
         </div>
         <div style="background:var(--bg);border-radius:10px;padding:12px">
           <div style="font-size:11px;color:var(--muted);margin-bottom:3px">الدور</div>
@@ -2494,20 +2468,13 @@ function renderProfile(){
           </div>
         </div>
       </div>
-      <div class="inp-grid">
-        <div class="inp-group"><label>الاسم الثلاثي</label><input type="text" id="adm-fullname" value="${u.adminFullName||u.name||""}"/></div>
-        <div class="inp-group"><label>اسم المستخدم</label><input type="text" id="adm-username" value="${u.adminUsername||""}"/></div>
-      </div>
-      <div class="inp-group"><label>كلمة المرور الجديدة <span style="color:var(--muted);font-weight:400">(اتركه فارغاً للإبقاء على الحالية)</span></label><input type="password" id="adm-newpass" placeholder="••••••••"/></div>
+      <div class="inp-group"><label>الاسم الثلاثي</label><input type="text" id="adm-fullname" value="${u.adminFullName||u.name||""}"/></div>
+      <div class="inp-group"><label>اسم المستخدم</label><input type="text" id="adm-username" value="${u.adminUsername||""}"/></div>
+      <div class="inp-group"><label>كلمة المرور الجديدة (اتركه فارغاً للإبقاء)</label><input type="password" id="adm-newpass" placeholder="••••••••"/></div>
       <div class="inp-group"><label>تأكيد كلمة المرور</label><input type="password" id="adm-newpass2" placeholder="••••••••"/></div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px">
-        <button class="btn btn-primary" onclick="saveAdminProfile()">
-          <i data-lucide="save" style="width:14px;height:14px"></i> حفظ التعديلات
-        </button>
-        <button class="btn btn-danger btn-sm" onclick="doLogout()" style="align-self:center">
-          <i data-lucide="log-out" style="width:13px;height:13px"></i> تسجيل الخروج
-        </button>
-      </div>
+      <button class="btn btn-primary" onclick="saveAdminProfile()">
+        <i data-lucide="save" style="width:14px;height:14px"></i> حفظ التعديلات
+      </button>
     </div>`}
   </div>`;
   lucide.createIcons();
@@ -2557,7 +2524,65 @@ function renderAboutApp(){
 function renderAboutPublic(){
   const cfg=APP.siteConfig;
   const el=document.getElementById("about-full-content");
-  if(el) el.innerHTML=`<div style="white-space:pre-line;line-height:2">${cfg.aboutText}</div>`;
+  if(el) el.innerHTML=`
+  <div style="margin-bottom:28px">
+    <h2 style="color:var(--purple);font-size:20px;font-weight:800;margin-bottom:14px;font-family:'Amiri',serif;display:flex;align-items:center;gap:8px">
+      <span style="color:var(--gold)">◈</span> تعريف بالشيخ مصعب بن صلاح حفظه الله
+    </h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;background:rgba(212,180,142,.07);border-radius:14px;padding:16px;margin-bottom:14px">
+      <div><span style="color:var(--gold-d);font-weight:700">▪️ الاسم:</span> مصعب بن صلاح بن علي</div>
+      <div><span style="color:var(--gold-d);font-weight:700">▪️ الميلاد:</span> 1407هـ / 1987م</div>
+      <div><span style="color:var(--gold-d);font-weight:700">▪️ الأصل:</span> محسي من الشمالية — عبري</div>
+      <div><span style="color:var(--gold-d);font-weight:700">▪️ الدراسة:</span> الأحساء ثم المدينة المنورة ثم السودان</div>
+    </div>
+    <p style="color:var(--muted);font-size:13px;line-height:2">درس جميع المراحل الدراسية بالأحساء، تخرج من الثانوية عام 2004م، التحق بكلية الطب بجامعة العلوم والتقانة بأمدرمان، ثم انتقل إلى كلية الحديث الشريف بالجامعة الإسلامية بالمدينة المنورة عام 2009م، وعاد إلى السودان عام 2015م.</p>
+  </div>
+
+  <div style="margin-bottom:26px">
+    <h3 style="color:var(--purple);font-size:15px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:7px">
+      <span style="color:var(--gold)">◈</span> مشايخه
+    </h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:7px">
+      ${["الشيخ محمد أحيد الشنقيطي (النحو)","الشيخ عبدالرحمن الشنقيطي (النحو)","الشيخ أحمد محمود الشنقيطي (أصول الفقه)","الشيخ صالح سندي (العقيدة)","الشيخ سليمان الرحيلي","الشيخ صالح العصيمي","العلامة عبدالمحسن العباد البدر","العلامة صالح السحيمي","العلامة عبدالرزاق البدر","العلامة عبدالكريم الخضير","الشيخ عبدالله البخاري","الشيخ محمد بن هادي المدخلي","الشيخ عبيد الجابري","الشيخ أنيس طاهر (الجرح والتعديل)","الشيخ ربيع المدخلي","المفتي عبدالعزيز آل الشيخ","العلامة صالح الفوزان","العلامة صالح اللحيدان","العلامة أحمد المباركي","العلامة سعد الشثري","الشيخ خالد عبداللطيف","الشيخ حسن الهواري","الشيخ عبدالرحمن حامد","الشيخ محمد سيد حاج رحمه الله","الشيخ صلاح الأمين","الشيخ المرتضى الزين","الشيخ معتصم صلاح","الشيخ حاتم عز الدين","الشيخ فخر الدين الزبير"].map(s=>`<div style="background:rgba(212,180,142,.1);border:1px solid rgba(212,180,142,.3);border-radius:8px;padding:6px 12px;font-size:12px;color:var(--text);display:flex;align-items:center;gap:5px"><span style="color:var(--gold);font-size:8px">●</span>${s}</div>`).join("")}
+    </div>
+  </div>
+
+  <div style="margin-bottom:26px">
+    <h3 style="color:var(--purple);font-size:15px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:7px">
+      <span style="color:var(--gold)">◈</span> مؤلفاته
+    </h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:7px">
+      ${["المدخل إلى طلب العلم","البيان المهم في حكم طلب العلم","ضوابط في التبديع","الرد على المخالف","ضوابط التعامل مع زلات العلماء","الجهل وأثره على الدعوة","الحزبية","التوضيح الأنفع شرح القواعد الأربع","خلاصة الكلام شرح نواقض الإسلام"].map((b,i)=>`<div style="background:linear-gradient(135deg,var(--purple),var(--purple-l));border-radius:9px;padding:9px 13px;color:#fff;font-size:12px;display:flex;align-items:center;gap:8px"><span style="color:var(--gold);font-weight:800;font-size:14px;flex-shrink:0">${i+1}</span>${b}</div>`).join("")}
+    </div>
+  </div>
+
+  <div style="margin-bottom:26px">
+    <h3 style="color:var(--purple);font-size:15px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:7px">
+      <span style="color:var(--gold)">◈</span> الإجازات العلمية
+    </h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:10px">مُجازٌ برواية أكثر كتب العلم بالأسانيد المتصلة:</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:7px">
+      ${["📖 كتب السنة والحديث (الصحيحان والسنن)","📖 كتب العقيدة","📖 كتب التفاسير المشهورة","📖 كتب شروح الحديث","📖 كتب التاريخ والسيرة","📖 كتب الزهد والرقائق","📖 كتب الفقه وأصوله وقواعده","📖 كتب اللغة والأدب","📖 كتب علوم الحديث والمصطلح"].map(k=>`<div style="background:rgba(59,27,64,.06);border:1px solid rgba(59,27,64,.12);border-radius:8px;padding:7px 12px;font-size:12px;color:var(--purple)">${k}</div>`).join("")}
+    </div>
+  </div>
+
+  <div style="border-top:2px solid rgba(212,180,142,.3);padding-top:22px">
+    <h2 style="color:var(--purple);font-size:18px;font-weight:800;margin-bottom:14px;font-family:'Amiri',serif">
+      <span style="color:var(--gold)">◈</span> عن البرنامج
+    </h2>
+    <div style="background:rgba(212,180,142,.07);border-radius:14px;padding:18px;margin-bottom:16px">
+      <p style="color:var(--text);font-size:14px;line-height:2">برنامج علمي ميسَّر: يدرس الطالب فيه عدداً من المتون العلمية التي يحتاجها كل طالب علم، مع روافد متممة تُعين على استكمال بناء قوة الطالب العلمية والعملية.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:7px;margin-bottom:16px">
+      ${["تدريس المتون المعتمدة في مختلف العلوم","الاعتناء بحفظ المتون ومراجعتها","الترقي في أخذ العلم","تكوين الملكة العلمية","معرفة العلاقة بين العلوم","القدرة على المباحثة والمناقشة","التكامل المعرفي","التعرف على المكتبة الإسلامية","معالجة الأغلاط المنهجية"].map(g=>`<div style="display:flex;align-items:center;gap:6px;padding:8px 12px;background:var(--bg);border-radius:8px;border:1px solid rgba(212,180,142,.2);font-size:12px;color:var(--text)"><span style="color:var(--gold);font-weight:800">◈</span>${g}</div>`).join("")}
+    </div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted)">
+      <span style="display:flex;align-items:center;gap:5px"><span style="color:var(--gold)">●</span> الفئة المستهدفة: طلاب العلم ذكوراً وإناثاً بمختلف أعمارهم</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="color:var(--gold)">●</span> المدة: سنة واحدة فقط</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="color:var(--gold)">●</span> إجازات علمية وشهادات إتمام</span>
+    </div>
+    ${cfg.aboutText?`<div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(212,180,142,.2);white-space:pre-line;line-height:2;color:var(--muted);font-size:13px">${cfg.aboutText}</div>`:""}
+  </div>`;
   const tg=document.getElementById("about-team-grid");
   if(tg&&cfg.team?.length){
     tg.innerHTML=cfg.team.map(m=>`
@@ -2572,13 +2597,9 @@ function renderAboutPublic(){
   const vc=document.getElementById("landing-video-container");
   const vf=document.getElementById("landing-video-frame");
   const np=document.getElementById("no-video-placeholder");
-  const vt=document.getElementById("hero-video-title");
-  const vtxt=document.getElementById("hero-video-title-text");
   if(vf) vf.innerHTML=`<iframe src="${videoUrl}" allowfullscreen allow="accelerometer;autoplay;encrypted-media;gyroscope;picture-in-picture" loading="lazy"></iframe>`;
   if(vc) vc.style.display="";
   if(np) np.style.display="none";
-  if(vt) vt.style.display="";
-  if(vtxt && cfg.videoTitle) vtxt.textContent=cfg.videoTitle;
 
   // Contact
   const ce=document.getElementById("contact-email"); if(ce)ce.textContent=cfg.contactEmail||"";
@@ -2772,8 +2793,7 @@ function renderAdmin(){
     <!-- ── إعدادات الموقع ── -->
     <div class="admin-section">
       <h3><i data-lucide="globe" style="width:16px;height:16px;color:var(--gold)"></i> إعدادات الموقع</h3>
-      <div class="inp-group"><label>عنوان المقطع التعريفي</label><input type="text" id="cfg-video-title" value="${APP.siteConfig.videoTitle||'مقطع تعريفي بمعهد التأصيل العلمي'}" placeholder="مثال: تعرف على معهد التأصيل العلمي"/></div>
-      <div class="inp-group"><label>رابط الفيديو التعريفي (YouTube embed)</label><input type="text" id="cfg-video" value="${APP.siteConfig.introVideo||""}" placeholder="https://www.youtube.com/embed/..."/></div>
+      <div class="inp-group"><label>رابط فيديو التعريف (YouTube Embed)</label><input type="text" id="cfg-video" value="${APP.siteConfig.introVideo||""}" placeholder="https://www.youtube.com/embed/..."/></div>
       <div class="inp-group"><label>بريد التواصل</label><input type="text" id="cfg-email" value="${APP.siteConfig.contactEmail||""}"/></div>
       <div class="inp-group"><label>تيليجرام المعهد (يُفتح بالتطبيق)</label><input type="text" id="cfg-tg" value="${APP.siteConfig.contactTelegram||""}" placeholder="@TaaseelInstitute"/></div>
       <div class="inp-group"><label>الهاتف</label><input type="text" id="cfg-phone" value="${APP.siteConfig.contactPhone||""}"/></div>
@@ -2855,16 +2875,36 @@ function renderAdmin(){
     <div class="admin-section">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <h3 style="border:none;padding:0;margin:0"><i data-lucide="file-text" style="width:16px;height:16px;color:var(--gold)"></i> إدارة الاختبارات</h3>
-        <button class="btn btn-gold btn-sm" onclick="adminAddTest()"><i data-lucide="plus" style="width:12px;height:12px"></i> جديد</button>
+        <button class="btn btn-gold btn-sm" onclick="adminAddTest()"><i data-lucide="plus" style="width:12px;height:12px"></i> اختبار جديد</button>
       </div>
-      ${APP.tests.map(t=>`
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(212,180,142,.12)">
-        <span style="font-size:13px;color:var(--text)">${t.title} (${t.questions.length} سؤال)</span>
-        <div style="display:flex;gap:5px">
-          <button class="btn btn-ghost btn-sm" onclick="adminEditTest('${t.id}')"><i data-lucide="edit-2" style="width:12px;height:12px"></i> تعديل</button>
-          <button class="btn btn-danger btn-sm" onclick="adminDeleteTest('${t.id}')"><i data-lucide="trash-2" style="width:12px;height:12px"></i></button>
-        </div>
-      </div>`).join("")||"<p style='color:var(--muted);font-size:13px'>لا توجد اختبارات</p>"}
+      <div id="tests-admin-list">
+        ${APP.tests.length===0?`<p style='color:var(--muted);font-size:13px'>لا توجد اختبارات</p>`:
+          APP.tests.map(t=>`
+          <div style="background:var(--bg);border-radius:12px;padding:12px 14px;margin-bottom:8px;border:1px solid rgba(212,180,142,.2)">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+              <div>
+                <div style="font-size:14px;font-weight:700;color:var(--purple);margin-bottom:4px">${t.title}</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                  <span class="tag tag-gold">${t.questions.length} سؤال</span>
+                  <span class="tag ${t.visible!==false?"tag-green":"tag-red"}">${t.visible!==false?"ظاهر":"مخفي"}</span>
+                  <span class="tag ${t.locked?"tag-red":"tag-blue"}">${t.locked?"🔒 مقفل":"🔓 مفتوح"}</span>
+                </div>
+              </div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+                <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)">
+                  <label class="toggle" title="إظهار/إخفاء"><input type="checkbox" ${t.visible!==false?"checked":""} onchange="adminToggleTestVisible('${t.id}',this.checked)"><span class="toggle-slider"></span></label>
+                  <span>ظهور</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)">
+                  <label class="toggle" title="قفل/فتح"><input type="checkbox" ${t.locked?"checked":""} onchange="adminToggleTestLocked('${t.id}',this.checked)"><span class="toggle-slider"></span></label>
+                  <span>قفل</span>
+                </div>
+                <button class="btn btn-ghost btn-sm" onclick="adminEditTest('${t.id}')"><i data-lucide="edit-2" style="width:12px;height:12px"></i> تعديل</button>
+                <button class="btn btn-danger btn-sm" onclick="adminDeleteTest('${t.id}')"><i data-lucide="trash-2" style="width:12px;height:12px"></i></button>
+              </div>
+            </div>
+          </div>`).join("")}
+      </div>
     </div>
 
     <!-- حالة التزامن -->
@@ -2902,7 +2942,10 @@ service cloud.firestore {<br>
     </div>
   </div>`;
   lucide.createIcons();
-  setTimeout(()=>{ renderAdminUsers("all"); if(isSuperAdmin()) loadSupervisors(); }, 80);
+  setTimeout(()=>{ 
+    renderAdminUsers("all"); 
+    if(isSuperAdmin()) loadSupervisors();
+  }, 80);
 }
 
 async function checkSyncStatus(){
@@ -3108,7 +3151,6 @@ async function removeSupervisor(uid2,name){
 }
 
 function saveConfig(){
-  APP.siteConfig.videoTitle=document.getElementById("cfg-video-title")?.value.trim()||"مقطع تعريفي بمعهد التأصيل العلمي";
   APP.siteConfig.introVideo=document.getElementById("cfg-video")?.value.trim()||"";
   APP.siteConfig.contactEmail=document.getElementById("cfg-email")?.value.trim()||"";
   APP.siteConfig.contactTelegram=document.getElementById("cfg-tg")?.value.trim()||"";
@@ -3639,7 +3681,7 @@ function addTestQ(){
   if(wrap){ wrap.innerHTML=_renderTestQsWrap(window._pendingTestQs); lucide.createIcons({nodes:[wrap]}); }
 }
 
-async function saveTest2(id){
+function saveTest2(id){
   const title=document.getElementById("nt-title")?.value.trim();
   if(!title){toast("عنوان الاختبار مطلوب","error");return;}
   if(!window._pendingTestQs.length){toast("أضف أسئلة أولاً","error");return;}
@@ -3648,14 +3690,53 @@ async function saveTest2(id){
     if(t){t.title=title;t.questions=[...window._pendingTestQs];}
     toast("تم تحديث الاختبار ✅","success");
   } else {
-    APP.tests.push({id:uid(),title,questions:[...window._pendingTestQs]});
+    APP.tests.push({id:uid(),title,questions:[...window._pendingTestQs],visible:true,locked:false});
     addNotif(`اختبار جديد: ${title}`,"info");
     toast(`تم إنشاء اختبار: ${title} ✅`,"success");
   }
-  await fbSaveTests();closeModal();renderAdmin();renderTests();
+  saveState();closeModal();renderAdmin();renderTests();
 }
 function adminDeleteTest(id){
-  confirm2("حذف هذا الاختبار نهائياً؟",async()=>{APP.tests=APP.tests.filter(t=>t.id!==id);await fbSaveTests();renderAdmin();renderTests();toast("تم الحذف","info");});
+  confirm2("حذف هذا الاختبار نهائياً؟",()=>{APP.tests=APP.tests.filter(t=>t.id!==id);saveState();renderAdmin();renderTests();toast("تم الحذف","info");});
+}
+function adminToggleTestVisible(id, val){
+  const t=findById(APP.tests,id);
+  if(t){ t.visible=val; saveState(); _refreshTestsAdminList(); renderTests(); toast(val?"✅ الاختبار ظاهر للطلاب":"🙈 الاختبار مخفي عن الطلاب","info"); }
+}
+function adminToggleTestLocked(id, val){
+  const t=findById(APP.tests,id);
+  if(t){ t.locked=val; saveState(); _refreshTestsAdminList(); renderTests(); toast(val?"🔒 الاختبار مقفل — الطلاب يرونه لكن لا يستطيعون البدء":"🔓 الاختبار مفتوح للطلاب","info"); }
+}
+function _refreshTestsAdminList(){
+  const el=document.getElementById("tests-admin-list");
+  if(!el) return;
+  el.innerHTML = APP.tests.length===0?`<p style="color:var(--muted);font-size:13px">لا توجد اختبارات</p>`:
+    APP.tests.map(t=>`
+    <div style="background:var(--bg);border-radius:12px;padding:12px 14px;margin-bottom:8px;border:1px solid rgba(212,180,142,.2)">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-size:14px;font-weight:700;color:var(--purple);margin-bottom:4px">${t.title}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <span class="tag tag-gold"><i data-lucide="help-circle" style="width:10px;height:10px"></i> ${t.questions.length} سؤال</span>
+            <span class="tag ${t.visible!==false?'tag-green':'tag-red'}">${t.visible!==false?'ظاهر':'مخفي'}</span>
+            <span class="tag ${t.locked?'tag-red':'tag-blue'}">${t.locked?'🔒 مقفل':'🔓 مفتوح'}</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+          <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)">
+            <label class="toggle" title="إظهار/إخفاء"><input type="checkbox" ${t.visible!==false?"checked":""} onchange="adminToggleTestVisible('${t.id}',this.checked)"><span class="toggle-slider"></span></label>
+            <span>ظهور</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)">
+            <label class="toggle" title="قفل/فتح"><input type="checkbox" ${t.locked?"checked":""} onchange="adminToggleTestLocked('${t.id}',this.checked)"><span class="toggle-slider"></span></label>
+            <span>قفل</span>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="adminEditTest('${t.id}')"><i data-lucide="edit-2" style="width:12px;height:12px"></i> تعديل</button>
+          <button class="btn btn-danger btn-sm" onclick="adminDeleteTest('${t.id}')"><i data-lucide="trash-2" style="width:12px;height:12px"></i></button>
+        </div>
+      </div>
+    </div>`).join("");
+  lucide.createIcons({nodes:[el]});
 }
 
 // ── الخطة الدراسية الافتراضية ──
@@ -3723,23 +3804,17 @@ window.addEventListener("DOMContentLoaded", async ()=>{
   renderPublicPlan();
   renderAboutPublic();
 
-  // ── تذكرني طالب: تسجيل دخول تلقائي ──
+  // ── تذكرني: تسجيل دخول تلقائي ──
   const savedCreds = loadRememberMe();
   if(savedCreds){
+    // ملء الحقول وتفعيل مؤشر التحميل
     const emailEl=document.getElementById("l-email");
+    const passEl=document.getElementById("l-pass");
     const remEl=document.getElementById("l-remember");
     if(emailEl) emailEl.value=savedCreds.e||"";
     if(remEl) remEl.checked=true;
+    // محاولة تسجيل الدخول التلقائي
     tryAutoLogin();
-  }
-  // ── تذكرني مسؤول: تسجيل دخول تلقائي ──
-  const savedAdmin = loadAdminRememberMe();
-  if(savedAdmin){
-    const alEl=document.getElementById("al-email");
-    const alRem=document.getElementById("al-remember");
-    if(alEl) alEl.value=savedAdmin.e||"";
-    if(alRem) alRem.checked=true;
-    tryAutoAdminLogin();
   }
 
   // معالجة نتيجة redirect من Google/Apple
