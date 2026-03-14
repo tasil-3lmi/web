@@ -582,8 +582,9 @@ body{font-family:'Zain',sans-serif;background:var(--bg);color:var(--text);direct
       <button class="nav-btn" id="nb-admin-qa" onclick="navTo('admin-qa')" style="display:none">
         <i data-lucide="message-square" style="width:15px;height:15px"></i><span>استفسارات</span>
       </button>
-      <!-- Notifications -->
-      <button class="nav-btn notif-badge" id="nb-notif" onclick="toggleNotifPanel()" title="الإشعارات">
+      <button class="nav-btn" id="nb-channel" onclick="openTelegramFromNav()" title="قناة المعهد" style="display:none">
+        <i data-lucide="send" style="width:15px;height:15px;color:#229ED9"></i><span>القناة</span>
+      </button>
         <i data-lucide="bell" style="width:15px;height:15px"></i>
         <span id="notif-badge-dot" class="badge-dot" style="display:none"></span>
       </button>
@@ -616,6 +617,22 @@ body{font-family:'Zain',sans-serif;background:var(--bg);color:var(--text);direct
   <div id="app-page-profile" class="page"></div>
   <div id="app-page-admin" class="page"></div>
   <div id="app-page-admin-qa" class="page"></div>
+
+  <!-- App Footer -->
+  <footer id="app-footer" style="background:var(--purple-d);padding:20px 24px;text-align:center;margin-top:auto">
+    <div style="display:flex;justify-content:center;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:10px">
+      <button onclick="openTelegram()" id="footer-tg-btn" style="display:none;background:none;border:none;cursor:pointer;color:var(--gold);font-family:'Zain',sans-serif;font-size:12px;display:inline-flex;align-items:center;gap:5px">
+        <i data-lucide="send" style="width:12px;height:12px"></i> <span id="footer-tg-label">تيليجرام المعهد</span>
+      </button>
+      <span style="color:rgba(255,255,255,.15);font-size:10px">|</span>
+      <span id="app-footer-sheikh" style="display:none">
+        <button onclick="openSheikhChannel()" style="background:none;border:none;cursor:pointer;color:var(--gold);font-family:'Zain',sans-serif;font-size:12px;display:inline-flex;align-items:center;gap:5px">
+          <i data-lucide="radio" style="width:12px;height:12px"></i> قناة الشيخ مصعب بن صلاح
+        </button>
+      </span>
+    </div>
+    <div style="color:rgba(255,255,255,.25);font-size:11px">© 2024 معهد التأصيل العلمي — جميع الحقوق محفوظة</div>
+  </footer>
 
 </div><!-- /app-wrapper -->
 
@@ -787,7 +804,7 @@ let APP = {
   questions: LS("ti_questions") || [],
   notifications: LS("ti_notifications") || [],
   siteConfig: LS("ti_config") || {
-    introVideo:"",
+    introVideo:"https://www.youtube.com/embed/z1bbUyoasaE",
     aboutText:"معهد التأصيل العلمي منصة تعليمية متخصصة في نشر العلوم الشرعية وفق منهج أهل السنة والجماعة، يجمع بين الأصالة في المنهج والحداثة في الأسلوب.\n\nتأسس المعهد بهدف إيصال العلم الشرعي الأصيل إلى طلاب العلم في كل مكان عبر منصة رقمية متكاملة تعتمد المتون الكلاسيكية مع الشرح المبسّط.",
     studyPlan:[
       {
@@ -1336,6 +1353,7 @@ function loginUser(u){
     }
   }
   updateNotifBadge();
+  _updateAppFooter();
   navTo("dashboard");
   toast(`أهلاً ${u.name.split(" ")[0]}! 👋`,"success");
 }
@@ -1898,11 +1916,19 @@ function renderLessonContent(){
             <button class="btn btn-ghost btn-sm" onclick="adminEditExercise('${c.id}','${l.id}',${ei})"><i data-lucide="edit-2" style="width:11px;height:11px"></i></button>
             <button class="btn btn-danger btn-sm" onclick="adminDeleteExercise('${c.id}','${l.id}',${ei})"><i data-lucide="trash-2" style="width:11px;height:11px"></i></button>
           </div>`:""}
-          <p style="color:var(--purple);font-weight:700;font-size:14px;margin-bottom:12px">${ei+1}. ${ex.q}</p>
-          ${ex.options.map((opt,oi)=>`
+          <p style="color:var(--purple);font-weight:700;font-size:14px;margin-bottom:4px">${ei+1}. ${ex.q}</p>
+          ${ex.multi?`<p style="font-size:11px;color:var(--muted);margin-bottom:10px">(اختر كل الإجابات الصحيحة)</p>`:""}
+          ${ex.options.map((opt,oi)=>ex.multi?`
           <label id="opt-${ei}-${oi}" style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:10px;margin-bottom:6px;cursor:pointer;background:var(--white);border:1.5px solid rgba(212,180,142,.28);transition:all .2s;font-size:13px">
-            <input type="radio" name="ex${ei}" value="${oi}" style="accent-color:var(--purple)" onchange="checkExercise(${ei},${oi},${ex.answer})"> ${opt}
+            <input type="checkbox" id="cb-${ei}-${oi}" style="accent-color:var(--purple);width:15px;height:15px"> ${opt}
+          </label>`:`
+          <label id="opt-${ei}-${oi}" style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:10px;margin-bottom:6px;cursor:pointer;background:var(--white);border:1.5px solid rgba(212,180,142,.28);transition:all .2s;font-size:13px">
+            <input type="radio" name="ex${ei}" value="${oi}" style="accent-color:var(--purple)"> ${opt}
           </label>`).join("")}
+          <button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="checkExerciseNew(${ei})">
+            <i data-lucide="check-circle" style="width:13px;height:13px"></i> تحقق من الإجابة
+          </button>
+          <div id="ex-res-${ei}" style="display:none;margin-top:8px"></div>
         </div>`).join("")}
       </div>
     </div>
@@ -1922,6 +1948,42 @@ function getFileIcon(t=""){
 function toggleExercises(){
   const p=document.getElementById("exercises-wrap");
   if(p) p.style.display=p.style.display==="none"?"":"none";
+}
+
+function checkExerciseNew(ei){
+  const l=APP.currentLesson;
+  if(!l) return;
+  const ex=l.exercises[ei];
+  if(!ex) return;
+  const resEl=document.getElementById(`ex-res-${ei}`);
+
+  if(ex.multi){
+    // خيار أو أكثر
+    const selected=ex.options.map((_,oi)=>document.getElementById(`cb-${ei}-${oi}`)?.checked?oi:-1).filter(x=>x>=0);
+    const correct=ex.answers||[ex.answer];
+    const isRight=correct.length===selected.length && correct.every(a=>selected.includes(a));
+    // تلوين الخيارات
+    ex.options.forEach((_,oi)=>{
+      const lbl=document.getElementById(`opt-${ei}-${oi}`);
+      if(!lbl) return;
+      const isCorrect=correct.includes(oi), isSelected=selected.includes(oi);
+      if(isCorrect) lbl.style.cssText+="border-color:#28a745;background:#d4edda";
+      else if(isSelected) lbl.style.cssText+="border-color:#dc3545;background:#f8d7da";
+    });
+    if(resEl){ resEl.style.display=""; resEl.innerHTML=`<div style="padding:8px 12px;border-radius:9px;background:${isRight?"#d4edda":"#f8d7da"};color:${isRight?"#28a745":"#dc3545"};font-size:13px;font-weight:700">${isRight?"✅ أحسنت! إجابة صحيحة":"❌ إجابة غير صحيحة — الإجابات الصحيحة: "+correct.map(a=>ex.options[a]).join("، ")}</div>`; }
+  } else {
+    // خيار واحد
+    const sel=ex.options.map((_,oi)=>{const r=document.querySelector(`input[name="ex${ei}"][value="${oi}"]`);return r?.checked?oi:-1;}).find(x=>x>=0)??null;
+    if(sel===null){ toast("اختر إجابة أولاً","error"); return; }
+    const isRight=sel===ex.answer;
+    ex.options.forEach((_,oi)=>{
+      const lbl=document.getElementById(`opt-${ei}-${oi}`);
+      if(!lbl) return;
+      if(oi===ex.answer) lbl.style.cssText+="border-color:#28a745;background:#d4edda";
+      else if(oi===sel) lbl.style.cssText+="border-color:#dc3545;background:#f8d7da";
+    });
+    if(resEl){ resEl.style.display=""; resEl.innerHTML=`<div style="padding:8px 12px;border-radius:9px;background:${isRight?"#d4edda":"#f8d7da"};color:${isRight?"#28a745":"#dc3545"};font-size:13px;font-weight:700">${isRight?"✅ أحسنت!":"❌ إجابة خاطئة — الصحيحة: "+ex.options[ex.answer]}</div>`; }
+  }
 }
 function pickAnswer(qi, oi){
   window._exAnswers[qi]=oi;
@@ -2065,7 +2127,7 @@ let _testState={id:null,answers:{},submitted:false};
 function startTest(tid){
   const t=findById(APP.tests,tid);
   if(!t) return;
-  _testState={id:tid,answers:{},submitted:false};
+  _testState={id:tid,answers:{},multiAnswers:{},submitted:false};
   document.getElementById("app-page-tests").innerHTML=`
   <div class="pg" style="padding:28px">
     <button class="btn btn-ghost btn-sm" onclick="renderTests()" style="margin-bottom:22px"><i data-lucide="arrow-right" style="width:13px;height:13px"></i> رجوع</button>
@@ -2074,13 +2136,17 @@ function startTest(tid){
       <p style="color:var(--muted);font-size:13px;margin-bottom:26px">${t.questions.length} سؤال</p>
       ${t.questions.map((q,qi)=>`
       <div class="fu" style="animation-delay:${qi*55}ms;margin-bottom:24px" id="tq-${qi}">
-        <p style="color:var(--purple);font-weight:700;font-size:14px;margin-bottom:12px">${qi+1}. ${q.q}</p>
-        ${q.options.map((o,oi)=>`
+        <p style="color:var(--purple);font-weight:700;font-size:14px;margin-bottom:4px">${qi+1}. ${q.q}</p>
+        ${q.multi?`<p style="font-size:11px;color:var(--muted);margin-bottom:8px">(اختر كل الإجابات الصحيحة)</p>`:""}
+        ${q.options.map((o,oi)=>q.multi?`
+        <label id="topt-${qi}-${oi}" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:11px;margin-bottom:6px;cursor:pointer;background:var(--bg);border:1.5px solid rgba(212,180,142,.28);transition:all .2s;font-size:13px">
+          <input type="checkbox" id="tcb-${qi}-${oi}" style="accent-color:var(--purple);width:15px;height:15px" onchange="highlightTestMulti(${qi})"> ${o}
+        </label>`:`
         <label id="topt-${qi}-${oi}" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:11px;margin-bottom:6px;cursor:pointer;background:var(--bg);border:1.5px solid rgba(212,180,142,.28);transition:all .2s;font-size:13px">
           <input type="radio" name="tq${qi}" value="${oi}" style="accent-color:var(--purple)" onchange="_testState.answers[${qi}]=${oi};highlightTestOpts(${qi})"> ${o}
         </label>`).join("")}
       </div>`).join("")}
-      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:13px;font-size:15px" onclick="submitTest(${tid})">
+      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:13px;font-size:15px" onclick="submitTest('${tid}')">
         <i data-lucide="send" style="width:15px;height:15px"></i> تسليم الاختبار
       </button>
     </div>
@@ -2098,29 +2164,53 @@ function highlightTestOpts(qi){
     el.style.borderColor=isSel?"var(--gold)":"rgba(212,180,142,.28)";
   });
 }
+function highlightTestMulti(qi){
+  const t=findById(APP.tests,_testState.id);
+  if(!t||_testState.submitted) return;
+  t.questions[qi].options.forEach((_,oi)=>{
+    const cb=document.getElementById(`tcb-${qi}-${oi}`);
+    const el=document.getElementById(`topt-${qi}-${oi}`);
+    if(!el||!cb) return;
+    el.style.background=cb.checked?"rgba(212,180,142,.15)":"var(--bg)";
+    el.style.borderColor=cb.checked?"var(--gold)":"rgba(212,180,142,.28)";
+  });
+}
 function submitTest(tid){
   const t=findById(APP.tests,tid);
   if(!t) return;
   _testState.submitted=true;
   let correct=0;
   t.questions.forEach((q,qi)=>{
-    const isCor=_testState.answers[qi]===q.answer;
+    let isCor=false;
+    if(q.multi){
+      const correctAns=q.answers||[q.answer];
+      const selected=q.options.map((_,oi)=>document.getElementById(`tcb-${qi}-${oi}`)?.checked?oi:-1).filter(x=>x>=0);
+      isCor=correctAns.length===selected.length&&correctAns.every(a=>selected.includes(a));
+      q.options.forEach((_,oi)=>{
+        const el=document.getElementById(`topt-${qi}-${oi}`);
+        const cb=document.getElementById(`tcb-${qi}-${oi}`);
+        if(!el||!cb) return;
+        const isAns=correctAns.includes(oi),isSel=selected.includes(oi);
+        el.style.background=isAns?"#d4edda":(isSel?"#f8d7da":"var(--bg)");
+        el.style.borderColor=isAns?"#28a745":(isSel?"#dc3545":"rgba(212,180,142,.28)");
+        cb.disabled=true;
+      });
+    } else {
+      isCor=_testState.answers[qi]===q.answer;
+      q.options.forEach((_,oi)=>{
+        const el=document.getElementById(`topt-${qi}-${oi}`);
+        if(!el) return;
+        el.style.background=oi===q.answer?"#d4edda":(_testState.answers[qi]===oi?"#f8d7da":"var(--bg)");
+        el.style.borderColor=oi===q.answer?"#28a745":(_testState.answers[qi]===oi?"#dc3545":"rgba(212,180,142,.28)");
+        const inp=el.querySelector("input"); if(inp) inp.disabled=true;
+      });
+    }
     if(isCor) correct++;
-    q.options.forEach((_,oi)=>{
-      const el=document.getElementById(`topt-${qi}-${oi}`);
-      if(!el) return;
-      el.style.background=oi===q.answer?"#d4edda":_testState.answers[qi]===oi?"#f8d7da":"var(--bg)";
-      el.style.borderColor=oi===q.answer?"#28a745":_testState.answers[qi]===oi?"#dc3545":"rgba(212,180,142,.28)";
-      el.querySelector("input").disabled=true;
-    });
   });
   const pct=Math.round(correct/t.questions.length*100);
-  // Save result
   const rs=[...(APP.user.testResults||[]),{testId:tid,correct,total:t.questions.length,pct,date:new Date().toLocaleDateString("ar")}];
   APP.user.testResults=rs;
-  const users=LS("ti_users")||[];const i=users.findIndex(u=>u.id===APP.user.id);
-  if(i!==-1){users[i].testResults=rs;SS("ti_users",users);}
-
+  fsSetUser(APP.user.id,{testResults:rs}).catch(()=>{});
   const btn=document.querySelector("[onclick*='submitTest']");
   if(btn){
     btn.insertAdjacentHTML("afterend",`<div class="pi" style="margin-top:18px;background:${pct>=80?"#d4edda":pct>=60?"#fff3cd":"#f8d7da"};border-radius:14px;padding:22px;text-align:center;border:1px solid ${pct>=80?"#28a745":pct>=60?"#ffc107":"#f5c6cb"}">
@@ -2416,15 +2506,15 @@ function renderAboutPublic(){
       <p style="color:var(--muted);font-size:12px;margin-top:4px">${m.role}</p>
     </div>`).join("");
   }
-  // Video
+  // Video — auto-show with default if not set
+  const videoUrl = cfg.introVideo || "https://www.youtube.com/embed/z1bbUyoasaE";
   const vc=document.getElementById("landing-video-container");
   const vf=document.getElementById("landing-video-frame");
   const np=document.getElementById("no-video-placeholder");
-  if(cfg.introVideo){
-    if(vf) vf.innerHTML=`<iframe src="${cfg.introVideo}" allowfullscreen></iframe>`;
-    if(vc) vc.style.display="";
-    if(np) np.style.display="none";
-  }
+  if(vf) vf.innerHTML=`<iframe src="${videoUrl}" allowfullscreen allow="accelerometer;autoplay;encrypted-media;gyroscope;picture-in-picture" loading="lazy"></iframe>`;
+  if(vc) vc.style.display="";
+  if(np) np.style.display="none";
+
   // Contact
   const ce=document.getElementById("contact-email"); if(ce)ce.textContent=cfg.contactEmail||"";
   const ct=document.getElementById("contact-telegram");
@@ -2432,14 +2522,38 @@ function renderAboutPublic(){
   const cp=document.getElementById("contact-phone"); if(cp)cp.textContent=cfg.contactPhone||"";
   // Sheikh channel card
   const sc=document.getElementById("sheikh-channel-link");
-  if(sc) sc.textContent=cfg.sheikhChannel||(cfg.sheikhChannel?"":"اضغط للانتقال");
+  if(sc) sc.textContent=cfg.sheikhChannel?"الانتقال للقناة":"اضغط للانتقال للقناة";
   const scc=document.getElementById("sheikh-channel-card");
   if(scc) scc.style.display=cfg.sheikhChannel?"":"none";
-  // Footer sheikh channel
+  // Footer sheikh channel (public page)
   const fc=document.getElementById("footer-sheikh-channel");
   if(fc) fc.style.display=cfg.sheikhChannel?"":"none";
+  // Update app footer & nav channel button
+  _updateAppFooter();
   // Study plan public
   renderPublicPlan();
+}
+
+function _updateAppFooter(){
+  const cfg=APP.siteConfig;
+  // Nav channel button
+  const nbCh=document.getElementById("nb-channel");
+  if(nbCh) nbCh.style.display=(cfg.privateChannel||cfg.sheikhChannel||cfg.contactTelegram)?"":"none";
+  // App footer tg
+  const ftg=document.getElementById("footer-tg-btn");
+  if(ftg){ ftg.style.display=cfg.contactTelegram?"inline-flex":"none"; }
+  const ftgLbl=document.getElementById("footer-tg-label");
+  if(ftgLbl) ftgLbl.textContent=cfg.contactTelegram||"تيليجرام";
+  // App footer sheikh
+  const fsh=document.getElementById("app-footer-sheikh");
+  if(fsh) fsh.style.display=cfg.sheikhChannel?"":"none";
+}
+
+function openTelegramFromNav(){
+  const cfg=APP.siteConfig;
+  if(cfg.privateChannel) openPrivateChannel();
+  else if(cfg.contactTelegram) openTelegram();
+  else if(cfg.sheikhChannel) openSheikhChannel();
 }
 function renderPublicPlan(){
   const el=document.getElementById("public-plan-grid");
@@ -3028,13 +3142,38 @@ function saveCourse(rawId){
   }
   saveState();
   closeModal();
-  // إعادة تصيير المناطق المتأثرة
-  if(document.getElementById("app-page-admin")?.classList.contains("active")) renderAdmin();
-  if(document.getElementById("app-page-courses")?.classList.contains("active")) renderCourses();
+  // تحديث جدول المقررات في لوحة الإدارة مباشرة
+  _refreshCoursesAdminTable();
+  // تحديث صفحة المقررات إن كانت ظاهرة
+  const coursesPage=document.getElementById("app-page-courses");
+  if(coursesPage?.classList.contains("active")) renderCourses();
+}
+
+function _refreshCoursesAdminTable(){
+  const tbody=document.getElementById("courses-admin-tbl");
+  if(!tbody) return;
+  tbody.innerHTML=APP.courses.map(c=>`
+  <tr>
+    <td><div style="display:flex;align-items:center;gap:8px"><i data-lucide="${c.icon||'book'}" style="width:15px;height:15px;color:${c.color}"></i><span style="font-weight:600;color:var(--purple)">${c.title}</span></div></td>
+    <td><span class="tag tag-gold">${(c.lessons||[]).length}</span></td>
+    <td>
+      <label class="toggle"><input type="checkbox" ${c.visible!==false?"checked":""} onchange="adminToggleCourse('${c.id}',this.checked)"><span class="toggle-slider"></span></label>
+    </td>
+    <td>
+      <div style="display:flex;gap:5px">
+        <button class="btn-icon btn-sm" onclick="adminEditCourse('${c.id}')"><i data-lucide="edit-2" style="width:12px;height:12px"></i></button>
+        <button class="btn-icon btn-sm" style="color:#dc3545" onclick="adminDeleteCourse('${c.id}')"><i data-lucide="trash-2" style="width:12px;height:12px"></i></button>
+      </div>
+    </td>
+  </tr>`).join("");
+  lucide.createIcons({nodes:[tbody]});
 }
 function adminDeleteCourse(id){
   confirm2("هل تريد حذف هذا المقرر نهائياً؟",()=>{
-    APP.courses=APP.courses.filter(c=>c.id!==id);saveState();renderAdmin();toast("تم حذف المقرر","info");
+    APP.courses=APP.courses.filter(c=>toId(c.id)!==toId(id));
+    saveState();
+    _refreshCoursesAdminTable();
+    toast("تم حذف المقرر","info");
   });
 }
 function adminToggleCourse(id, val){
@@ -3152,30 +3291,132 @@ function adminAddExercise(cid,lid){
 function adminEditExercise(cid,lid,ei){
   _buildExModal(cid,lid,ei);
 }
+// ── Exercise CRUD — يدعم خيارات متعددة وإجابات متعددة ──
+function adminAddExercise(cid,lid){ _buildExModal(cid,lid,null); }
+function adminEditExercise(cid,lid,ei){ _buildExModal(cid,lid,ei); }
+
 function _buildExModal(cid,lid,ei){
-  const c=findById(APP.courses,cid);const l=c?findById(c.lessons,lid):null;
+  const c=findById(APP.courses,cid); const l=c?findById(c.lessons,lid):null;
   const ex=ei!=null?l?.exercises?.[ei]:null;
+  const opts=ex?.options||["","","",""];
+  const answers=ex?.answers||[]; // multi
+  const singleAns=ex?.answer??0;
+  const isMulti=ex?.multi===true;
+  const numOpts=opts.length;
+
   openModal(`
     <div class="inp-group"><label>نص السؤال *</label><input type="text" id="ex-q" value="${ex?.q||""}" placeholder="السؤال..."/></div>
-    ${[0,1,2,3].map(i=>`<div class="inp-group"><label>الخيار ${i+1}</label><input type="text" id="ex-o${i}" value="${ex?.options?.[i]||""}" placeholder="الخيار ${i+1}"/></div>`).join("")}
-    <div class="inp-group">
-      <label>الإجابة الصحيحة</label>
-      <select id="ex-ans">${[0,1,2,3].map(i=>`<option value="${i}" ${ex?.answer===i?"selected":""}>الخيار ${i+1}</option>`).join("")}</select>
+
+    <!-- نوع الإجابة -->
+    <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center">
+      <span style="font-size:13px;font-weight:600;color:var(--purple)">نوع السؤال:</span>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px">
+        <input type="radio" name="ex-type" id="ex-single" value="single" ${!isMulti?"checked":""} onchange="_refreshExAnsUI()" style="accent-color:var(--purple)"> خيار واحد
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px">
+        <input type="radio" name="ex-type" id="ex-multi" value="multi" ${isMulti?"checked":""} onchange="_refreshExAnsUI()" style="accent-color:var(--purple)"> خيار أو أكثر
+      </label>
     </div>
-    <button class="btn btn-gold" onclick="saveExercise('${cid}','${lid}',${ei!=null?ei:"null"})">
+
+    <!-- الخيارات الديناميكية -->
+    <div id="ex-opts-wrap">
+      ${opts.map((o,i)=>`
+      <div class="inp-group" id="ex-opt-row-${i}" style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <input type="text" id="ex-o${i}" value="${o}" placeholder="الخيار ${i+1}" style="flex:1;padding:10px 12px;border-radius:10px;border:1.5px solid rgba(212,180,142,.4);font-size:13px;font-family:'Zain',sans-serif;color:var(--text);background:var(--bg)"/>
+        ${i>1?`<button type="button" onclick="_removeExOpt(${i})" style="width:28px;height:28px;border-radius:50%;border:none;background:#fee;cursor:pointer;color:#dc3545;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i data-lucide="x" style="width:12px;height:12px"></i></button>`:'<div style="width:28px"></div>'}
+      </div>`).join("")}
+    </div>
+    <button type="button" class="btn btn-ghost btn-sm" onclick="_addExOpt()" style="margin-bottom:14px">
+      <i data-lucide="plus" style="width:12px;height:12px"></i> إضافة خيار
+    </button>
+
+    <!-- الإجابة/الإجابات الصحيحة -->
+    <div id="ex-ans-wrap">
+      <label style="font-size:13px;font-weight:600;color:var(--purple);display:block;margin-bottom:6px">الإجابة الصحيحة</label>
+      <div id="ex-ans-inner"></div>
+    </div>
+
+    <button class="btn btn-gold" style="width:100%;justify-content:center;margin-top:14px" onclick="saveExercise('${cid}','${lid}',${ei!=null?ei:"null"})">
       <i data-lucide="save" style="width:14px;height:14px"></i> ${ei!=null?"حفظ التعديلات":"إضافة التمرين"}
     </button>
   `, ei!=null?"تعديل التمرين":"إضافة تمرين");
+
+  // حفظ الإجابات القديمة
+  window._exInitAnswers = { single: singleAns, multi: answers };
+  window._exOptCount = numOpts;
+  _refreshExAnsUI();
 }
+
+function _refreshExAnsUI(){
+  const isMulti = document.getElementById("ex-multi")?.checked;
+  const wrap = document.getElementById("ex-ans-inner");
+  if(!wrap) return;
+  const count = window._exOptCount||4;
+  const prev = window._exInitAnswers||{single:0,multi:[]};
+
+  if(isMulti){
+    wrap.innerHTML = Array.from({length:count},(_,i)=>`
+    <label style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:9px;margin-bottom:5px;cursor:pointer;background:var(--bg);border:1px solid rgba(212,180,142,.25);font-size:13px">
+      <input type="checkbox" id="ex-ans-${i}" value="${i}" style="accent-color:var(--purple);width:15px;height:15px" ${prev.multi.includes(i)?"checked":""}> الخيار ${i+1}
+    </label>`).join("");
+  } else {
+    wrap.innerHTML = `<select id="ex-ans-sel" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid rgba(212,180,142,.4);font-size:13px;font-family:'Zain',sans-serif;background:var(--bg)">
+      ${Array.from({length:count},(_,i)=>`<option value="${i}" ${i===prev.single?"selected":""}>الخيار ${i+1}</option>`).join("")}
+    </select>`;
+  }
+  lucide.createIcons({nodes:[wrap]});
+}
+
+function _addExOpt(){
+  window._exOptCount = (window._exOptCount||4)+1;
+  const i = window._exOptCount-1;
+  const wrap=document.getElementById("ex-opts-wrap");
+  if(!wrap) return;
+  const div=document.createElement("div");
+  div.className="inp-group"; div.id=`ex-opt-row-${i}`; div.style.cssText="display:flex;align-items:center;gap:8px;margin-bottom:8px";
+  div.innerHTML=`<input type="text" id="ex-o${i}" placeholder="الخيار ${i+1}" style="flex:1;padding:10px 12px;border-radius:10px;border:1.5px solid rgba(212,180,142,.4);font-size:13px;font-family:'Zain',sans-serif;color:var(--text);background:var(--bg)"/>
+  <button type="button" onclick="_removeExOpt(${i})" style="width:28px;height:28px;border-radius:50%;border:none;background:#fee;cursor:pointer;color:#dc3545;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i data-lucide="x" style="width:12px;height:12px"></i></button>`;
+  wrap.appendChild(div);
+  lucide.createIcons({nodes:[div]});
+  _refreshExAnsUI();
+}
+
+function _removeExOpt(i){
+  const row=document.getElementById(`ex-opt-row-${i}`);
+  if(row) row.remove();
+  window._exOptCount = Math.max(2,(window._exOptCount||4)-1);
+  _refreshExAnsUI();
+}
+
 function saveExercise(cid,lid,ei){
-  const q=document.getElementById("ex-q")?.value.trim();if(!q){toast("نص السؤال مطلوب","error");return;}
-  const opts=[0,1,2,3].map(i=>document.getElementById(`ex-o${i}`)?.value.trim()||"");
-  const ans=parseInt(document.getElementById("ex-ans")?.value||0);
-  const c=findById(APP.courses,cid);const l=c?findById(c.lessons,lid):null;if(!l) return;
-  const newEx={q,options:opts,answer:ans};
-  if(ei!=null){ l.exercises[ei]=newEx; toast("تم تحديث التمرين ✅","success"); }
+  const q=document.getElementById("ex-q")?.value.trim();
+  if(!q){toast("نص السؤال مطلوب","error");return;}
+  const isMulti=document.getElementById("ex-multi")?.checked;
+  // جمع الخيارات
+  const opts=[];
+  for(let i=0;i<20;i++){
+    const el=document.getElementById(`ex-o${i}`);
+    if(!el) break;
+    opts.push(el.value.trim());
+  }
+  if(opts.filter(Boolean).length<2){toast("أضف خيارَين على الأقل","error");return;}
+
+  let answer, answers, multi;
+  if(isMulti){
+    answers=opts.map((_,i)=>document.getElementById(`ex-ans-${i}`)?.checked).map((v,i)=>v?i:-1).filter(x=>x>=0);
+    if(!answers.length){toast("حدد إجابة صحيحة واحدة على الأقل","error");return;}
+    answer=answers[0]; multi=true;
+  } else {
+    answer=parseInt(document.getElementById("ex-ans-sel")?.value||0);
+    answers=[answer]; multi=false;
+  }
+
+  const c=findById(APP.courses,cid); const l=c?findById(c.lessons,lid):null;
+  if(!l){toast("لم يتم العثور على الدرس","error");return;}
+  const newEx={q, options:opts, answer, answers, multi};
+  if(ei!=null&&ei!=="null"){ l.exercises[ei]=newEx; toast("تم تحديث التمرين ✅","success"); }
   else { l.exercises.push(newEx); toast("تم إضافة التمرين ✅","success"); }
-  saveState();closeModal();
+  saveState(); closeModal();
   if(APP.currentLesson?.id!=null && toId(APP.currentLesson.id)===toId(lid)){ APP.currentLesson=l; renderLessonContent(); }
 }
 function adminDeleteExercise(cid,lid,ei){
@@ -3183,61 +3424,157 @@ function adminDeleteExercise(cid,lid,ei){
   if(l){l.exercises.splice(ei,1);saveState();APP.currentLesson=l;renderLessonContent();toast("تم الحذف","info");}
 }
 
-// Test CRUD
-function adminAddTest(){
-  _buildTestModal(null);
+// Test CRUD — يدعم خيارات متعددة وإجابات متعددة
+function adminAddTest(){ _buildTestModal(null); }
+function adminEditTest(id){ _buildTestModal(id); }
+
+function _renderTestQsWrap(qs){
+  return qs.map((q,qi)=>`
+  <div class="card" style="padding:12px;margin-bottom:8px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:600;color:var(--purple);margin-bottom:4px">${qi+1}. ${q.q} ${q.multi?'<span class="tag tag-blue" style="font-size:10px;padding:1px 7px">متعدد</span>':''}</div>
+        <div style="font-size:11px;color:var(--muted)">${(q.options||[]).map((o,i)=>{
+          const isAns=q.multi?(q.answers||[]).includes(i):(q.answer===i);
+          return `<span style="${isAns?"color:#28a745;font-weight:700":""}">${i+1}.${o||'—'} </span>`;
+        }).join("")}</div>
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="removeTestQ(${qi})"><i data-lucide="x" style="width:11px;height:11px"></i></button>
+    </div>
+  </div>`).join("");
 }
-function adminEditTest(id){
-  _buildTestModal(id);
-}
+
 function _buildTestModal(id){
   const t=id?findById(APP.tests,id):null;
+  window._pendingTestQs=[...(t?.questions||[])];
   openModal(`
     <div class="inp-group"><label>عنوان الاختبار *</label><input type="text" id="nt-title" value="${t?.title||""}"/></div>
-    <div style="max-height:50vh;overflow-y:auto" id="nt-qs-wrap">
-      ${(t?.questions||[]).map((q,qi)=>`<div class="card" style="padding:14px;margin-bottom:10px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <span style="font-size:12px;font-weight:600;color:var(--purple)">${qi+1}. ${q.q}</span>
-          <button class="btn btn-danger btn-sm" onclick="removeTestQ(${qi})"><i data-lucide="x" style="width:11px;height:11px"></i></button>
-        </div>
-        <div style="font-size:11px;color:var(--muted)">${q.options.map((o,i)=>`<span style="${i===q.answer?"color:#28a745;font-weight:700":""}">${i+1}.${o} </span>`).join("")}</div>
-      </div>`).join("")}
+    <div style="max-height:38vh;overflow-y:auto;margin-bottom:10px" id="nt-qs-wrap">
+      ${_renderTestQsWrap(window._pendingTestQs)}
     </div>
-    <div style="background:var(--bg);border-radius:12px;padding:14px;margin-top:10px">
-      <div style="font-size:12px;font-weight:700;color:var(--purple);margin-bottom:10px">إضافة سؤال</div>
-      <div class="inp-group" style="margin-bottom:8px"><input type="text" id="nq-q" placeholder="نص السؤال"/></div>
-      <div class="inp-grid" style="gap:8px">
-        ${[1,2,3,4].map(i=>`<div class="inp-group" style="margin-bottom:6px"><input type="text" id="nq-o${i}" placeholder="خيار ${i}"/></div>`).join("")}
+
+    <!-- إضافة سؤال جديد -->
+    <div style="background:var(--bg);border-radius:12px;padding:14px;border:1px solid rgba(212,180,142,.2)">
+      <div style="font-size:12px;font-weight:700;color:var(--purple);margin-bottom:10px;display:flex;align-items:center;gap:6px">
+        <i data-lucide="plus-circle" style="width:14px;height:14px;color:var(--gold)"></i> إضافة سؤال
       </div>
-      <div class="inp-group" style="margin-bottom:8px"><select id="nq-ans">${[1,2,3,4].map(i=>`<option value="${i-1}">الإجابة: خيار ${i}</option>`).join("")}</select></div>
-      <button class="btn btn-ghost btn-sm" onclick="addTestQ()"><i data-lucide="plus" style="width:12px;height:12px"></i> إضافة السؤال</button>
+      <div class="inp-group" style="margin-bottom:8px"><input type="text" id="nq-q" placeholder="نص السؤال *"/></div>
+
+      <!-- نوع الإجابة -->
+      <div style="display:flex;gap:12px;margin-bottom:10px">
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px">
+          <input type="radio" name="nq-type" id="nq-single" value="single" checked onchange="_refreshTestAnsUI()" style="accent-color:var(--purple)"> خيار واحد
+        </label>
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px">
+          <input type="radio" name="nq-type" id="nq-multi" value="multi" onchange="_refreshTestAnsUI()" style="accent-color:var(--purple)"> خيار أو أكثر
+        </label>
+      </div>
+
+      <!-- خيارات السؤال -->
+      <div id="nq-opts-wrap">
+        ${[1,2,3,4].map(i=>`
+        <div id="nq-opt-row-${i-1}" style="display:flex;gap:8px;margin-bottom:6px;align-items:center">
+          <input type="text" id="nq-o${i}" placeholder="خيار ${i}" style="flex:1;padding:8px 10px;border-radius:9px;border:1.5px solid rgba(212,180,142,.35);font-size:12px;font-family:'Zain',sans-serif;background:var(--white)"/>
+          ${i>2?`<button type="button" onclick="_removeTestOpt(${i-1})" style="width:24px;height:24px;border-radius:50%;border:none;background:#fee;cursor:pointer;color:#dc3545;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</button>`:'<div style="width:24px"></div>'}
+        </div>`).join("")}
+      </div>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="_addTestOpt()" style="margin-bottom:10px">
+        <i data-lucide="plus" style="width:11px;height:11px"></i> خيار إضافي
+      </button>
+
+      <!-- الإجابة -->
+      <div id="nq-ans-wrap"><div id="nq-ans-inner"></div></div>
+      <button class="btn btn-ghost btn-sm" onclick="addTestQ()" style="margin-top:8px">
+        <i data-lucide="check" style="width:12px;height:12px"></i> إضافة السؤال
+      </button>
     </div>
+
     <button class="btn btn-gold" onclick="saveTest2('${id||""}')" style="width:100%;justify-content:center;margin-top:14px">
       <i data-lucide="save" style="width:14px;height:14px"></i> ${id?"حفظ التعديلات":"إنشاء الاختبار"}
     </button>
   `, id?"تعديل الاختبار":"اختبار جديد");
   lucide.createIcons();
-  window._pendingTestQs = [...(t?.questions||[])];
+  window._testOptCount=4;
+  _refreshTestAnsUI();
 }
+
+function _refreshTestAnsUI(){
+  const isMulti=document.getElementById("nq-multi")?.checked;
+  const wrap=document.getElementById("nq-ans-inner");
+  if(!wrap) return;
+  const count=window._testOptCount||4;
+  if(isMulti){
+    wrap.innerHTML=`<div style="font-size:12px;color:var(--muted);margin-bottom:6px">الإجابات الصحيحة (اختر واحدة أو أكثر):</div>`+
+      Array.from({length:count},(_,i)=>`
+      <label style="display:inline-flex;align-items:center;gap:5px;margin-left:12px;margin-bottom:4px;cursor:pointer;font-size:12px">
+        <input type="checkbox" id="nq-ans-cb-${i}" style="accent-color:var(--purple)"> خ${i+1}
+      </label>`).join("");
+  } else {
+    wrap.innerHTML=`<div style="font-size:12px;color:var(--muted);margin-bottom:6px">الإجابة الصحيحة:</div>
+      <select id="nq-ans-sel" style="width:100%;padding:8px 10px;border-radius:9px;border:1.5px solid rgba(212,180,142,.35);font-size:12px;font-family:'Zain',sans-serif;background:var(--white)">
+        ${Array.from({length:count},(_,i)=>`<option value="${i}">الخيار ${i+1}</option>`).join("")}
+      </select>`;
+  }
+}
+function _addTestOpt(){
+  window._testOptCount=(window._testOptCount||4)+1;
+  const i=window._testOptCount-1;
+  const wrap=document.getElementById("nq-opts-wrap");
+  if(!wrap) return;
+  const div=document.createElement("div");
+  div.id=`nq-opt-row-${i}`; div.style.cssText="display:flex;gap:8px;margin-bottom:6px;align-items:center";
+  div.innerHTML=`<input type="text" id="nq-o${i+1}" placeholder="خيار ${i+1}" style="flex:1;padding:8px 10px;border-radius:9px;border:1.5px solid rgba(212,180,142,.35);font-size:12px;font-family:'Zain',sans-serif;background:var(--white)"/>
+  <button type="button" onclick="_removeTestOpt(${i})" style="width:24px;height:24px;border-radius:50%;border:none;background:#fee;cursor:pointer;color:#dc3545;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</button>`;
+  wrap.appendChild(div);
+  _refreshTestAnsUI();
+}
+function _removeTestOpt(i){
+  const row=document.getElementById(`nq-opt-row-${i}`);
+  if(row) row.remove();
+  window._testOptCount=Math.max(2,(window._testOptCount||4)-1);
+  _refreshTestAnsUI();
+}
+
 function removeTestQ(qi){
   window._pendingTestQs.splice(qi,1);
   const wrap=document.getElementById("nt-qs-wrap");
-  if(wrap) wrap.innerHTML=window._pendingTestQs.map((q,i)=>`<div class="card" style="padding:12px;margin-bottom:8px"><div style="display:flex;justify-content:space-between"><span style="font-size:12px;font-weight:600;color:var(--purple)">${i+1}. ${q.q}</span><button class="btn btn-danger btn-sm" onclick="removeTestQ(${i})"><i data-lucide="x" style="width:11px"></i></button></div></div>`).join("");
-  lucide.createIcons({nodes:[wrap]});
+  if(wrap){ wrap.innerHTML=_renderTestQsWrap(window._pendingTestQs); lucide.createIcons({nodes:[wrap]}); }
 }
+
 function addTestQ(){
-  const q=document.getElementById("nq-q")?.value.trim();if(!q){toast("نص السؤال مطلوب","error");return;}
-  const opts=[1,2,3,4].map(i=>document.getElementById(`nq-o${i}`)?.value.trim()||"");
-  const ans=parseInt(document.getElementById("nq-ans")?.value||0);
-  window._pendingTestQs.push({q,options:opts,answer:ans});
+  const q=document.getElementById("nq-q")?.value.trim();
+  if(!q){toast("نص السؤال مطلوب","error");return;}
+  const isMulti=document.getElementById("nq-multi")?.checked;
+  const opts=[];
+  for(let i=1;i<=20;i++){
+    const el=document.getElementById(`nq-o${i}`);
+    if(!el) break;
+    opts.push(el.value.trim());
+  }
+  if(opts.filter(Boolean).length<2){toast("أضف خيارَين على الأقل","error");return;}
+  let answer, answers, multi;
+  if(isMulti){
+    answers=opts.map((_,i)=>document.getElementById(`nq-ans-cb-${i}`)?.checked?i:-1).filter(x=>x>=0);
+    if(!answers.length){toast("حدد إجابة واحدة على الأقل","error");return;}
+    answer=answers[0]; multi=true;
+  } else {
+    answer=parseInt(document.getElementById("nq-ans-sel")?.value||0);
+    answers=[answer]; multi=false;
+  }
+  window._pendingTestQs.push({q,options:opts,answer,answers,multi});
   toast("تمت إضافة السؤال","success");
-  document.getElementById("nq-q").value="";[1,2,3,4].forEach(i=>{const el=document.getElementById(`nq-o${i}`);if(el)el.value="";});
+  document.getElementById("nq-q").value="";
+  for(let i=1;i<=20;i++){const el=document.getElementById(`nq-o${i}`);if(el)el.value="";}
+  document.getElementById("nq-single").checked=true;
+  window._testOptCount=4;
+  _refreshTestAnsUI();
   const wrap=document.getElementById("nt-qs-wrap");
-  if(wrap) wrap.innerHTML=window._pendingTestQs.map((q2,i)=>`<div class="card" style="padding:12px;margin-bottom:8px"><div style="display:flex;justify-content:space-between"><span style="font-size:12px;font-weight:600;color:var(--purple)">${i+1}. ${q2.q}</span><button class="btn btn-danger btn-sm" onclick="removeTestQ(${i})"><i data-lucide="x" style="width:11px"></i></button></div></div>`).join("");
-  lucide.createIcons({nodes:[wrap]});
+  if(wrap){ wrap.innerHTML=_renderTestQsWrap(window._pendingTestQs); lucide.createIcons({nodes:[wrap]}); }
 }
+
 function saveTest2(id){
-  const title=document.getElementById("nt-title")?.value.trim();if(!title){toast("عنوان الاختبار مطلوب","error");return;}
+  const title=document.getElementById("nt-title")?.value.trim();
+  if(!title){toast("عنوان الاختبار مطلوب","error");return;}
   if(!window._pendingTestQs.length){toast("أضف أسئلة أولاً","error");return;}
   if(id){
     const t=findById(APP.tests,id);
