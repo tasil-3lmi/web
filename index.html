@@ -487,22 +487,14 @@ body{font-family:'Zain',sans-serif;background:var(--bg);color:var(--text);direct
 
       <!-- Admin login form -->
       <div id="admin-login-form" style="display:none">
-        <div style="background:rgba(59,27,64,.06);border-radius:12px;padding:12px 14px;margin-bottom:14px;border:1px solid rgba(59,27,64,.1)">
+        <div style="background:rgba(59,27,64,.06);border-radius:12px;padding:14px 16px;margin-bottom:16px;border:1px solid rgba(59,27,64,.1)">
           <div style="font-size:12px;color:var(--purple);font-weight:700;display:flex;align-items:center;gap:6px">
             <i data-lucide="shield" style="width:13px;height:13px;color:var(--gold)"></i> دخول المسؤولين والمشرفين
           </div>
         </div>
-        <div class="inp-group">
-          <label>البريد الإلكتروني أو اسم المستخدم</label>
-          <input type="text" id="al-email" placeholder="example@email.com أو @admin_name" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('al-pass').focus()"/>
-        </div>
+        <div class="inp-group"><label>البريد الإلكتروني</label><input type="email" id="al-email" placeholder="example@email.com" onkeydown="if(event.key==='Enter')doAdminLogin()"/></div>
         <div class="inp-group"><label>كلمة المرور</label><input type="password" id="al-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doAdminLogin()"/></div>
         <div id="admin-login-err" style="display:none;color:#dc3545;font-size:13px;padding:9px 13px;background:#fff5f5;border-radius:9px;margin-bottom:12px;border:1px solid #ffcccc"></div>
-        <!-- تذكرني للمسؤول -->
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
-          <label class="toggle" style="flex-shrink:0"><input type="checkbox" id="al-remember"><span class="toggle-slider"></span></label>
-          <span style="font-size:13px;color:var(--text);cursor:pointer" onclick="document.getElementById('al-remember').click()">تذكرني — دخول تلقائي</span>
-        </div>
         <button id="btn-admin-login" class="btn btn-primary" onclick="doAdminLogin()" style="width:100%;justify-content:center;font-size:14px;padding:13px;margin-bottom:10px">
           <i data-lucide="shield-check" style="width:16px;height:16px"></i> دخول المسؤول
         </button>
@@ -511,11 +503,6 @@ body{font-family:'Zain',sans-serif;background:var(--bg);color:var(--text);direct
       <!-- Register form -->
       <div id="register-form" style="display:none">
         <div class="inp-group"><label>الاسم الثلاثي *</label><input type="text" id="r-name" placeholder="أدخل اسمك الثلاثي"/></div>
-        <div class="inp-group">
-          <label>اسم المستخدم * <span style="color:var(--muted);font-weight:400">(يُستخدم لتسجيل الدخول)</span></label>
-          <input type="text" id="r-username" placeholder="مثال: student_ahmad" autocomplete="username" oninput="this.value=this.value.replace(/[^a-zA-Z0-9_؀-ۿ]/g,'')" />
-          <span style="font-size:11px;color:var(--muted);margin-top:3px;display:block">حروف وأرقام فقط، بدون مسافات</span>
-        </div>
         <div class="inp-grid">
           <div class="inp-group"><label>العمر</label><input type="number" id="r-age" placeholder="عمرك"/></div>
           <div class="inp-group"><label>رقم الهاتف</label><input type="text" id="r-phone" placeholder="+966..."/></div>
@@ -560,7 +547,7 @@ body{font-family:'Zain',sans-serif;background:var(--bg);color:var(--text);direct
 <!-- ══════════════════════════════════════════════════════════
      APP WRAPPER (after login)
 ══════════════════════════════════════════════════════════ -->
-<div id="app-wrapper" style="display:none;min-height:100vh;flex-direction:column;">
+<div id="app-wrapper" style="display:none">
 
   <!-- App Nav -->
   <nav id="main-nav">
@@ -621,7 +608,6 @@ body{font-family:'Zain',sans-serif;background:var(--bg);color:var(--text);direct
   </div>
 
   <!-- App Pages -->
-  <div id="app-pages-wrap" style="flex:1">
   <div id="app-page-dashboard" class="page active" style="padding-bottom:48px"></div>
   <div id="app-page-courses" class="page"></div>
   <div id="app-page-course-detail" class="page"></div>
@@ -631,10 +617,9 @@ body{font-family:'Zain',sans-serif;background:var(--bg);color:var(--text);direct
   <div id="app-page-profile" class="page"></div>
   <div id="app-page-admin" class="page"></div>
   <div id="app-page-admin-qa" class="page"></div>
-  </div><!-- /app-pages-wrap -->
 
   <!-- App Footer -->
-  <footer id="app-footer" style="background:var(--purple-d);padding:20px 24px;text-align:center;">
+  <footer id="app-footer" style="background:var(--purple-d);padding:20px 24px;text-align:center;margin-top:auto">
     <div style="display:flex;justify-content:center;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:10px">
       <button onclick="openTelegram()" id="footer-tg-btn" style="display:none;background:none;border:none;cursor:pointer;color:var(--gold);font-family:'Zain',sans-serif;font-size:12px;display:inline-flex;align-items:center;gap:5px">
         <i data-lucide="send" style="width:12px;height:12px"></i> <span id="footer-tg-label">تيليجرام المعهد</span>
@@ -665,7 +650,67 @@ const LS_TS_KEY = "ti_ts";
 function getLocalTs(){ return LS(LS_TS_KEY)||0; }
 function bumpLocalTs(){ const t=Date.now(); SS(LS_TS_KEY,t); return t; }
 
-// ── Firestore — كل عملية تفشل بصمت تماماً ──
+// ══════════════════════════════════════════════════════════
+// Firestore — collections مخصصة لكل نوع بيانات
+// courses/{id}  tests/{id}  config/main  questions/{id}
+// ══════════════════════════════════════════════════════════
+
+// ── Courses ──
+async function fsSaveCourse(course){
+  try{ await FB_DB.collection("courses").doc(String(course.id)).set(course); }catch(e){ console.warn("fsSaveCourse",e); }
+}
+async function fsDeleteCourse(id){
+  try{ await FB_DB.collection("courses").doc(String(id)).delete(); }catch(e){}
+}
+async function fsLoadCourses(){
+  try{
+    const snap = await FB_DB.collection("courses").orderBy("_order","asc").get().catch(()=>
+      FB_DB.collection("courses").get()
+    );
+    return snap.docs.map(d=>d.data());
+  }catch(e){ return null; }
+}
+
+// ── Tests ──
+async function fsSaveTest(test){
+  try{ await FB_DB.collection("tests").doc(String(test.id)).set(test); }catch(e){ console.warn("fsSaveTest",e); }
+}
+async function fsDeleteTest(id){
+  try{ await FB_DB.collection("tests").doc(String(id)).delete(); }catch(e){}
+}
+async function fsLoadTests(){
+  try{
+    const snap = await FB_DB.collection("tests").get();
+    return snap.docs.map(d=>d.data());
+  }catch(e){ return null; }
+}
+
+// ── Site Config ──
+async function fsSaveConfig(cfg){
+  try{ await FB_DB.collection("config").doc("main").set(cfg); }catch(e){}
+}
+async function fsLoadConfig(){
+  try{
+    const snap = await FB_DB.collection("config").doc("main").get();
+    return snap.exists ? snap.data() : null;
+  }catch(e){ return null; }
+}
+
+// ── Questions ──
+async function fsSaveQuestion(q){
+  try{ await FB_DB.collection("questions").doc(String(q.id)).set(q); }catch(e){}
+}
+async function fsDeleteQuestion(id){
+  try{ await FB_DB.collection("questions").doc(String(id)).delete(); }catch(e){}
+}
+async function fsLoadQuestions(){
+  try{
+    const snap = await FB_DB.collection("questions").get();
+    return snap.docs.map(d=>d.data());
+  }catch(e){ return null; }
+}
+
+// ── Legacy (fallback) ──
 async function fsGetAppData(doc){
   try{
     const s = await FB_DB.collection("taaseel_app").doc(doc).get();
@@ -909,61 +954,109 @@ let APP = {
   activePage: "dashboard",
 };
 
+// localStorage sync (always works offline)
 function saveState(){
   SS("ti_courses",       APP.courses);
   SS("ti_tests",         APP.tests);
   SS("ti_questions",     APP.questions);
   SS("ti_notifications", APP.notifications);
   SS("ti_config",        APP.siteConfig);
-  const ts = bumpLocalTs();
-  setTimeout(()=>_bgSync(ts), 100);
 }
-function _bgSync(ts){
-  fsSetAppData("courses",   APP.courses);
-  fsSetAppData("tests",     APP.tests);
-  fsSetAppData("questions", APP.questions);
-  fsSetAppData("config",    APP.siteConfig);
-  try{ FB_DB.collection("taaseel_app").doc("_meta").set({ts},{merge:true}); }catch(e){}
+
+// ── Instant Firebase write for a single course (add/edit) ──
+async function fbWriteCourse(course){
+  const idx = APP.courses.findIndex(c=>toId(c.id)===toId(course.id));
+  if(idx>=0) APP.courses[idx]=course; else APP.courses.push(course);
+  saveState();
+  await fsSaveCourse({...course, _order: APP.courses.findIndex(c=>toId(c.id)===toId(course.id))});
 }
-// ── Instant Firebase saves for CRUD ──
-async function _fbBump(){
-  const ts=bumpLocalTs();
-  try{ await FB_DB.collection("taaseel_app").doc("_meta").set({ts},{merge:true}); }catch(e){}
+// ── Delete a course from Firebase ──
+async function fbRemoveCourse(id){
+  APP.courses=APP.courses.filter(c=>toId(c.id)!==toId(id));
+  saveState();
+  await fsDeleteCourse(id);
 }
-async function fbSaveCourses(){
-  SS("ti_courses",APP.courses);
-  try{ await fsSetAppData("courses",APP.courses); await _fbBump(); }catch(e){}
+// ── Save entire courses array (after reorder / toggle) ──
+async function fbSyncCourses(){
+  saveState();
+  await Promise.all(APP.courses.map((c,i)=>fsSaveCourse({...c,_order:i})));
 }
-async function fbSaveTests(){
-  SS("ti_tests",APP.tests);
-  try{ await fsSetAppData("tests",APP.tests); await _fbBump(); }catch(e){}
+
+// ── Test CRUD ──
+async function fbWriteTest(test){
+  const idx = APP.tests.findIndex(t=>toId(t.id)===toId(test.id));
+  if(idx>=0) APP.tests[idx]=test; else APP.tests.push(test);
+  saveState();
+  await fsSaveTest(test);
 }
-async function fbSaveQuestions(){
-  SS("ti_questions",APP.questions);
-  try{ await fsSetAppData("questions",APP.questions); await _fbBump(); }catch(e){}
+async function fbRemoveTest(id){
+  APP.tests=APP.tests.filter(t=>toId(t.id)!==toId(id));
+  saveState();
+  await fsDeleteTest(id);
 }
-async function fbSaveConfig(){
-  SS("ti_config",APP.siteConfig);
-  try{ await fsSetAppData("config",APP.siteConfig); await _fbBump(); }catch(e){}
+
+// ── Question CRUD ──
+async function fbWriteQuestion(q){
+  const idx = APP.questions.findIndex(x=>toId(x.id)===toId(q.id));
+  if(idx>=0) APP.questions[idx]=q; else APP.questions.push(q);
+  saveState();
+  await fsSaveQuestion(q);
 }
+async function fbRemoveQuestion(id){
+  APP.questions=APP.questions.filter(x=>toId(x.id)!==toId(id));
+  saveState();
+  await fsDeleteQuestion(id);
+}
+
+// ── Config ──
+async function fbWriteConfig(){
+  saveState();
+  await fsSaveConfig(APP.siteConfig);
+}
+
+// ── Load all data from Firestore on startup ──
 async function loadFromFirestore(){
-  // نحمّل من Firestore فقط إذا كانت Firestore أحدث من localStorage
   try{
-    const metaSnap = await FB_DB.collection("taaseel_app").doc("_meta").get();
-    const fsTs = metaSnap.exists ? (metaSnap.data().ts||0) : 0;
-    const localTs = getLocalTs();
-    if(localTs >= fsTs){ return; } // localStorage أحدث أو متساوٍ — لا تغيير
-    // Firestore أحدث — حمّل البيانات
-    const [cd,td,qd,cfg] = await Promise.all([
-      fsGetAppData("courses"), fsGetAppData("tests"),
-      fsGetAppData("questions"), fsGetAppData("config")
+    const [coursesData, testsData, questionsData, cfgData] = await Promise.all([
+      fsLoadCourses(), fsLoadTests(), fsLoadQuestions(), fsLoadConfig()
     ]);
-    if(cd?.payload)  { APP.courses=_fixYtUrls(cd.payload); SS("ti_courses",APP.courses); }
-    if(td?.payload)  { APP.tests=td.payload;               SS("ti_tests",APP.tests); }
-    if(qd?.payload)  { APP.questions=qd.payload;           SS("ti_questions",APP.questions); }
-    if(cfg?.payload) { APP.siteConfig=cfg.payload;         SS("ti_config",APP.siteConfig); }
-    SS(LS_TS_KEY, fsTs);
-  }catch(e){ /* Firestore غير متاح — نعمل بـ localStorage */ }
+
+    // Courses — تحميل من Firestore إذا وُجدت بيانات
+    if(coursesData && coursesData.length > 0){
+      const sorted = [...coursesData].sort((a,b)=>(a._order||0)-(b._order||0));
+      APP.courses = _fixYtUrls(sorted);
+      SS("ti_courses", APP.courses);
+    } else if(APP.courses.length > 0){
+      // رفع البيانات المحلية لـ Firestore (مزامنة أولية)
+      await Promise.all(APP.courses.map((c,i)=>fsSaveCourse({...c,_order:i})));
+    }
+
+    // Tests
+    if(testsData && testsData.length > 0){
+      APP.tests = testsData;
+      SS("ti_tests", APP.tests);
+    } else if(APP.tests.length > 0){
+      await Promise.all(APP.tests.map(t=>fsSaveTest(t)));
+    }
+
+    // Questions
+    if(questionsData && questionsData.length > 0){
+      APP.questions = questionsData;
+      SS("ti_questions", APP.questions);
+    }
+
+    // Config
+    if(cfgData && Object.keys(cfgData).length > 0){
+      APP.siteConfig = {...APP.siteConfig, ...cfgData};
+      SS("ti_config", APP.siteConfig);
+    }
+
+    console.log(`✅ Firebase: ${APP.courses.length} مقرر، ${APP.tests.length} اختبار`);
+    return true;
+  }catch(e){
+    console.warn("loadFromFirestore failed, using localStorage:", e);
+    return false;
+  }
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1081,48 +1174,29 @@ function switchTab(t){
 }
 
 // ── Admin login — Firebase Auth + Firestore ──
-// يدعم البريد الإلكتروني أو اسم المستخدم
-async function _resolveAdminEmail(input){
-  // إذا يبدو كبريد إلكتروني — استخدمه مباشرة
-  if(input.includes("@") && input.includes(".")){ return input; }
-  // ابحث عن المسؤول بـ username في Firestore
-  try{
-    const snap = await FB_DB.collection("admins").where("username","==",input).limit(1).get();
-    if(!snap.empty) return snap.docs[0].data().email||null;
-  }catch(e){}
-  return null;
-}
 async function doAdminLogin(){
-  const rawInput = document.getElementById("al-email").value.trim();
+  const email = document.getElementById("al-email").value.trim();
   const pass  = document.getElementById("al-pass").value;
-  const remember = document.getElementById("al-remember")?.checked||false;
   const err   = document.getElementById("admin-login-err");
   err.style.display="none";
-  if(!rawInput||!pass){ err.textContent="يرجى إدخال البريد / اسم المستخدم وكلمة المرور"; err.style.display=""; return; }
+  if(!email||!pass){ err.textContent="يرجى إدخال البريد وكلمة المرور"; err.style.display=""; return; }
   setBtnLoading("btn-admin-login",true,"جارٍ التحقق...");
   try{
-    // 1. حل اسم المستخدم إلى بريد إلكتروني إن لزم
-    let email = await _resolveAdminEmail(rawInput);
-    if(!email){ err.textContent="اسم المستخدم غير موجود"; err.style.display=""; return; }
-
-    // 2. تسجيل دخول Firebase Auth
+    // 1. تسجيل دخول Firebase Auth
     const cred = await FB_AUTH.signInWithEmailAndPassword(email, pass);
     const uid = cred.user.uid;
 
-    // 3. التحقق من وجود الحساب في مجموعة "admins"
+    // 2. التحقق من وجود الحساب في مجموعة "admins"
     const adminProfile = await fsGetAdmin(uid);
     if(!adminProfile){
+      // ليس مسؤولاً — أخرجه فوراً
       await FB_AUTH.signOut();
       err.textContent = "هذا الحساب ليس حساب مسؤول";
       err.style.display = "";
       return;
     }
 
-    // 4. تذكرني
-    if(remember){ saveAdminRM(email, pass); }
-    else { localStorage.removeItem(ARM_KEY); }
-
-    // 5. تسجيل الدخول كمسؤول
+    // 3. تسجيل الدخول كمسؤول
     _adminSessionEmail = email;
     _adminSessionPass  = pass;
     loginUser({
@@ -1145,9 +1219,8 @@ async function doAdminLogin(){
   }
 }
 
-// ── تذكرني (طالب) ──
+// ── تذكرني ──
 const RM_KEY = "ti_rm";
-const ARM_KEY = "ti_arm"; // تذكرني مسؤول
 function toggleRememberMe(checked){
   if(!checked){ localStorage.removeItem(RM_KEY); }
 }
@@ -1169,64 +1242,22 @@ async function tryAutoLogin(){
     await _handleStudentFirebaseLogin(cred.user);
     return true;
   }catch(e){
+    // بيانات قديمة — احذف التذكر
     localStorage.removeItem(RM_KEY);
     return false;
   }
 }
-// ── تذكرني (مسؤول) ──
-function saveAdminRM(email, pass){
-  try{ localStorage.setItem(ARM_KEY, btoa(JSON.stringify({e:email,p:pass}))); }catch(e){}
-}
-function loadAdminRM(){
-  try{
-    const raw = localStorage.getItem(ARM_KEY);
-    if(!raw) return null;
-    return JSON.parse(atob(raw));
-  }catch(e){ localStorage.removeItem(ARM_KEY); return null; }
-}
-async function tryAutoAdminLogin(){
-  const saved = loadAdminRM();
-  if(!saved?.e||!saved?.p) return false;
-  try{
-    const cred = await FB_AUTH.signInWithEmailAndPassword(saved.e, saved.p);
-    const uid2 = cred.user.uid;
-    const adminProfile = await fsGetAdmin(uid2);
-    if(!adminProfile){ localStorage.removeItem(ARM_KEY); await FB_AUTH.signOut(); return false; }
-    _adminSessionEmail = saved.e;
-    _adminSessionPass  = saved.p;
-    loginUser({
-      id:uid2, name:adminProfile.fullName||adminProfile.username,
-      adminLabel:adminProfile.username, adminFullName:adminProfile.fullName,
-      adminUsername:adminProfile.username, isAdmin:true,
-      adminRole:adminProfile.role, adminPermissions:adminProfile.permissions||{},
-      completedLessons:[], testResults:[],
-    });
-    return true;
-  }catch(e){ localStorage.removeItem(ARM_KEY); return false; }
-}
 
-// ── Resolve student username → email ──
-async function _resolveStudentEmail(input){
-  if(input.includes("@") && input.includes(".")){ return input; }
-  // البحث عن المستخدم بـ username في Firestore
-  try{
-    const snap = await FB_DB.collection("users").where("username","==",input).limit(1).get();
-    if(!snap.empty) return snap.docs[0].data().email||null;
-  }catch(e){}
-  return null;
-}
 // ── Student email/password login ──
 async function doLogin(){
-  const rawInput=document.getElementById("l-email").value.trim();
+  const email=document.getElementById("l-email").value.trim();
   const pass=document.getElementById("l-pass").value;
   const remember=document.getElementById("l-remember")?.checked||false;
   const err=document.getElementById("login-err");
   err.style.display="none";
-  if(!rawInput||!pass){err.textContent="يرجى إدخال البريد / اسم المستخدم وكلمة المرور";err.style.display="";return;}
+  if(!email||!pass){err.textContent="يرجى إدخال البريد وكلمة المرور";err.style.display="";return;}
   setBtnLoading("btn-email-login",true,"جاري الدخول...");
   try{
-    let email = await _resolveStudentEmail(rawInput);
-    if(!email){ err.textContent="اسم المستخدم غير موجود أو البريد غير صحيح"; err.style.display=""; return; }
     const cred=await FB_AUTH.signInWithEmailAndPassword(email,pass);
     if(remember){ saveRememberMe(email, pass); }
     else { localStorage.removeItem(RM_KEY); }
@@ -1239,7 +1270,6 @@ async function doLogin(){
 // ── Student registration (Firebase Auth + Firestore) ──
 async function doRegister(){
   const name=document.getElementById("r-name").value.trim();
-  const username=document.getElementById("r-username")?.value.trim()||"";
   const email=document.getElementById("r-email").value.trim();
   const pass=document.getElementById("r-pass").value;
   const err=document.getElementById("reg-err");
@@ -1247,24 +1277,16 @@ async function doRegister(){
   const showOk=msg=>{err.textContent=msg;err.style.cssText="display:block;color:#28a745;font-size:13px;padding:9px 13px;background:#f0fff4;border-radius:9px;margin-bottom:12px;border:1px solid #b2dfdb";};
 
   if(!name||!email||!pass){ showErr("يرجى ملء الحقول المطلوبة (الاسم، البريد، كلمة المرور)"); return; }
-  if(!username){ showErr("يرجى اختيار اسم مستخدم"); return; }
-  if(username.length<3){ showErr("اسم المستخدم يجب أن يكون 3 أحرف على الأقل"); return; }
   if(pass.length<6){ showErr("كلمة المرور يجب أن تكون 6 أحرف على الأقل"); return; }
 
-  setBtnLoading("btn-register",true,"جاري التحقق...");
+  setBtnLoading("btn-register",true,"جاري التسجيل...");
   try{
-    // التحقق من عدم تكرار اسم المستخدم
-    try{
-      const uSnap = await FB_DB.collection("users").where("username","==",username).limit(1).get();
-      if(!uSnap.empty){ showErr("اسم المستخدم مستخدم مسبقاً — اختر اسماً آخر"); setBtnLoading("btn-register",false,"إنشاء الحساب"); return; }
-    }catch(e){}
-
     // 1. إنشاء حساب Firebase Auth
     const cred = await FB_AUTH.createUserWithEmailAndPassword(email, pass);
 
     // 2. حفظ الملف الشخصي في Firestore
     const profile={
-      name, username, email,
+      name, email,
       phone:   document.getElementById("r-phone")?.value.trim()||"",
       age:     document.getElementById("r-age")?.value||"",
       telegram:document.getElementById("r-tg")?.value.trim()||"",
@@ -1276,6 +1298,7 @@ async function doRegister(){
     try{
       await fsSetUser(cred.user.uid, profile);
     }catch(fsErr){
+      // Firestore فشل — نحفظ مؤقتاً في localStorage
       console.warn("Firestore write failed, storing locally:", fsErr);
       const pending = LS("ti_pending_users") || [];
       pending.push({uid: cred.user.uid, ...profile});
@@ -1284,10 +1307,10 @@ async function doRegister(){
 
     // 3. تسجيل خروج فوري (انتظار موافقة المسؤول)
     await FB_AUTH.signOut();
-    showOk(`✅ تم التسجيل! اسم المستخدم: @${username}. حسابك في انتظار موافقة المسؤول.`);
+    showOk("✅ تم التسجيل بنجاح! حسابك في انتظار موافقة المسؤول.");
 
     // مسح الحقول
-    ["r-name","r-username","r-email","r-pass","r-phone","r-age","r-tg"].forEach(id=>{
+    ["r-name","r-email","r-pass","r-phone","r-age","r-tg"].forEach(id=>{
       const el=document.getElementById(id); if(el) el.value="";
     });
 
@@ -1465,7 +1488,6 @@ function loginUser(u){
 async function doLogout(){
   // عند تسجيل الخروج اليدوي — احذف التذكر
   localStorage.removeItem(RM_KEY);
-  localStorage.removeItem(ARM_KEY);
   APP.user=null;
   _adminSessionEmail = "";
   _adminSessionPass  = "";
@@ -2189,7 +2211,8 @@ function processFiles(files, cid, lid){
 function deleteAttachment(cid,lid,ai){
   const c=findById(APP.courses,cid);const l=c?findById(c.lessons,lid):null;
   if(!l) return;
-  l.attachments.splice(ai,1);saveState();
+  l.attachments.splice(ai,1);
+  fbWriteCourse(c).then(()=>{}).catch(()=>{});
   selectLesson(cid,lid);toast("تم حذف المرفق","info");
 }
 
@@ -2381,8 +2404,9 @@ function submitQuestion(){
   const s=document.getElementById("q-subject")?.value.trim();
   const b=document.getElementById("q-body")?.value.trim();
   if(!s||!b){toast("يرجى ملء جميع الحقول","error");return;}
-  APP.questions.push({id:uid(),userId:APP.user.id,userName:APP.user.name,subject:s,body:b,answer:null,date:new Date().toLocaleDateString("ar")});
-  fbSaveQuestions();
+  const newQ={id:uid(),userId:APP.user.id,userName:APP.user.name,subject:s,body:b,answer:null,date:new Date().toLocaleDateString("ar")};
+  APP.questions.push(newQ);
+  fbWriteQuestion(newQ);
   toast("تم إرسال سؤالك بنجاح!","success");
   renderQA();
 }
@@ -2437,7 +2461,7 @@ function submitAnswer(qid){
   const txt=document.getElementById(`ans-${qid}`)?.value.trim();
   if(!txt){toast("يرجى كتابة الرد","error");return;}
   const q=findById(APP.questions,qid);
-  if(q){ q.answer=txt; fbSaveQuestions().then(()=>{ toast("تم إرسال الرد بنجاح!","success"); renderAdminQA(); }); }
+  if(q){ q.answer=txt; fbWriteQuestion(q).then(()=>{ toast("تم إرسال الرد في Firebase ✅","success"); renderAdminQA(); }); }
 }
 function editAnswer(qid){
   const q=findById(APP.questions,qid);
@@ -2450,10 +2474,10 @@ function editAnswer(qid){
 function saveEditAnswer(qid){
   const txt=document.getElementById("edit-ans")?.value.trim();
   const q=findById(APP.questions,qid);
-  if(q&&txt){q.answer=txt;fbSaveQuestions().then(()=>{ closeModal(); toast("تم تحديث الرد","success"); renderAdminQA(); });}
+  if(q&&txt){q.answer=txt;fbWriteQuestion(q).then(()=>{closeModal();toast("تم تحديث الرد في Firebase ✅","success");renderAdminQA();});}
 }
 function deleteQuestion(qid){
-  APP.questions=APP.questions.filter(x=>x.id!==qid);fbSaveQuestions().then(()=>renderAdminQA());toast("تم الحذف","info");
+  fbRemoveQuestion(qid).then(()=>{renderAdminQA();toast("تم الحذف من Firebase ✅","info");});
 }
 
 // ══════════════════════════════════════════════════════════
@@ -2602,49 +2626,48 @@ function renderAboutPublic(){
   const cfg=APP.siteConfig;
   const el=document.getElementById("about-full-content");
   if(el) el.innerHTML=`
-  <div style="margin-bottom:28px">
-    <h2 style="color:var(--purple);font-size:20px;font-weight:800;margin-bottom:14px;font-family:'Amiri',serif;display:flex;align-items:center;gap:8px">
+  <div style="margin-bottom:26px">
+    <h2 style="color:var(--purple);font-size:19px;font-weight:800;margin-bottom:12px;font-family:'Amiri',serif;display:flex;align-items:center;gap:8px">
       <span style="color:var(--gold)">◈</span> تعريف بالشيخ مصعب بن صلاح حفظه الله
     </h2>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;background:rgba(212,180,142,.07);border-radius:14px;padding:16px;margin-bottom:14px;font-size:13px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:8px;background:rgba(212,180,142,.07);border-radius:12px;padding:14px;margin-bottom:12px;font-size:12px">
       <div><span style="color:var(--gold-d);font-weight:700">▪️ الاسم:</span> مصعب بن صلاح بن علي</div>
       <div><span style="color:var(--gold-d);font-weight:700">▪️ الميلاد:</span> 1407هـ / 1987م</div>
       <div><span style="color:var(--gold-d);font-weight:700">▪️ الأصل:</span> محسي من الشمالية — عبري</div>
       <div><span style="color:var(--gold-d);font-weight:700">▪️ الدراسة:</span> الأحساء — المدينة المنورة — السودان</div>
     </div>
-    <p style="color:var(--muted);font-size:13px;line-height:2">درس جميع المراحل الدراسية بالأحساء، تخرج من الثانوية عام 2004م، التحق بكلية الطب بجامعة العلوم والتقانة بأمدرمان، ثم انتقل إلى كلية الحديث الشريف بالجامعة الإسلامية بالمدينة المنورة عام 2009م، وعاد إلى السودان عام 2015م.</p>
+    <p style="color:var(--muted);font-size:13px;line-height:1.9">درس جميع المراحل الدراسية بالأحساء، تخرج من الثانوية عام 2004م، التحق بكلية الطب بجامعة العلوم والتقانة بأمدرمان، ثم انتقل إلى كلية الحديث الشريف بالجامعة الإسلامية بالمدينة المنورة عام 2009م، وعاد إلى السودان عام 2015م.</p>
   </div>
-  <div style="margin-bottom:24px">
-    <h3 style="color:var(--purple);font-size:15px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:7px"><span style="color:var(--gold)">◈</span> مشايخه</h3>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px">
-      ${["الشيخ محمد أحيد الشنقيطي (النحو)","الشيخ عبدالرحمن الشنقيطي (النحو)","الشيخ أحمد محمود الشنقيطي (أصول الفقه)","الشيخ صالح سندي (العقيدة)","الشيخ سليمان الرحيلي","الشيخ صالح العصيمي","العلامة عبدالمحسن العباد البدر","العلامة صالح السحيمي","العلامة عبدالرزاق البدر","العلامة عبدالكريم الخضير","الشيخ عبدالله البخاري","الشيخ محمد بن هادي المدخلي","الشيخ عبيد الجابري","الشيخ أنيس طاهر (الجرح والتعديل)","الشيخ ربيع المدخلي","المفتي عبدالعزيز آل الشيخ","العلامة صالح الفوزان","العلامة صالح اللحيدان","العلامة أحمد المباركي","العلامة سعد الشثري","الشيخ خالد عبداللطيف","الشيخ حسن الهواري","الشيخ عبدالرحمن حامد","الشيخ محمد سيد حاج رحمه الله","الشيخ صلاح الأمين","الشيخ المرتضى الزين","الشيخ معتصم صلاح","الشيخ حاتم عز الدين","الشيخ فخر الدين الزبير"].map(s=>`<div style="background:rgba(212,180,142,.1);border:1px solid rgba(212,180,142,.28);border-radius:8px;padding:6px 12px;font-size:12px;color:var(--text);display:flex;align-items:center;gap:5px"><span style="color:var(--gold);font-size:8px">●</span>${s}</div>`).join("")}
+  <div style="margin-bottom:22px">
+    <h3 style="color:var(--purple);font-size:14px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px"><span style="color:var(--gold)">◈</span> مشايخه</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:5px">
+      ${["الشيخ محمد أحيد الشنقيطي (النحو)","الشيخ عبدالرحمن الشنقيطي (النحو)","الشيخ أحمد محمود الشنقيطي (أصول الفقه)","الشيخ صالح سندي (العقيدة)","الشيخ سليمان الرحيلي","الشيخ صالح العصيمي","العلامة عبدالمحسن العباد البدر","العلامة صالح السحيمي","العلامة عبدالرزاق البدر","العلامة عبدالكريم الخضير","الشيخ عبدالله البخاري","الشيخ محمد بن هادي المدخلي","الشيخ عبيد الجابري","الشيخ أنيس طاهر (الجرح والتعديل)","الشيخ ربيع المدخلي","المفتي عبدالعزيز آل الشيخ","العلامة صالح الفوزان","العلامة صالح اللحيدان","العلامة أحمد المباركي","العلامة سعد الشثري","الشيخ خالد عبداللطيف","الشيخ حسن الهواري","الشيخ عبدالرحمن حامد","الشيخ محمد سيد حاج رحمه الله","الشيخ صلاح الأمين","الشيخ المرتضى الزين","الشيخ معتصم صلاح","الشيخ حاتم عز الدين","الشيخ فخر الدين الزبير"].map(s=>`<div style="background:rgba(212,180,142,.1);border:1px solid rgba(212,180,142,.28);border-radius:7px;padding:5px 11px;font-size:11px;color:var(--text);display:flex;align-items:center;gap:4px"><span style="color:var(--gold);font-size:7px">●</span>${s}</div>`).join("")}
     </div>
   </div>
-  <div style="margin-bottom:24px">
-    <h3 style="color:var(--purple);font-size:15px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:7px"><span style="color:var(--gold)">◈</span> مؤلفاته</h3>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px">
-      ${["المدخل إلى طلب العلم","البيان المهم في حكم طلب العلم","ضوابط في التبديع","الرد على المخالف","ضوابط التعامل مع زلات العلماء","الجهل وأثره على الدعوة","الحزبية","التوضيح الأنفع شرح القواعد الأربع","خلاصة الكلام شرح نواقض الإسلام"].map((b,i)=>`<div style="background:linear-gradient(135deg,var(--purple),var(--purple-l));border-radius:9px;padding:8px 13px;color:#fff;font-size:12px;display:flex;align-items:center;gap:8px"><span style="color:var(--gold);font-weight:800;font-size:14px;flex-shrink:0">${i+1}</span>${b}</div>`).join("")}
+  <div style="margin-bottom:22px">
+    <h3 style="color:var(--purple);font-size:14px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px"><span style="color:var(--gold)">◈</span> مؤلفاته</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:5px">
+      ${["المدخل إلى طلب العلم","البيان المهم في حكم طلب العلم","ضوابط في التبديع","الرد على المخالف","ضوابط التعامل مع زلات العلماء","الجهل وأثره على الدعوة","الحزبية","التوضيح الأنفع شرح القواعد الأربع","خلاصة الكلام شرح نواقض الإسلام"].map((b,i)=>`<div style="background:linear-gradient(135deg,var(--purple),var(--purple-l));border-radius:8px;padding:7px 12px;color:#fff;font-size:11px;display:flex;align-items:center;gap:7px"><span style="color:var(--gold);font-weight:800;font-size:13px;flex-shrink:0">${i+1}</span>${b}</div>`).join("")}
     </div>
   </div>
-  <div style="margin-bottom:24px">
-    <h3 style="color:var(--purple);font-size:15px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:7px"><span style="color:var(--gold)">◈</span> الإجازات العلمية</h3>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:10px">مُجازٌ برواية أكثر كتب العلم بالأسانيد المتصلة:</p>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px">
-      ${["📖 كتب السنة والحديث (الصحيحان والسنن والمسانيد)","📖 كتب العقيدة","📖 كتب التفاسير المشهورة","📖 كتب شروح الحديث","📖 كتب التاريخ والسيرة","📖 كتب الزهد والرقائق","📖 كتب الفقه وأصوله وقواعده","📖 كتب اللغة والأدب","📖 كتب علوم الحديث والمصطلح"].map(k=>`<div style="background:rgba(59,27,64,.06);border:1px solid rgba(59,27,64,.12);border-radius:8px;padding:7px 12px;font-size:12px;color:var(--purple)">${k}</div>`).join("")}
+  <div style="margin-bottom:22px">
+    <h3 style="color:var(--purple);font-size:14px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px"><span style="color:var(--gold)">◈</span> الإجازات العلمية</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:5px">
+      ${["📖 كتب السنة والحديث (الصحيحان والسنن)","📖 كتب العقيدة","📖 كتب التفاسير المشهورة","📖 كتب شروح الحديث","📖 كتب التاريخ والسيرة","📖 كتب الزهد والرقائق","📖 كتب الفقه وأصوله وقواعده","📖 كتب اللغة والأدب","📖 كتب علوم الحديث والمصطلح"].map(k=>`<div style="background:rgba(59,27,64,.06);border:1px solid rgba(59,27,64,.1);border-radius:7px;padding:6px 11px;font-size:11px;color:var(--purple)">${k}</div>`).join("")}
     </div>
   </div>
-  <div style="border-top:2px solid rgba(212,180,142,.3);padding-top:20px">
-    <h2 style="color:var(--purple);font-size:17px;font-weight:800;margin-bottom:12px;font-family:'Amiri',serif"><span style="color:var(--gold)">◈</span> عن البرنامج</h2>
-    <p style="font-size:14px;line-height:2;color:var(--text);background:rgba(212,180,142,.07);border-radius:12px;padding:14px;margin-bottom:14px">برنامج علمي ميسَّر: يدرس الطالب فيه عدداً من المتون العلمية التي يحتاجها كل طالب علم، مع روافد متممة تُعين على استكمال بناء قوة الطالب العلمية والعملية.</p>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:6px;margin-bottom:14px">
-      ${["تدريس المتون المعتمدة في مختلف العلوم","الاعتناء بحفظ المتون ومراجعتها","الترقي في أخذ العلم","تكوين الملكة العلمية","معرفة العلاقة بين العلوم","القدرة على المباحثة والمناقشة","التكامل المعرفي","التعرف على المكتبة الإسلامية","معالجة الأغلاط المنهجية"].map(g=>`<div style="display:flex;align-items:center;gap:6px;padding:7px 11px;background:var(--bg);border-radius:8px;border:1px solid rgba(212,180,142,.2);font-size:12px;color:var(--text)"><span style="color:var(--gold);font-weight:800">◈</span>${g}</div>`).join("")}
+  <div style="border-top:2px solid rgba(212,180,142,.25);padding-top:18px">
+    <h2 style="color:var(--purple);font-size:16px;font-weight:800;margin-bottom:12px;font-family:'Amiri',serif"><span style="color:var(--gold)">◈</span> عن البرنامج</h2>
+    <p style="font-size:13px;line-height:2;color:var(--text);background:rgba(212,180,142,.07);border-radius:10px;padding:12px;margin-bottom:12px">برنامج علمي ميسَّر: يدرس الطالب فيه عدداً من المتون العلمية التي يحتاجها كل طالب علم، مع روافد متممة تُعين على استكمال بناء قوة الطالب العلمية والعملية.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(192px,1fr));gap:5px;margin-bottom:12px">
+      ${["تدريس المتون المعتمدة","الاعتناء بحفظ المتون","الترقي في أخذ العلم","تكوين الملكة العلمية","معرفة العلاقة بين العلوم","القدرة على المباحثة","التكامل المعرفي","التعرف على المكتبة الإسلامية","معالجة الأغلاط المنهجية"].map(g=>`<div style="display:flex;align-items:center;gap:5px;padding:6px 10px;background:var(--bg);border-radius:7px;border:1px solid rgba(212,180,142,.18);font-size:11px;color:var(--text)"><span style="color:var(--gold);font-weight:800">◈</span>${g}</div>`).join("")}
     </div>
-    <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted)">
-      <span>● الفئة المستهدفة: طلاب العلم ذكوراً وإناثاً بمختلف أعمارهم</span>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted)">
+      <span>● الفئة: طلاب العلم ذكوراً وإناثاً بمختلف الأعمار</span>
       <span>● المدة: سنة واحدة فقط</span>
       <span>● إجازات علمية وشهادات إتمام</span>
     </div>
-    ${cfg.aboutText?`<div style="margin-top:14px;border-top:1px solid rgba(212,180,142,.2);padding-top:12px;white-space:pre-line;line-height:2;color:var(--muted);font-size:13px">${cfg.aboutText}</div>`:""}
+    ${cfg.aboutText?`<div style="margin-top:12px;border-top:1px solid rgba(212,180,142,.18);padding-top:10px;white-space:pre-line;line-height:1.9;color:var(--muted);font-size:12px">${cfg.aboutText}</div>`:""}
   </div>`;
   const tg=document.getElementById("about-team-grid");
   if(tg&&cfg.team?.length){
@@ -2966,17 +2989,19 @@ function renderAdmin(){
 rules_version = '2';<br>
 service cloud.firestore {<br>
 &nbsp;&nbsp;match /databases/{database}/documents {<br>
-&nbsp;&nbsp;&nbsp;&nbsp;match /taaseel_app/{doc} {<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allow read, write: if true;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;// المقررات — قراءة للجميع، كتابة للمسجلين<br>
+&nbsp;&nbsp;&nbsp;&nbsp;match /courses/{courseId} {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allow read: if true;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allow write, update, delete: if request.auth != null;<br>
 &nbsp;&nbsp;&nbsp;&nbsp;}<br>
-&nbsp;&nbsp;&nbsp;&nbsp;match /admins/{uid} {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;// الاختبارات — قراءة للمسجلين، كتابة للمسؤولين<br>
+&nbsp;&nbsp;&nbsp;&nbsp;match /tests/{testId} {<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allow read: if request.auth != null;<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allow write: if request.auth != null;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allow write, update, delete: if request.auth != null;<br>
 &nbsp;&nbsp;&nbsp;&nbsp;}<br>
-&nbsp;&nbsp;&nbsp;&nbsp;match /users/{uid} {<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allow read: if request.auth != null;<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allow write: if request.auth != null<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&amp;&amp; request.auth.uid == uid;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;// بقية المجموعات<br>
+&nbsp;&nbsp;&nbsp;&nbsp;match /{document=**} {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allow read, write: if request.auth != null;<br>
 &nbsp;&nbsp;&nbsp;&nbsp;}<br>
 &nbsp;&nbsp;}<br>
 }
@@ -3020,19 +3045,17 @@ async function checkSyncStatus(){
 }
 
 async function forceSyncToFirestore(){
-  toast("جارٍ المزامنة...","info");
-  const ts=bumpLocalTs();
+  toast("جارٍ رفع كل البيانات إلى Firebase...","info",2000);
   try{
     await Promise.all([
-      fsSetAppData("courses",   APP.courses),
-      fsSetAppData("tests",     APP.tests),
-      fsSetAppData("questions", APP.questions),
-      fsSetAppData("config",    APP.siteConfig),
-      FB_DB.collection("taaseel_app").doc("_meta").set({ts:ts},{merge:true})
+      ...APP.courses.map((course,i)=>fsSaveCourse({...course,_order:i})),
+      ...APP.tests.map(t=>fsSaveTest(t)),
+      ...APP.questions.map(q=>fsSaveQuestion(q)),
+      fsSaveConfig(APP.siteConfig),
     ]);
-    toast("تم رفع البيانات إلى Firestore ✅","success");
+    toast(`✅ تم رفع: ${APP.courses.length} مقرر، ${APP.tests.length} اختبار، ${APP.questions.length} سؤال`,"success",5000);
   }catch(e){
-    toast("فشل الرفع: "+( e.code||e.message),"error");
+    toast("❌ فشل الرفع: "+(e.code||e.message),"error");
   }
   checkSyncStatus();
 }
@@ -3190,18 +3213,18 @@ async function removeSupervisor(uid2,name){
   });
 }
 
-async function saveConfig(){
+function saveConfig(){
   APP.siteConfig.introVideo=document.getElementById("cfg-video")?.value.trim()||"";
   APP.siteConfig.contactEmail=document.getElementById("cfg-email")?.value.trim()||"";
   APP.siteConfig.contactTelegram=document.getElementById("cfg-tg")?.value.trim()||"";
   APP.siteConfig.contactPhone=document.getElementById("cfg-phone")?.value.trim()||"";
   APP.siteConfig.sheikhChannel=document.getElementById("cfg-sheikh-channel")?.value.trim()||"";
   APP.siteConfig.privateChannel=document.getElementById("cfg-private-channel")?.value.trim()||"";
-  await fbSaveConfig(); toast("تم حفظ الإعدادات ✅","success"); renderAboutPublic();
+  fbWriteConfig().then(()=>toast("تم حفظ الإعدادات في Firebase ✅","success"));
 }
-async function saveAbout(){
+function saveAbout(){
   APP.siteConfig.aboutText=document.getElementById("cfg-about")?.value||"";
-  await fbSaveConfig();toast("تم حفظ نص من نحن ✅","success");
+  fbWriteConfig().then(()=>toast("تم حفظ نص من نحن في Firebase ✅","success"));
 }
 function addTeamMember(){
   openModal(`
@@ -3213,9 +3236,9 @@ function addTeamMember(){
 function saveTeamMember(){
   const name=document.getElementById("tm-name")?.value.trim();const role=document.getElementById("tm-role")?.value.trim();
   if(!name) return;
-  APP.siteConfig.team.push({name,role:role||""});saveState();closeModal();renderAdmin();toast("تم إضافة العضو","success");
+  APP.siteConfig.team.push({name,role:role||""});fbWriteConfig();closeModal();renderAdmin();toast("تم إضافة العضو","success");
 }
-function deleteTeamMember(i){APP.siteConfig.team.splice(i,1);saveState();renderAdmin();}
+function deleteTeamMember(i){APP.siteConfig.team.splice(i,1);fbWriteConfig();renderAdmin();}
 
 function editStudyPlan(){
   const plan=APP.siteConfig.studyPlan||[];
@@ -3239,7 +3262,7 @@ function saveStudyPlan(count){
     const color=document.getElementById(`pl-color-${i}`)?.value;
     if(lvl) plan.push({level:lvl,courses:cs,color:color||"#3B1B40"});
   }
-  APP.siteConfig.studyPlan=plan;saveState();closeModal();renderAdmin();renderPublicPlan();toast("تم حفظ الخطة الدراسية ✅","success");
+  APP.siteConfig.studyPlan=plan;fbWriteConfig().then(()=>toast("تم حفظ الخطة في Firebase ✅","success"));closeModal();renderAdmin();renderPublicPlan();
 }
 
 // Course CRUD
@@ -3289,9 +3312,15 @@ function saveCourse(rawId){
     addNotif(`تم إضافة مقرر جديد: ${title}`,"info");
     toast(`تم إضافة مقرر: ${title} ✅`,"success");
   }
-  fbSaveCourses().then(()=>{ _refreshCoursesAdminTable(); const cp=document.getElementById("app-page-courses"); if(cp?.classList.contains("active")) renderCourses(); });
+  // ── Firebase ──
+  const targetCourse = id ? findById(APP.courses, id) : APP.courses[APP.courses.length-1];
+  if(targetCourse){
+    fbWriteCourse(targetCourse).then(()=>{
+      toast(id?"تم التحديث في Firebase ✅":"تم الحفظ في Firebase ✅","success",1500);
+    }).catch(()=>{});
+  }
   closeModal();
-  // تحديث صفحة المقررات إن كانت ظاهرة
+  _refreshCoursesAdminTable();
   const coursesPage=document.getElementById("app-page-courses");
   if(coursesPage?.classList.contains("active")) renderCourses();
 }
@@ -3317,27 +3346,33 @@ function _refreshCoursesAdminTable(){
 }
 function adminDeleteCourse(id){
   confirm2("هل تريد حذف هذا المقرر نهائياً؟",()=>{
-    APP.courses=APP.courses.filter(c=>toId(c.id)!==toId(id));
-    fbSaveCourses().then(()=>_refreshCoursesAdminTable());
-    toast("تم حذف المقرر","info");
+    fbRemoveCourse(id).then(()=>{
+      _refreshCoursesAdminTable();
+      toast("تم حذف المقرر من Firebase ✅","info");
+      const cp=document.getElementById("app-page-courses");
+      if(cp?.classList.contains("active")) renderCourses();
+    });
   });
 }
 function adminToggleCourse(id, val){
-  const c=findById(APP.courses,id);if(c){c.visible=val;fbSaveCourses();}
-  if(val) addNotif(`تم إظهار مقرر: ${c?.title}`,"info");
-  toast(val?"تم إظهار المقرر":"تم إخفاء المقرر","info");
+  const c=findById(APP.courses,id);
+  if(c){
+    c.visible=val;
+    fbWriteCourse(c);
+    if(val) addNotif(`تم إظهار مقرر: ${c.title}`,"info");
+    toast(val?"✅ تم إظهار المقرر":"🙈 تم إخفاء المقرر","info");
+  }
 }
 function adminToggleLesson(cid,lid){
   const c=findById(APP.courses,cid);const l=c?findById(c.lessons,lid):null;
-  if(l){ l.visible=!l.visible; fbSaveCourses(); }
-  if(l?.visible) addNotif(`تم إظهار درس: ${l?.title}`,"info");
-  toast(l?.visible?"تم إظهار الدرس":"تم إخفاء الدرس","info");
+  if(l&&c){ l.visible=!l.visible; fbWriteCourse(c); if(l.visible) addNotif(`تم إظهار درس: ${l.title}`,"info"); }
+  toast(l?.visible?"✅ تم إظهار الدرس":"🙈 تم إخفاء الدرس","info");
   renderCourseDetail();
 }
 function adminToggleLessonLock(cid,lid){
   const c=findById(APP.courses,cid);const l=c?findById(c.lessons,lid):null;
-  if(l){ l.locked=!l.locked; fbSaveCourses(); }
-  toast(l?.locked?"🔒 تم قفل الدرس — الطالب يراه لكن لا يستطيع فتحه":"🔓 تم فتح الدرس","info");
+  if(l&&c){ l.locked=!l.locked; fbWriteCourse(c); }
+  toast(l?.locked?"🔒 تم قفل الدرس":"🔓 تم فتح الدرس","info");
   renderCourseDetail();
 }
 function showLockedMsg(){
@@ -3421,12 +3456,20 @@ function saveLesson(cid,lid){
     addNotif(`درس جديد في ${c.title}: ${title}`,"info");
     toast(`تم إضافة درس: ${title} ✅`,"success");
   }
-  fbSaveCourses().then(()=>{ closeModal(); renderCourseDetail(); });
+  const courseObj = findById(APP.courses, cid);
+  if(courseObj){
+    fbWriteCourse(courseObj).then(()=>{}).catch(()=>{});
+  }
+  closeModal(); renderCourseDetail();
 }
 function adminDeleteLesson(cid,lid){
   confirm2("حذف هذا الدرس نهائياً؟",()=>{
     const c=findById(APP.courses,cid);
-    if(c){c.lessons=c.lessons.filter(l=>toId(l.id)!==toId(lid));fbSaveCourses().then(()=>renderCourseDetail());toast("تم حذف الدرس","info");}
+    if(c){
+      c.lessons=c.lessons.filter(l=>toId(l.id)!==toId(lid));
+      fbWriteCourse(c).then(()=>toast("تم حذف الدرس من Firebase ✅","info"));
+      renderCourseDetail();
+    }
   });
 }
 
@@ -3718,23 +3761,35 @@ function addTestQ(){
   if(wrap){ wrap.innerHTML=_renderTestQsWrap(window._pendingTestQs); lucide.createIcons({nodes:[wrap]}); }
 }
 
-function saveTest2(id){
+async function saveTest2(id){
   const title=document.getElementById("nt-title")?.value.trim();
   if(!title){toast("عنوان الاختبار مطلوب","error");return;}
   if(!window._pendingTestQs.length){toast("أضف أسئلة أولاً","error");return;}
+  let testObj;
   if(id){
     const t=findById(APP.tests,id);
-    if(t){t.title=title;t.questions=[...window._pendingTestQs];}
-    toast("تم تحديث الاختبار ✅","success");
+    if(t){ t.title=title; t.questions=[...window._pendingTestQs]; testObj=t; }
+    toast("جارٍ الحفظ...","info",1200);
   } else {
-    APP.tests.push({id:uid(),title,questions:[...window._pendingTestQs]});
+    testObj={id:uid(),title,questions:[...window._pendingTestQs],visible:true,locked:false};
+    APP.tests.push(testObj);
     addNotif(`اختبار جديد: ${title}`,"info");
-    toast(`تم إنشاء اختبار: ${title} ✅`,"success");
+    toast("جارٍ الحفظ...","info",1200);
   }
-  fbSaveTests().then(()=>{ closeModal(); renderAdmin(); renderTests(); });
+  if(testObj){
+    await fsSaveTest(testObj);
+    saveState();
+    toast(id?"تم تحديث الاختبار في Firebase ✅":`تم إنشاء اختبار: ${title} ✅`,"success");
+  }
+  closeModal();renderAdmin();renderTests();
 }
 function adminDeleteTest(id){
-  confirm2("حذف هذا الاختبار نهائياً؟",()=>{APP.tests=APP.tests.filter(t=>t.id!==id);fbSaveTests().then(()=>{ renderAdmin(); renderTests(); });toast("تم الحذف","info");});
+  confirm2("حذف هذا الاختبار نهائياً؟",()=>{
+    fbRemoveTest(id).then(()=>{
+      renderAdmin(); renderTests();
+      toast("تم حذف الاختبار من Firebase ✅","info");
+    });
+  });
 }
 
 // ── الخطة الدراسية الافتراضية ──
@@ -3759,6 +3814,43 @@ function _defaultStudyPlan(){
       ]
     }
   ];
+}
+
+// ══════════════════════════════════════════════════════════
+// FIREBASE LOADER UI
+// ══════════════════════════════════════════════════════════
+function _showFirebaseLoader(show){
+  let el = document.getElementById("fb-loader");
+  if(show){
+    if(!el){
+      el = document.createElement("div");
+      el.id = "fb-loader";
+      el.style.cssText = "position:fixed;bottom:16px;right:16px;z-index:9998;background:var(--purple);color:var(--gold-l);padding:10px 16px;border-radius:22px;font-size:12px;font-family:'Zain',sans-serif;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(59,27,64,.4);pointer-events:none;transition:opacity .3s";
+      el.innerHTML = `<svg style="width:14px;height:14px;animation:spin 1s linear infinite;color:var(--gold)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> جارٍ تحميل البيانات من Firebase...`;
+      document.body.appendChild(el);
+    }
+    el.style.opacity="1";
+  } else {
+    if(el){ el.style.opacity="0"; setTimeout(()=>el?.remove(),400); }
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// ADMIN PANEL — Firebase status indicator
+// ══════════════════════════════════════════════════════════
+async function checkSyncStatus(){
+  const el=document.getElementById("sync-status");
+  if(!el) return;
+  el.innerHTML=`<span style="color:var(--muted)">جارٍ الفحص...</span>`;
+  try{
+    await FB_DB.collection("courses").limit(1).get();
+    const cCount = APP.courses.length;
+    const tCount = APP.tests.length;
+    el.innerHTML=`<span style="color:#28a745;display:flex;align-items:center;gap:6px"><i data-lucide="check-circle" style="width:14px;height:14px"></i> Firebase متصل — ${cCount} مقرر، ${tCount} اختبار محفوظان</span>`;
+    lucide.createIcons({nodes:[el]});
+  }catch(e){
+    el.innerHTML=`<span style="color:#dc3545">⚠️ تعذّر الاتصال بـ Firebase: ${e.message}</span>`;
+  }
 }
 
 // ══════════════════════════════════════════════════════════
@@ -3802,25 +3894,17 @@ window.addEventListener("DOMContentLoaded", async ()=>{
   renderPublicPlan();
   renderAboutPublic();
 
-  // ── تذكرني طالب: تسجيل دخول تلقائي ──
+  // ── تذكرني: تسجيل دخول تلقائي ──
   const savedCreds = loadRememberMe();
   if(savedCreds){
+    // ملء الحقول وتفعيل مؤشر التحميل
     const emailEl=document.getElementById("l-email");
+    const passEl=document.getElementById("l-pass");
     const remEl=document.getElementById("l-remember");
     if(emailEl) emailEl.value=savedCreds.e||"";
     if(remEl) remEl.checked=true;
+    // محاولة تسجيل الدخول التلقائي
     tryAutoLogin();
-  }
-  // ── تذكرني مسؤول: تسجيل دخول تلقائي ──
-  if(!savedCreds){
-    const savedAdmin = loadAdminRM();
-    if(savedAdmin){
-      const alEl=document.getElementById("al-email");
-      const alRem=document.getElementById("al-remember");
-      if(alEl) alEl.value=savedAdmin.e||"";
-      if(alRem) alRem.checked=true;
-      tryAutoAdminLogin();
-    }
   }
 
   // معالجة نتيجة redirect من Google/Apple
@@ -3830,10 +3914,13 @@ window.addEventListener("DOMContentLoaded", async ()=>{
   const overlay=document.getElementById("redirect-overlay");
   if(overlay) overlay.remove();
 
-  // تحميل بيانات التطبيق من Firestore
-  loadFromFirestore().then(()=>{
+  // ── تحميل البيانات من Firebase ──
+  _showFirebaseLoader(true);
+  loadFromFirestore().then((loaded)=>{
+    _showFirebaseLoader(false);
     if(APP.activePage==="landing"){ renderPublicPlan(); renderAboutPublic(); }
-  });
+    if(loaded) console.log("✅ Firebase loaded successfully");
+  }).catch(()=>{ _showFirebaseLoader(false); });
 
   // إنشاء حساب المشرف العام إذا لم يكن موجوداً
   ensureSuperAdmin();
