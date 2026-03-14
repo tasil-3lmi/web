@@ -477,10 +477,10 @@ body{font-family:'Zain',sans-serif;background:var(--bg);color:var(--text);direct
             <i data-lucide="shield" style="width:13px;height:13px;color:var(--gold)"></i> دخول المسؤولين والمشرفين
           </div>
         </div>
-        <div class="inp-group"><label>اسم المستخدم</label><input type="text" id="al-username" placeholder="اسم المستخدم"/></div>
-        <div class="inp-group"><label>كلمة المرور</label><input type="password" id="al-pass" placeholder="••••••••"/></div>
+        <div class="inp-group"><label>البريد الإلكتروني</label><input type="email" id="al-email" placeholder="example@email.com" onkeydown="if(event.key==='Enter')doAdminLogin()"/></div>
+        <div class="inp-group"><label>كلمة المرور</label><input type="password" id="al-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doAdminLogin()"/></div>
         <div id="admin-login-err" style="display:none;color:#dc3545;font-size:13px;padding:9px 13px;background:#fff5f5;border-radius:9px;margin-bottom:12px;border:1px solid #ffcccc"></div>
-        <button class="btn btn-primary" onclick="doAdminLogin()" style="width:100%;justify-content:center;font-size:14px;padding:13px;margin-bottom:10px">
+        <button id="btn-admin-login" class="btn btn-primary" onclick="doAdminLogin()" style="width:100%;justify-content:center;font-size:14px;padding:13px;margin-bottom:10px">
           <i data-lucide="shield-check" style="width:16px;height:16px"></i> دخول المسؤول
         </button>
       </div>
@@ -648,26 +648,86 @@ async function fsDeleteUser(uid2){
 function toId(v){ return String(v); }
 function findById(arr, id){ return arr.find(x=>toId(x.id)===toId(id)); }
 
-// ── حسابات المسؤولين الثابتة ──
-const ADMIN_ACCOUNTS_KEY = "ti_admin_accounts";
-function getAdminAccounts(){
-  let accounts = LS(ADMIN_ACCOUNTS_KEY);
-  if(!accounts){
-    accounts = [
-      {id:"admin_chief", username:"الشيخ مصعب بن صلاح", password:"@mos1987", role:"chief", label:"المدير العام"},
-      {id:"admin_1",     username:"المشرف (١)",          password:"t3s010",    role:"supervisor", label:"المشرف (١)"},
-      {id:"admin_2",     username:"المشرف (٢)",          password:"t3s020",    role:"supervisor", label:"المشرف (٢)"},
-      {id:"admin_3",     username:"المشرف (٣)",          password:"t3s030",    role:"supervisor", label:"المشرف (٣)"},
-      {id:"admin_4",     username:"المشرف (٤)",          password:"t3s040",    role:"supervisor", label:"المشرف (٤)"},
-      {id:"admin_5",     username:"المشرف (٥)",          password:"t3s050",    role:"supervisor", label:"المشرف (٥)"},
-    ];
-    SS(ADMIN_ACCOUNTS_KEY, accounts);
-  }
-  return accounts;
+// مخزن مؤقت لبيانات الجلسة الإدارية (في الذاكرة فقط)
+let _adminSessionEmail = "";
+let _adminSessionPass  = "";
+// يُخزَّن في مجموعة "admins/{uid}"
+// الحقول: fullName, username, email, role ("super"|"supervisor"), permissions{}, createdAt
+
+const SUPER_ADMIN_EMAIL = "abwdahm645@gmail.com";
+
+// جلب ملف مسؤول من Firestore
+async function fsGetAdmin(uid2){
+  try{ const s=await FB_DB.collection("admins").doc(uid2).get(); return s.exists?{id:s.id,...s.data()}:null; }catch(e){ return null; }
 }
-function saveAdminAccounts(accounts){ SS(ADMIN_ACCOUNTS_KEY, accounts); }
-function findAdminByCredentials(username, password){
-  return getAdminAccounts().find(a => a.username === username && a.password === password) || null;
+async function fsSetAdmin(uid2, data){
+  try{ await FB_DB.collection("admins").doc(uid2).set(data,{merge:true}); }catch(e){ console.warn("fsSetAdmin",e); }
+}
+async function fsGetAllAdmins(){
+  try{ const s=await FB_DB.collection("admins").get(); return s.docs.map(d=>({id:d.id,...d.data()})); }catch(e){ return []; }
+}
+async function fsDeleteAdmin(uid2){
+  try{ await FB_DB.collection("admins").doc(uid2).delete(); }catch(e){}
+}
+
+// الصلاحيات الافتراضية للمشرف
+const DEFAULT_PERMISSIONS = {
+  canApproveUsers:  true,
+  canRejectUsers:   true,
+  canDeleteUsers:   false,
+  canManageCourses: false,
+  canManageTests:   false,
+  canAnswerQA:      true,
+  canViewAdmins:    false,
+};
+const PERM_LABELS = {
+  canApproveUsers:  "قبول الأعضاء",
+  canRejectUsers:   "رفض الأعضاء",
+  canDeleteUsers:   "حذف الأعضاء",
+  canManageCourses: "إدارة المقررات",
+  canManageTests:   "إدارة الاختبارات",
+  canAnswerQA:      "الرد على الاستفسارات",
+  canViewAdmins:    "عرض قائمة المشرفين",
+};
+
+function hasPerm(perm){
+  if(!APP.user?.isAdmin) return false;
+  if(APP.user.adminRole==="super") return true;
+  return APP.user.adminPermissions?.[perm] === true;
+}
+
+// إنشاء حساب المشرف العام إن لم يكن موجوداً
+async function ensureSuperAdmin(){
+  try{
+    // تحقق إذا كان المشرف العام مسجلاً في Firebase Auth بالفعل
+    // (لا نستطيع فحص ذلك مباشرة من client، لكن نحاول الإنشاء)
+    // إذا كان موجوداً سيفشل بـ email-already-in-use وهذا طبيعي
+    let uid = null;
+    try{
+      const cred = await FB_AUTH.createUserWithEmailAndPassword(
+        SUPER_ADMIN_EMAIL, "4m6m7878"
+      );
+      uid = cred.user.uid;
+      await FB_AUTH.signOut();
+    } catch(authErr){
+      if(authErr.code === "auth/email-already-in-use"){
+        // الحساب موجود — لا نحتاج فعل شيء
+        return;
+      }
+      throw authErr;
+    }
+    // أنشئ ملف المشرف العام في Firestore
+    if(uid){
+      await fsSetAdmin(uid, {
+        fullName:    "أبو الجواد الحنبلي",
+        username:    "dahm6",
+        email:       SUPER_ADMIN_EMAIL,
+        role:        "super",
+        permissions: {},
+        createdAt:   new Date().toISOString(),
+      });
+    }
+  }catch(e){ console.warn("ensureSuperAdmin:", e.code||e.message); }
 }
 
 let APP = {
@@ -866,6 +926,7 @@ function getFile(inputId){
   return document.getElementById(inputId)?.files?.[0] || null;
 }
 function isAdmin(){ return APP.user?.isAdmin === true; }
+function isSuperAdmin(){ return APP.user?.isAdmin && APP.user?.adminRole==="super"; }
 
 // ══════════════════════════════════════════════════════════
 // NAVIGATION & PAGES
@@ -951,16 +1012,50 @@ function switchTab(t){
   else           { tr2.style.cssText=act; tl.style.cssText=inact; }
 }
 
-// ── Admin login (no Firebase Auth — hardcoded accounts) ──
-function doAdminLogin(){
-  const username=document.getElementById("al-username").value.trim();
-  const pass=document.getElementById("al-pass").value;
-  const err=document.getElementById("admin-login-err");
+// ── Admin login — Firebase Auth + Firestore ──
+async function doAdminLogin(){
+  const email = document.getElementById("al-email").value.trim();
+  const pass  = document.getElementById("al-pass").value;
+  const err   = document.getElementById("admin-login-err");
   err.style.display="none";
-  if(!username||!pass){err.textContent="يرجى إدخال اسم المستخدم وكلمة المرور";err.style.display="";return;}
-  const admin=findAdminByCredentials(username,pass);
-  if(!admin){err.textContent="بيانات المسؤول غير صحيحة";err.style.display="";return;}
-  loginUser({id:admin.id,name:admin.username,adminLabel:admin.label,isAdmin:true,adminRole:admin.role,completedLessons:[],testResults:[]});
+  if(!email||!pass){ err.textContent="يرجى إدخال البريد وكلمة المرور"; err.style.display=""; return; }
+  setBtnLoading("btn-admin-login",true,"جارٍ التحقق...");
+  try{
+    // 1. تسجيل دخول Firebase Auth
+    const cred = await FB_AUTH.signInWithEmailAndPassword(email, pass);
+    const uid = cred.user.uid;
+
+    // 2. التحقق من وجود الحساب في مجموعة "admins"
+    const adminProfile = await fsGetAdmin(uid);
+    if(!adminProfile){
+      // ليس مسؤولاً — أخرجه فوراً
+      await FB_AUTH.signOut();
+      err.textContent = "هذا الحساب ليس حساب مسؤول";
+      err.style.display = "";
+      return;
+    }
+
+    // 3. تسجيل الدخول كمسؤول
+    _adminSessionEmail = email;
+    _adminSessionPass  = pass;
+    loginUser({
+      id:               uid,
+      name:             adminProfile.fullName || adminProfile.username,
+      adminLabel:       adminProfile.username,
+      adminFullName:    adminProfile.fullName,
+      adminUsername:    adminProfile.username,
+      isAdmin:          true,
+      adminRole:        adminProfile.role,
+      adminPermissions: adminProfile.permissions || {},
+      completedLessons: [],
+      testResults:      [],
+    });
+  }catch(e){
+    err.textContent = _fbErrMsg(e.code);
+    err.style.display = "";
+  }finally{
+    setBtnLoading("btn-admin-login",false,"دخول المسؤول");
+  }
 }
 
 // ── Student email/password login (Firebase Auth) ──
@@ -1187,7 +1282,9 @@ function loginUser(u){
     document.getElementById("nb-admin-qa").style.display="";
     document.getElementById("admin-badge").style.display="";
     const badge=document.getElementById("admin-badge");
-    if(badge) badge.textContent=u.adminLabel||"مسؤول";
+    if(badge){
+      badge.textContent = u.adminRole==="super" ? "المشرف العام" : (u.adminUsername||u.adminLabel||"مشرف");
+    }
   }
   updateNotifBadge();
   navTo("dashboard");
@@ -1196,6 +1293,8 @@ function loginUser(u){
 
 async function doLogout(){
   APP.user=null;
+  _adminSessionEmail = "";
+  _adminSessionPass  = "";
   try{ await FB_AUTH.signOut(); }catch(e){}
   document.getElementById("app-wrapper").style.display="none";
   document.getElementById("nb-admin").style.display="none";
@@ -2078,9 +2177,9 @@ function renderProfile(){
       <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold-d));display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:30px;font-weight:800;color:var(--purple);box-shadow:0 8px 24px rgba(212,180,142,.4)" class="pi">
         ${u.name.charAt(0)}
       </div>
-      <h2 style="color:#fff;font-size:20px;font-weight:800;margin-bottom:4px">${isAdminUser?(u.adminLabel||u.name):u.name}</h2>
-      <p style="color:rgba(232,207,168,.7);font-size:13px">${isAdminUser?"مسؤول النظام":(u.level||"طالب")}</p>
-      ${isAdminUser?`<span style="background:linear-gradient(135deg,var(--gold),var(--gold-d));color:var(--purple);padding:4px 14px;border-radius:18px;font-size:11px;font-weight:700;margin-top:10px;display:inline-block" class="gp">${u.adminLabel||"مسؤول"}</span>`:""}
+      <h2 style="color:#fff;font-size:20px;font-weight:800;margin-bottom:4px">${isAdminUser?(u.adminFullName||u.name):u.name}</h2>
+      <p style="color:rgba(232,207,168,.7);font-size:13px">${isAdminUser?(u.adminRole==="super"?"مشرف عام":"مشرف"):(u.level||"طالب")}</p>
+      ${isAdminUser?`<span style="background:linear-gradient(135deg,var(--gold),var(--gold-d));color:var(--purple);padding:4px 14px;border-radius:18px;font-size:11px;font-weight:700;margin-top:10px;display:inline-block" class="gp">${u.adminRole==="super"?"👑 المشرف العام":("🛡️ "+(u.adminUsername||"مشرف"))}</span>`:""}
     </div>
     ${!isAdminUser?`
     <!-- Student Stats -->
@@ -2129,14 +2228,31 @@ function renderProfile(){
         <i data-lucide="trash-2" style="width:13px;height:13px"></i> حذف حسابي
       </button>
     </div>`:`
-    <!-- Admin edit info -->
+    <!-- Admin info & edit -->
     <div class="card" style="padding:24px;margin-bottom:16px">
       <h3 style="color:var(--purple);font-size:14px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:6px">
-        <i data-lucide="shield" style="width:14px;height:14px;color:var(--gold)"></i> تعديل بيانات المسؤول
+        <i data-lucide="shield" style="width:14px;height:14px;color:var(--gold)"></i> بيانات حساب المسؤول
       </h3>
-      <div class="inp-group"><label>اسم المستخدم</label><input type="text" id="adm-username" value="${u.name||""}"/></div>
-      <div class="inp-group"><label>كلمة المرور الجديدة</label><input type="password" id="adm-newpass" placeholder="اتركه فارغاً إن لم تريد التغيير"/></div>
-      <div class="inp-group"><label>تأكيد كلمة المرور</label><input type="password" id="adm-newpass2" placeholder="أعد كتابة كلمة المرور"/></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div style="background:var(--bg);border-radius:10px;padding:12px">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:3px">الاسم الثلاثي</div>
+          <div style="font-size:14px;font-weight:700;color:var(--purple)">${u.adminFullName||u.name}</div>
+        </div>
+        <div style="background:var(--bg);border-radius:10px;padding:12px">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:3px">اسم المستخدم</div>
+          <div style="font-size:14px;font-weight:700;color:var(--purple)">${u.adminUsername||"—"}</div>
+        </div>
+        <div style="background:var(--bg);border-radius:10px;padding:12px">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:3px">الدور</div>
+          <div style="font-size:13px;font-weight:700;color:${u.adminRole==="super"?"var(--gold-d)":"var(--purple)"}">
+            ${u.adminRole==="super"?"👑 مشرف عام":"🛡️ مشرف"}
+          </div>
+        </div>
+      </div>
+      <div class="inp-group"><label>الاسم الثلاثي</label><input type="text" id="adm-fullname" value="${u.adminFullName||u.name||""}"/></div>
+      <div class="inp-group"><label>اسم المستخدم</label><input type="text" id="adm-username" value="${u.adminUsername||""}"/></div>
+      <div class="inp-group"><label>كلمة المرور الجديدة (اتركه فارغاً للإبقاء)</label><input type="password" id="adm-newpass" placeholder="••••••••"/></div>
+      <div class="inp-group"><label>تأكيد كلمة المرور</label><input type="password" id="adm-newpass2" placeholder="••••••••"/></div>
       <button class="btn btn-primary" onclick="saveAdminProfile()">
         <i data-lucide="save" style="width:14px;height:14px"></i> حفظ التعديلات
       </button>
@@ -2150,21 +2266,30 @@ async function saveProfile(){
   try{ await fsSetUser(APP.user.id,f); }catch(e){}
   toast("تم حفظ المعلومات بنجاح ✅","success");
 }
-function saveAdminProfile(){
-  const newUsername=document.getElementById("adm-username")?.value.trim();
-  const newPass=document.getElementById("adm-newpass")?.value;
-  const newPass2=document.getElementById("adm-newpass2")?.value;
-  if(!newUsername){toast("اسم المستخدم مطلوب","error");return;}
-  if(newPass&&newPass!==newPass2){toast("كلمتا المرور غير متطابقتين","error");return;}
-  const accounts=getAdminAccounts();
-  const idx=accounts.findIndex(a=>a.id===APP.user.id);
-  if(idx===-1){toast("لم يتم العثور على الحساب","error");return;}
-  accounts[idx].username=newUsername;
-  APP.user.name=newUsername;
-  APP.user.adminLabel=accounts[idx].label;
-  if(newPass) accounts[idx].password=newPass;
-  saveAdminAccounts(accounts);
-  toast("تم تحديث بيانات المسؤول ✅","success");
+async function saveAdminProfile(){
+  const fullName  = document.getElementById("adm-fullname")?.value.trim();
+  const username  = document.getElementById("adm-username")?.value.trim();
+  const newPass   = document.getElementById("adm-newpass")?.value;
+  const newPass2  = document.getElementById("adm-newpass2")?.value;
+  if(!fullName||!username){ toast("الاسم واسم المستخدم مطلوبان","error"); return; }
+  if(newPass&&newPass!==newPass2){ toast("كلمتا المرور غير متطابقتين","error"); return; }
+  if(newPass&&newPass.length<6){ toast("كلمة المرور 6 أحرف على الأقل","error"); return; }
+  try{
+    // تحديث Firestore
+    await fsSetAdmin(APP.user.id, {fullName, username});
+    APP.user.adminFullName = fullName;
+    APP.user.adminUsername = username;
+    APP.user.name = fullName;
+    // تحديث كلمة المرور في Firebase Auth
+    if(newPass){
+      const fbUser = FB_AUTH.currentUser;
+      if(fbUser) await fbUser.updatePassword(newPass);
+    }
+    toast("تم تحديث بيانات المسؤول ✅","success");
+    renderProfile();
+  }catch(e){
+    toast("حدث خطأ: "+_fbErrMsg(e.code),"error");
+  }
   renderProfile();
 }
 
@@ -2337,21 +2462,23 @@ function renderAdmin(){
       <div id="admin-users-list"></div>
     </div>
 
-    <!-- ── إدارة حسابات المشرفين ── -->
-    <div class="admin-section">
-      <h3><i data-lucide="shield" style="width:16px;height:16px;color:var(--gold)"></i> حسابات المشرفين</h3>
-      <div id="admin-accounts-list">
-        ${getAdminAccounts().map(a=>`
-        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;margin-bottom:6px;background:var(--bg);border:1px solid rgba(212,180,142,.15)">
-          <i data-lucide="${a.role==="chief"?"crown":"shield-check"}" style="width:14px;height:14px;color:${a.role==="chief"?"var(--gold)":"var(--purple)"}"></i>
-          <div style="flex:1">
-            <div style="font-size:13px;font-weight:700;color:var(--purple)">${a.label}</div>
-            <div style="font-size:11px;color:var(--muted)">اسم المستخدم: ${a.username}</div>
-          </div>
-          <span class="tag ${a.role==="chief"?"tag-gold":"tag-blue"}">${a.role==="chief"?"مدير عام":"مشرف"}</span>
-        </div>`).join("")}
+    <!-- ── إدارة المشرفين (المشرف العام فقط) ── -->
+    ${isSuperAdmin()?`
+    <div class="admin-section" style="border-color:rgba(212,180,142,.4);background:linear-gradient(135deg,rgba(59,27,64,.03),rgba(212,180,142,.04))">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h3 style="border:none;padding:0;margin:0">
+          <i data-lucide="shield-check" style="width:16px;height:16px;color:var(--gold)"></i> إدارة المشرفين
+        </h3>
+        <button class="btn btn-gold btn-sm" onclick="openAddSupervisorModal()">
+          <i data-lucide="user-plus" style="width:12px;height:12px"></i> إضافة مشرف
+        </button>
       </div>
-    </div>
+      <div id="supervisors-list">
+        <div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">
+          <i data-lucide="loader" style="width:16px;height:16px;animation:spin 1s linear infinite"></i> جاري تحميل المشرفين...
+        </div>
+      </div>
+    </div>`:""}
 
     <!-- ── إعدادات الموقع ── -->
     <div class="admin-section">
@@ -2463,8 +2590,12 @@ service cloud.firestore {<br>
 &nbsp;&nbsp;&nbsp;&nbsp;match /taaseel_app/{doc} {<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allow read, write: if true;<br>
 &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+&nbsp;&nbsp;&nbsp;&nbsp;match /admins/{uid} {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allow read: if request.auth != null;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allow write: if request.auth != null;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br>
 &nbsp;&nbsp;&nbsp;&nbsp;match /users/{uid} {<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allow read: if true;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allow read: if request.auth != null;<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allow write: if request.auth != null<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&amp;&amp; request.auth.uid == uid;<br>
 &nbsp;&nbsp;&nbsp;&nbsp;}<br>
@@ -2475,7 +2606,7 @@ service cloud.firestore {<br>
     </div>
   </div>`;
   lucide.createIcons();
-  setTimeout(()=>{ renderAdminUsers("all"); checkSyncStatus(); }, 80);
+  setTimeout(()=>{ renderAdminUsers("all"); if(isSuperAdmin()) loadSupervisors(); }, 80);
 }
 
 async function checkSyncStatus(){
@@ -2526,6 +2657,160 @@ async function forceSyncToFirestore(){
   }
   checkSyncStatus();
 }
+
+// ══════════════════════════════════════════════════════════
+// SUPERVISOR MANAGEMENT (المشرف العام فقط)
+// ══════════════════════════════════════════════════════════
+async function loadSupervisors(){
+  const el = document.getElementById("supervisors-list");
+  if(!el) return;
+  el.innerHTML=`<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px"><i data-lucide="loader" style="width:16px;height:16px;animation:spin 1s linear infinite"></i></div>`;
+  lucide.createIcons({nodes:[el]});
+  const admins = await fsGetAllAdmins();
+  if(!admins.length){
+    el.innerHTML=`<p style="color:var(--muted);font-size:13px;padding:8px 0">لا يوجد مشرفون مضافون بعد</p>`;
+    return;
+  }
+  el.innerHTML = admins.map(a=>`
+  <div style="background:var(--bg);border-radius:12px;padding:14px 16px;margin-bottom:10px;border:1px solid rgba(212,180,142,.18)">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="width:40px;height:40px;border-radius:50%;background:${a.role==="super"?"linear-gradient(135deg,var(--gold),var(--gold-d))":"linear-gradient(135deg,var(--purple),var(--purple-l))"};display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:${a.role==="super"?"var(--purple)":"#fff"};flex-shrink:0">${(a.fullName||"م").charAt(0)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:700;color:var(--purple)">${a.fullName||"—"}</div>
+        <div style="font-size:11px;color:var(--muted)">@${a.username||"—"} · ${a.email||"—"}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span class="tag ${a.role==="super"?"tag-gold":"tag-blue"}">${a.role==="super"?"مشرف عام":"مشرف"}</span>
+        ${a.role!=="super"?`
+        <button class="btn btn-ghost btn-sm" onclick="editSupervisorPermissions('${a.id}')"><i data-lucide="sliders" style="width:12px;height:12px"></i> صلاحيات</button>
+        <button class="btn btn-danger btn-sm" onclick="removeSupervisor('${a.id}','${(a.fullName||"").replace(/'/g,"")}')"><i data-lucide="trash-2" style="width:12px;height:12px"></i></button>`:""}
+      </div>
+    </div>
+    ${a.role!=="super"&&a.permissions?`
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(212,180,142,.15);display:flex;flex-wrap:wrap;gap:5px">
+      ${Object.entries(PERM_LABELS).map(([k,label])=>`
+      <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:18px;font-size:11px;font-weight:600;background:${a.permissions[k]?"rgba(40,167,69,.1)":"rgba(0,0,0,.04)"};color:${a.permissions[k]?"#28a745":"#aaa"};border:1px solid ${a.permissions[k]?"rgba(40,167,69,.2)":"rgba(0,0,0,.08)"}">
+        <i data-lucide="${a.permissions[k]?"check":"minus"}" style="width:9px;height:9px"></i>${label}
+      </span>`).join("")}
+    </div>`:""}
+  </div>`).join("");
+  lucide.createIcons({nodes:[el]});
+}
+
+function openAddSupervisorModal(){
+  openModal(`
+    <div style="background:rgba(59,27,64,.05);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:var(--muted);line-height:1.8">
+      سيُنشأ حساب جديد في Firebase Auth تلقائياً للمشرف بالبريد وكلمة المرور المدخلين.
+    </div>
+    <div class="inp-group"><label>الاسم الثلاثي *</label><input type="text" id="sv-fullname" placeholder="اسم المشرف الثلاثي"/></div>
+    <div class="inp-group"><label>اسم المستخدم *</label><input type="text" id="sv-username" placeholder="مثال: mod_ahmad"/></div>
+    <div class="inp-group"><label>البريد الإلكتروني *</label><input type="email" id="sv-email" placeholder="supervisor@email.com"/></div>
+    <div class="inp-group"><label>كلمة المرور *</label><input type="password" id="sv-pass" placeholder="6 أحرف على الأقل"/></div>
+    <div style="margin-bottom:14px">
+      <div style="font-size:13px;font-weight:700;color:var(--purple);margin-bottom:10px;display:flex;align-items:center;gap:6px">
+        <i data-lucide="sliders" style="width:14px;height:14px;color:var(--gold)"></i> الصلاحيات
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
+        ${Object.entries(PERM_LABELS).map(([k,label])=>`
+        <label style="display:flex;align-items:center;gap:8px;padding:9px 10px;background:var(--bg);border-radius:9px;cursor:pointer;border:1px solid rgba(212,180,142,.2);transition:all .2s">
+          <input type="checkbox" id="perm-${k}" style="accent-color:var(--purple);width:15px;height:15px" ${DEFAULT_PERMISSIONS[k]?"checked":""}>
+          <span style="font-size:12px;color:var(--text)">${label}</span>
+        </label>`).join("")}
+      </div>
+    </div>
+    <button class="btn btn-gold" id="btn-add-sv" style="width:100%;justify-content:center" onclick="addSupervisor()">
+      <i data-lucide="user-plus" style="width:14px;height:14px"></i> إضافة المشرف
+    </button>
+  `,"إضافة مشرف جديد");
+}
+
+async function addSupervisor(){
+  const fullName = document.getElementById("sv-fullname")?.value.trim();
+  const username = document.getElementById("sv-username")?.value.trim();
+  const email    = document.getElementById("sv-email")?.value.trim();
+  const pass     = document.getElementById("sv-pass")?.value;
+  if(!fullName||!username||!email||!pass){ toast("يرجى ملء جميع الحقول","error"); return; }
+  if(pass.length<6){ toast("كلمة المرور 6 أحرف على الأقل","error"); return; }
+  const perms = {};
+  Object.keys(PERM_LABELS).forEach(k=>{ perms[k]=document.getElementById(`perm-${k}`)?.checked||false; });
+  setBtnLoading("btn-add-sv",true,"جاري الإضافة...");
+  try{
+    // 1. إنشاء حساب Firebase Auth للمشرف الجديد
+    const cred = await FB_AUTH.createUserWithEmailAndPassword(email, pass);
+    const newUid = cred.user.uid;
+
+    // 2. حفظ الملف في مجموعة admins
+    await fsSetAdmin(newUid, {
+      fullName, username, email,
+      role: "supervisor",
+      permissions: perms,
+      createdAt: new Date().toISOString()
+    });
+
+    // 3. تسجيل الخروج من الحساب الجديد وإعادة دخول المشرف العام
+    await FB_AUTH.signOut();
+    if(_adminSessionEmail && _adminSessionPass){
+      await FB_AUTH.signInWithEmailAndPassword(_adminSessionEmail, _adminSessionPass);
+    }
+
+    closeModal();
+    toast(`✅ تم إضافة المشرف: ${fullName}`,"success");
+    loadSupervisors();
+  }catch(e){
+    // في حالة الفشل — أعد تسجيل دخول المشرف العام
+    if(_adminSessionEmail && _adminSessionPass){
+      try{ await FB_AUTH.signInWithEmailAndPassword(_adminSessionEmail, _adminSessionPass); }catch(_){}
+    }
+    if(e.code==="auth/email-already-in-use"){
+      toast("هذا البريد مسجل مسبقاً في Firebase Auth","error",5000);
+    } else {
+      toast(_fbErrMsg(e.code),"error");
+    }
+  } finally {
+    setBtnLoading("btn-add-sv",false,"إضافة المشرف");
+  }
+}
+
+function editSupervisorPermissions(uid2){
+  fsGetAdmin(uid2).then(admin=>{
+    if(!admin){ toast("لم يتم العثور على المشرف","error"); return; }
+    openModal(`
+      <div style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--bg);border-radius:10px;margin-bottom:14px">
+        <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--purple),var(--purple-l));display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700">${(admin.fullName||"م").charAt(0)}</div>
+        <div><div style="font-size:14px;font-weight:700;color:var(--purple)">${admin.fullName}</div><div style="font-size:12px;color:var(--muted)">@${admin.username}</div></div>
+      </div>
+      <div style="font-size:13px;font-weight:700;color:var(--purple);margin-bottom:10px;display:flex;align-items:center;gap:6px">
+        <i data-lucide="sliders" style="width:14px;height:14px;color:var(--gold)"></i> تعديل الصلاحيات
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:16px">
+        ${Object.entries(PERM_LABELS).map(([k,label])=>`
+        <label style="display:flex;align-items:center;gap:8px;padding:9px 10px;background:var(--bg);border-radius:9px;cursor:pointer;border:1px solid rgba(212,180,142,.2)">
+          <input type="checkbox" id="ep-${k}" style="accent-color:var(--purple);width:15px;height:15px" ${(admin.permissions||{})[k]?"checked":""}>
+          <span style="font-size:12px;color:var(--text)">${label}</span>
+        </label>`).join("")}
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="saveSupervisorPermissions('${uid2}')">
+        <i data-lucide="save" style="width:14px;height:14px"></i> حفظ الصلاحيات
+      </button>
+    `,"صلاحيات المشرف");
+  });
+}
+
+async function saveSupervisorPermissions(uid2){
+  const perms={};
+  Object.keys(PERM_LABELS).forEach(k=>{ perms[k]=document.getElementById(`ep-${k}`)?.checked||false; });
+  await fsSetAdmin(uid2,{permissions:perms});
+  closeModal(); toast("✅ تم تحديث الصلاحيات","success"); loadSupervisors();
+}
+
+async function removeSupervisor(uid2,name){
+  confirm2(`هل تريد إزالة المشرف "${name}" نهائياً؟`,async()=>{
+    await fsDeleteAdmin(uid2);
+    toast(`تم إزالة ${name}`,"info");
+    loadSupervisors();
+  });
+}
+
 function saveConfig(){
   APP.siteConfig.introVideo=document.getElementById("cfg-video")?.value.trim()||"";
   APP.siteConfig.contactEmail=document.getElementById("cfg-email")?.value.trim()||"";
@@ -2837,10 +3122,43 @@ function adminDeleteTest(id){
   confirm2("حذف هذا الاختبار نهائياً؟",()=>{APP.tests=APP.tests.filter(t=>t.id!==id);saveState();renderAdmin();renderTests();toast("تم الحذف","info");});
 }
 
+// ── الخطة الدراسية الافتراضية ──
+function _defaultStudyPlan(){
+  return [
+    {
+      level:"المرحلة التمهيدية", color:"#b8965e",
+      stages:[{
+        name:"كتب المرحلة التمهيدية",
+        books:["كتاب المدخل إلى طلب العلم","كتاب تذكرة السامع والمتكلم","كتاب للجرد يختاره الشيخ (تطبيق عملي)"]
+      }]
+    },
+    {
+      level:"مقررات المستوى الأول", color:"#3B1B40",
+      stages:[
+        { name:"المرحلة الأولى — العقيدة والتوحيد", books:["القواعد الأربع","نواقض الإسلام","الأصول الثلاثة وأدلتها","كشف الشبهات"] },
+        { name:"المرحلة الثانية — علوم الآلة والسنة", books:["متن الآجرومية (النحو)","متن التذكرة في علوم الحديث لابن الملقن","الأرجوزة الميئية في السيرة النبوية","الرسالة اللطيفة في أصول الفقه (للسعدي)","الأربعون النووية مع زيادات ابن رجب"] },
+        { name:"المرحلة الثالثة — الفقه المالكي وأصوله وقواعده", books:["مقدمات التفقه (رد السفاريني، ابن رجب، أقوال ابن تيمية)","متن الأخضري (العبادات)","متن العشماوية (قراءة سريعة)","نظم ابن أبي كف (أدلة المذهب)","نظم المرشد المعين لابن عاشر (دراسة نقدية)","منظومة ابن سند في القواعد الفقهية"] },
+        { name:"المرحلة الرابعة — أصول التفسير والعقيدة", books:["مقدمة في أصول التفسير لابن تيمية","كتاب التوحيد (للشيخ محمد بن عبد الوهاب)","القواعد والضوابط السلفية في الأسماء والصفات","العقيدة الواسطية لابن تيمية"] },
+        { name:"المرحلة الخامسة — المقاصد والآداب والسياسة الشرعية", books:["منظومة تبصرة القاصد في علم المقاصد (للشيخ العصيمي)","كتاب الجامع من القوانين الفقهية لابن جزي (الآداب)","منظومة السبل المرضية في السياسة الشرعية (لحافظ الحكمي)"] },
+        { name:"المرحلة السادسة — فقه الدعوة والمناظرة والحصانة", books:["رسالة الأمر بالمعروف والنهي عن المنكر لابن تيمية","متن آداب البحث والمناظرة (لطاشكبري زاده)","متن الرد على المخالف","متن الحصانة الفكرية"] }
+      ]
+    }
+  ];
+}
+
 // ══════════════════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════════════════
 window.addEventListener("DOMContentLoaded", async ()=>{
+  // ── إصلاح الخطة الدراسية إذا كانت بالصيغة القديمة (courses بدل stages) ──
+  const plan = APP.siteConfig.studyPlan||[];
+  const hasOldFormat = plan.length>0 && plan.every(l=>!l.stages && l.courses);
+  if(hasOldFormat || plan.length===0){
+    // أعد تحميل الخطة الافتراضية الجديدة
+    APP.siteConfig.studyPlan = _defaultStudyPlan();
+    SS("ti_config", APP.siteConfig);
+  }
+
   // إصلاح روابط YouTube في البيانات المحفوظة عند كل تشغيل
   APP.courses = _fixYtUrls(APP.courses);
 
@@ -2881,7 +3199,8 @@ window.addEventListener("DOMContentLoaded", async ()=>{
     if(APP.activePage==="landing"){ renderPublicPlan(); renderAboutPublic(); }
   });
 
-  getAdminAccounts();
+  // إنشاء حساب المشرف العام إذا لم يكن موجوداً
+  ensureSuperAdmin();
 
   document.addEventListener("click", e=>{
     const panel=document.getElementById("notif-panel");
