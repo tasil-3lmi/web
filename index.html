@@ -73,6 +73,9 @@ body{font-family:'Zain',sans-serif;background:var(--bg);color:var(--text);direct
 .schedule-cell{padding:8px;border-radius:8px;background:rgba(212,180,142,.1);border:1px solid rgba(212,180,142,.25);font-size:12px;min-height:54px;transition:var(--transition)}
 .schedule-cell:hover{background:rgba(212,180,142,.18)}
 .schedule-cell.active-cell{background:linear-gradient(135deg,rgba(59,27,64,.08),rgba(212,180,142,.12));border-color:var(--gold)}
+/* Form page styles */
+#app-page-course-form .card,#app-page-lesson-form .card,#app-page-test-detail .card{box-shadow:0 8px 32px rgba(59,27,64,.08);border:1px solid rgba(212,180,142,.15)}
+#app-page-test-detail .card{border-right:none}
 @media(max-width:768px){
   #hamburger-btn{display:flex}
   #main-nav .nav-links{display:none}
@@ -660,7 +663,10 @@ body{font-family:'Zain',sans-serif;background:var(--bg);color:var(--text);direct
   <div id="app-page-dashboard" class="page active" style="padding-bottom:48px"></div>
   <div id="app-page-courses" class="page"></div>
   <div id="app-page-course-detail" class="page"></div>
+  <div id="app-page-course-form" class="page"></div>
+  <div id="app-page-lesson-form" class="page"></div>
   <div id="app-page-tests" class="page"></div>
+  <div id="app-page-test-detail" class="page"></div>
   <div id="app-page-schedule" class="page"></div>
   <div id="app-page-qa" class="page"></div>
   <div id="app-page-about-app" class="page"></div>
@@ -1195,6 +1201,7 @@ function navTo(page){
   // Render page
   const renders = {
     dashboard: renderDashboard, courses: renderCourses,
+    "course-detail": renderCourseDetail,
     tests: renderTests, qa: renderQA,
     schedule: renderSchedule,
     "about-app": renderAboutApp, profile: renderProfile,
@@ -1811,17 +1818,26 @@ function renderCourses(){
   <div class="pg" style="padding:28px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px">
       <h2 style="color:var(--purple);font-size:22px;font-weight:800">المقررات الدراسية <span style="font-size:13px;color:var(--muted);font-weight:400">(${visible.length}/100 مقرر)</span></h2>
-      ${isAdmin()?`<button class="btn btn-gold" onclick="adminAddCourse()" ${APP.courses.length>=100?"disabled title='الحد الأقصى 100 مقرر'":""}><i data-lucide="plus" style="width:15px;height:15px"></i> مقرر جديد</button>`:""}
+      ${isAdmin()?`<button class="btn btn-gold" onclick="openCourseForm(null)" ${APP.courses.length>=100?"disabled title='الحد الأقصى 100 مقرر'":""}><i data-lucide="plus" style="width:15px;height:15px"></i> مقرر جديد</button>`:""}
     </div>
 
     <!-- Active courses -->
     ${visible.length>0?`
     <div class="courses-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:20px;margin-bottom:40px">
       ${visible.map((c,i)=>`
-      <div class="card fu" style="animation-delay:${i*70}ms;overflow:hidden;cursor:pointer;position:relative" onclick="openCourse(${c.id})">
+      <div class="card fu" style="animation-delay:${i*70}ms;overflow:hidden;position:relative">
         ${!c.visible?`<div style="position:absolute;top:10px;left:10px;z-index:2"><span class="tag tag-red"><i data-lucide="eye-off" style="width:10px;height:10px"></i> مخفي</span></div>`:""}
+        ${isAdmin()?`
+        <div style="position:absolute;top:8px;right:8px;z-index:3;display:flex;gap:4px" onclick="event.stopPropagation()">
+          <button class="btn-icon" title="تعديل" onclick="openCourseForm('${c.id}')" style="width:28px;height:28px;background:rgba(255,255,255,.9);border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.12)">
+            <i data-lucide="edit-2" style="width:12px;height:12px;color:var(--purple)"></i>
+          </button>
+          <button class="btn-icon" title="حذف" onclick="adminDeleteCourse('${c.id}')" style="width:28px;height:28px;background:rgba(255,255,255,.9);border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.12)">
+            <i data-lucide="trash-2" style="width:12px;height:12px;color:#dc3545"></i>
+          </button>
+        </div>`:""}
         <div style="height:5px;background:linear-gradient(90deg,${c.color},${c.color}99)"></div>
-        <div style="padding:20px">
+        <div style="padding:20px;cursor:pointer" onclick="openCourse(${c.id})">
           <div style="width:44px;height:44px;border-radius:11px;background:${c.color}18;display:flex;align-items:center;justify-content:center;margin-bottom:12px">
             <i data-lucide="${c.icon||'book'}" style="width:22px;height:22px;color:${c.color}"></i>
           </div>
@@ -1913,9 +1929,20 @@ function renderCourseDetail(){
   document.getElementById("app-page-course-detail").innerHTML=`
   <div class="pg">
     <div style="background:linear-gradient(135deg,${c.color},${c.color}cc);padding:22px 28px;box-shadow:0 4px 24px rgba(0,0,0,.2)">
-      <button class="btn btn-sm" onclick="navTo('courses')" style="background:rgba(255,255,255,.15);color:#fff;border:none;margin-bottom:14px;backdrop-filter:blur(8px)">
-        <i data-lucide="arrow-right" style="width:13px;height:13px"></i> رجوع
-      </button>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+        <button class="btn btn-sm" onclick="navTo('courses')" style="background:rgba(255,255,255,.15);color:#fff;border:none;backdrop-filter:blur(8px)">
+          <i data-lucide="arrow-right" style="width:13px;height:13px"></i> رجوع
+        </button>
+        ${isAdmin()?`
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-sm" onclick="openCourseForm('${c.id}')" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.3);backdrop-filter:blur(8px)">
+            <i data-lucide="edit-2" style="width:13px;height:13px"></i> تعديل المقرر
+          </button>
+          <button class="btn btn-sm" onclick="adminDeleteCourse('${c.id}')" style="background:rgba(220,53,69,.3);color:#fff;border:1px solid rgba(220,53,69,.4);backdrop-filter:blur(8px)">
+            <i data-lucide="trash-2" style="width:13px;height:13px"></i> حذف
+          </button>
+        </div>`:""}
+      </div>
       <div style="display:flex;align-items:center;gap:12px">
         <div style="width:46px;height:46px;border-radius:12px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center">
           <i data-lucide="${c.icon||'book'}" style="width:24px;height:24px;color:#fff"></i>
@@ -1932,7 +1959,7 @@ function renderCourseDetail(){
       <div style="background:var(--white);border-left:1px solid rgba(212,180,142,.18);padding:16px;overflow-y:auto">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
           <span style="color:var(--purple);font-size:13px;font-weight:700">الدروس (${lessons.length})</span>
-          ${isAdmin()?`<button class="btn btn-gold btn-sm" onclick="adminAddLesson('${c.id}')"><i data-lucide="plus" style="width:11px;height:11px"></i></button>`:""}
+          ${isAdmin()?`<button class="btn btn-gold btn-sm" onclick="openLessonForm('${c.id}',null)"><i data-lucide="plus" style="width:11px;height:11px"></i> درس جديد</button>`:""}
         </div>
         ${lessons.length===0?`<div style="color:var(--muted);text-align:center;padding:32px 10px;font-size:13px">لا توجد دروس</div>`:""}
         ${lessons.map((l,i)=>{
@@ -1964,7 +1991,7 @@ function renderCourseDetail(){
                 <button class="btn-icon" onclick="adminToggleLesson('${c.id}','${l.id}')" title="${l.visible?"إخفاء":"إظهار"}" style="width:24px;height:24px;padding:4px">
                   <i data-lucide="${l.visible?"eye-off":"eye"}" style="width:11px;height:11px"></i>
                 </button>
-                <button class="btn-icon" onclick="adminEditLesson('${c.id}','${l.id}')" style="width:24px;height:24px;padding:4px">
+                <button class="btn-icon" onclick="openLessonForm('${c.id}','${l.id}')" style="width:24px;height:24px;padding:4px">
                   <i data-lucide="edit-2" style="width:11px;height:11px"></i>
                 </button>
                 <button class="btn-icon" style="color:#dc3545;width:24px;height:24px;padding:4px" onclick="adminDeleteLesson('${c.id}','${l.id}')">
@@ -2295,24 +2322,32 @@ function renderTests(){
       <h2 style="color:var(--purple);font-size:22px;font-weight:800;display:flex;align-items:center;gap:8px">
         <i data-lucide="file-text" style="width:22px;height:22px;color:var(--gold)"></i> الاختبارات <span style="font-size:13px;color:var(--muted);font-weight:400">(${APP.tests.length}/100)</span>
       </h2>
-      ${isAdmin()?`<button class="btn btn-gold" onclick="adminAddTest()" ${APP.tests.length>=100?"disabled title='الحد الأقصى 100 اختبار'":""}><i data-lucide="plus" style="width:15px;height:15px"></i> اختبار جديد</button>`:""}
+      ${isAdmin()?`<button class="btn btn-gold" onclick="openTestForm(null)" ${APP.tests.length>=100?"disabled title='الحد الأقصى 100 اختبار'":""}><i data-lucide="plus" style="width:15px;height:15px"></i> اختبار جديد</button>`:""}
     </div>
-    ${APP.tests.length===0?`<div style="text-align:center;padding:60px;color:var(--muted)">لا توجد اختبارات حالياً</div>`:""}
+    ${APP.tests.length===0?`<div style="text-align:center;padding:60px;color:var(--muted)"><i data-lucide="file-text" style="width:48px;height:48px;opacity:.2;margin-bottom:12px"></i><p>لا توجد اختبارات حالياً</p>${isAdmin()?`<button class="btn btn-gold" style="margin-top:16px" onclick="openTestForm(null)"><i data-lucide="plus" style="width:14px;height:14px"></i> أضف أول اختبار</button>`:""}</div>`:""}
     <div style="display:grid;gap:14px">
       ${APP.tests.map((t,i)=>`
-      <div class="card fu" style="animation-delay:${i*70}ms;padding:22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
-        <div>
-          <h3 style="color:var(--purple);font-size:15px;font-weight:700;margin-bottom:5px">${t.title}</h3>
-          <span class="tag tag-gold"><i data-lucide="help-circle" style="width:10px;height:10px"></i> ${t.questions.length} سؤال</span>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btn-primary" onclick="startTest(${t.id})">
-            <i data-lucide="play" style="width:13px;height:13px"></i> ابدأ
-          </button>
-          ${isAdmin()?`
-          <button class="btn btn-ghost btn-sm" onclick="adminEditTest('${t.id}')"><i data-lucide="edit-2" style="width:13px;height:13px"></i></button>
-          <button class="btn btn-danger btn-sm" onclick="adminDeleteTest('${t.id}')"><i data-lucide="trash-2" style="width:13px;height:13px"></i></button>
-          `:""}
+      <div class="card fu" style="animation-delay:${i*70}ms;padding:22px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+          <div style="flex:1">
+            <h3 style="color:var(--purple);font-size:16px;font-weight:700;margin-bottom:6px">${t.title}</h3>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <span class="tag tag-gold"><i data-lucide="help-circle" style="width:10px;height:10px"></i> ${t.questions.length} سؤال</span>
+              ${!t.visible&&isAdmin()?`<span class="tag tag-red"><i data-lucide="eye-off" style="width:10px;height:10px"></i> مخفي</span>`:""}
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="startTest(${t.id})">
+              <i data-lucide="play" style="width:13px;height:13px"></i> ابدأ الاختبار
+            </button>
+            ${isAdmin()?`
+            <button class="btn btn-ghost btn-sm" title="تعديل" onclick="openTestForm('${t.id}')">
+              <i data-lucide="edit-2" style="width:13px;height:13px"></i> تعديل
+            </button>
+            <button class="btn btn-sm" title="حذف" onclick="adminDeleteTest('${t.id}')" style="background:#dc3545;color:#fff;border:none;padding:8px 12px;border-radius:10px;cursor:pointer;font-size:12px;font-weight:700;display:flex;align-items:center;gap:5px">
+              <i data-lucide="trash-2" style="width:13px;height:13px"></i>
+            </button>`:""}
+          </div>
         </div>
       </div>`).join("")}
     </div>
@@ -3006,7 +3041,7 @@ function renderAdmin(){
     <div class="admin-section">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <h3 style="border:none;padding:0;margin:0"><i data-lucide="layers" style="width:16px;height:16px;color:var(--gold)"></i> إدارة المقررات</h3>
-        <button class="btn btn-gold btn-sm" onclick="adminAddCourse()"><i data-lucide="plus" style="width:12px;height:12px"></i> مقرر جديد</button>
+        <button class="btn btn-gold btn-sm" onclick="openCourseForm(null)"><i data-lucide="plus" style="width:12px;height:12px"></i> مقرر جديد</button>
       </div>
       <table class="tbl" style="border-radius:12px;overflow:hidden">
         <thead><tr><th>المقرر</th><th>الدروس</th><th>الظهور</th><th>إجراءات</th></tr></thead>
@@ -3020,7 +3055,7 @@ function renderAdmin(){
             </td>
             <td>
               <div style="display:flex;gap:5px">
-                <button class="btn-icon btn-sm" onclick="adminEditCourse('${c.id}')"><i data-lucide="edit-2" style="width:12px;height:12px"></i></button>
+                <button class="btn-icon btn-sm" onclick="openCourseForm('${c.id}')"><i data-lucide="edit-2" style="width:12px;height:12px"></i></button>
                 <button class="btn-icon btn-sm" style="color:#dc3545" onclick="adminDeleteCourse('${c.id}')"><i data-lucide="trash-2" style="width:12px;height:12px"></i></button>
               </div>
             </td>
@@ -3039,7 +3074,7 @@ function renderAdmin(){
       <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(212,180,142,.12)">
         <span style="font-size:13px;color:var(--text)">${t.title} (${t.questions.length} سؤال)</span>
         <div style="display:flex;gap:5px">
-          <button class="btn btn-ghost btn-sm" onclick="adminEditTest('${t.id}')"><i data-lucide="edit-2" style="width:12px;height:12px"></i> تعديل</button>
+          <button class="btn btn-ghost btn-sm" onclick="openTestForm('${t.id}')"><i data-lucide="edit-2" style="width:12px;height:12px"></i> تعديل</button>
           <button class="btn btn-danger btn-sm" onclick="adminDeleteTest('${t.id}')"><i data-lucide="trash-2" style="width:12px;height:12px"></i></button>
         </div>
       </div>`).join("")||"<p style='color:var(--muted);font-size:13px'>لا توجد اختبارات</p>"}
@@ -3337,6 +3372,396 @@ function saveStudyPlan(count){
   APP.siteConfig.studyPlan=plan;fbWriteConfig().then(()=>toast("تم حفظ الخطة في Firebase ✅","success"));closeModal();renderAdmin();renderPublicPlan();
 }
 
+
+// ══════════════════════════════════════════════════════════
+// FULL-PAGE FORMS: Course / Lesson / Test
+// ══════════════════════════════════════════════════════════
+
+// ── Course Form Page ──
+function openCourseForm(id){
+  const c = id ? findById(APP.courses, id) : null;
+  const pageId = "app-page-course-form";
+  // Activate the page manually
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));
+  document.getElementById(pageId).classList.add("active");
+  APP.activePage = "course-form";
+
+  document.getElementById(pageId).innerHTML=`
+  <div class="pg" style="padding:28px;max-width:700px;margin:0 auto">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px">
+      <button class="btn btn-ghost btn-sm" onclick="${c?"navTo('course-detail')":"navTo('courses')"}">
+        <i data-lucide="arrow-right" style="width:14px;height:14px"></i> رجوع
+      </button>
+      <h2 style="color:var(--purple);font-size:20px;font-weight:800">${c?"تعديل المقرر":"مقرر جديد"}</h2>
+    </div>
+    <div class="card" style="padding:28px">
+      <div class="inp-group">
+        <label>اسم المقرر *</label>
+        <input type="text" id="cf-title" value="${c?c.title:""}" placeholder="اسم المقرر الدراسي"/>
+      </div>
+      <div class="inp-group">
+        <label>الوصف المختصر</label>
+        <input type="text" id="cf-desc" value="${c?c.description||"":""}" placeholder="وصف مختصر يظهر على البطاقة"/>
+      </div>
+      <div class="inp-group">
+        <label>معلومات تفصيلية</label>
+        <textarea id="cf-info" rows="3" placeholder="تفاصيل المقرر، منهجه، أهدافه...">${c?c.info||"":""}</textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="inp-group">
+          <label>أيقونة Lucide</label>
+          <input type="text" id="cf-icon" value="${c?c.icon||"book":"book"}" placeholder="book-open"/>
+          <span style="font-size:11px;color:var(--muted);margin-top:4px;display:block">مثال: book, book-open, graduation-cap, scroll, layers</span>
+        </div>
+        <div class="inp-group">
+          <label>لون المقرر</label>
+          <input type="color" id="cf-color" value="${c?c.color||"#3B1B40":"#3B1B40"}" style="height:48px;width:100%;border-radius:10px;border:1px solid rgba(212,180,142,.3);cursor:pointer"/>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;padding:14px;background:rgba(212,180,142,.06);border-radius:12px;border:1px solid rgba(212,180,142,.2);margin-top:4px">
+        <label class="toggle">
+          <input type="checkbox" id="cf-visible" ${c?c.visible!==false?"checked":"":"checked"}>
+          <span class="toggle-slider"></span>
+        </label>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--purple)">إظهار المقرر للطلاب</div>
+          <div style="font-size:11px;color:var(--muted)">عند التعطيل لن يظهر المقرر للطلاب</div>
+        </div>
+      </div>
+      <button class="btn btn-gold" onclick="saveCourseForm(${c?`'${c.id}'`:'null'})" style="margin-top:20px;width:100%;justify-content:center;padding:14px;font-size:15px">
+        <i data-lucide="${c?"save":"plus"}" style="width:16px;height:16px"></i> ${c?"حفظ التعديلات":"إضافة المقرر"}
+      </button>
+    </div>
+  </div>`;
+  lucide.createIcons();
+}
+
+async function saveCourseForm(rawId){
+  const id = (rawId===null||rawId==="null"||rawId===undefined)?null:rawId;
+  const title = document.getElementById("cf-title")?.value.trim();
+  if(!title){toast("اسم المقرر مطلوب","error");return;}
+  const data = {
+    title,
+    description: document.getElementById("cf-desc")?.value.trim()||"",
+    info: document.getElementById("cf-info")?.value.trim()||"",
+    icon: document.getElementById("cf-icon")?.value.trim()||"book",
+    color: document.getElementById("cf-color")?.value||"#3B1B40",
+    visible: document.getElementById("cf-visible")?.checked!==false,
+  };
+  let savedCourse;
+  if(id){
+    const c=findById(APP.courses,id);
+    if(!c){toast("لم يُعثر على المقرر","error");return;}
+    Object.assign(c,data);
+    savedCourse=c;
+    toast("جارٍ الحفظ...","info",1000);
+  } else {
+    if(APP.courses.length>=100){toast("الحد الأقصى 100 مقرر","error");return;}
+    savedCourse={id:uid(),...data,lessons:[],_order:APP.courses.length};
+    APP.courses.push(savedCourse);
+    addNotif(`مقرر جديد: ${title}`,"info");
+  }
+  saveState();
+  try{
+    await fbWriteCourse(savedCourse);
+    toast(id?"✅ تم تحديث المقرر":"✅ تم إضافة المقرر","success");
+  }catch(e){ toast("⚠️ خطأ في Firebase","error"); }
+  if(id){ APP.currentCourse=savedCourse; navTo("course-detail"); }
+  else navTo("courses");
+}
+
+// ── Lesson Form Page ──
+function openLessonForm(cid, lid){
+  const c = findById(APP.courses, cid);
+  if(!c) return;
+  const l = lid && lid!=="null" ? findById(c.lessons, lid) : null;
+  const pageId = "app-page-lesson-form";
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));
+  document.getElementById(pageId).classList.add("active");
+  APP.activePage = "lesson-form";
+  APP.currentCourse = c;
+
+  document.getElementById(pageId).innerHTML=`
+  <div class="pg" style="padding:28px;max-width:720px;margin:0 auto">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px">
+      <button class="btn btn-ghost btn-sm" onclick="navTo('course-detail')">
+        <i data-lucide="arrow-right" style="width:14px;height:14px"></i> رجوع إلى ${c.title}
+      </button>
+      <h2 style="color:var(--purple);font-size:20px;font-weight:800">${l?"تعديل الدرس":"درس جديد"}</h2>
+    </div>
+
+    <!-- Breadcrumb -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;font-size:12px;color:var(--muted)">
+      <span onclick="navTo('courses')" style="cursor:pointer;color:var(--purple)">المقررات</span>
+      <i data-lucide="chevron-left" style="width:12px;height:12px"></i>
+      <span onclick="navTo('course-detail')" style="cursor:pointer;color:var(--purple)">${c.title}</span>
+      <i data-lucide="chevron-left" style="width:12px;height:12px"></i>
+      <span>${l?l.title:"درس جديد"}</span>
+    </div>
+
+    <div class="card" style="padding:28px">
+      <div class="inp-group">
+        <label>عنوان الدرس *</label>
+        <input type="text" id="lf-title" value="${l?l.title:""}" placeholder="عنوان الدرس"/>
+      </div>
+      <div class="inp-group">
+        <label>رابط الفيديو (YouTube)</label>
+        <input type="text" id="lf-yt" value="${l?l.youtube||"":""}" placeholder="https://www.youtube.com/watch?v=... أو youtu.be/..."/>
+        <span style="font-size:11px;color:var(--muted);margin-top:4px;display:block">أي صيغة يوتيوب — سيتحول تلقائياً لرابط embed</span>
+      </div>
+      <div class="inp-group">
+        <label>رابط الملف الصوتي (اختياري)</label>
+        <input type="text" id="lf-audio" value="${l?l.audio||"":""}" placeholder="https://soundcloud.com/... أو رابط mp3"/>
+      </div>
+      <div class="inp-group">
+        <label>وصف الدرس / ملاحظات</label>
+        <textarea id="lf-notes" rows="3" placeholder="ملاحظات إضافية عن الدرس...">${l?l.notes||"":""}</textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px;background:rgba(212,180,142,.06);border-radius:12px;border:1px solid rgba(212,180,142,.2)">
+          <label class="toggle">
+            <input type="checkbox" id="lf-visible" ${l?l.visible!==false?"checked":"":"checked"}>
+            <span class="toggle-slider"></span>
+          </label>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--purple)">إظهار الدرس</div>
+            <div style="font-size:11px;color:var(--muted)">يظهر للطلاب</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:12px;background:rgba(220,53,69,.05);border-radius:12px;border:1px solid rgba(220,53,69,.15)">
+          <label class="toggle">
+            <input type="checkbox" id="lf-locked" ${l?l.locked?"checked":"":""}>
+            <span class="toggle-slider"></span>
+          </label>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#dc3545">قفل الدرس</div>
+            <div style="font-size:11px;color:var(--muted)">يُرى لكن لا يُفتح</div>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-gold" onclick="saveLessonForm('${cid}','${lid||'null'}')" style="margin-top:20px;width:100%;justify-content:center;padding:14px;font-size:15px">
+        <i data-lucide="${l?"save":"plus"}" style="width:16px;height:16px"></i> ${l?"حفظ التعديلات":"إضافة الدرس"}
+      </button>
+    </div>
+  </div>`;
+  lucide.createIcons();
+}
+
+async function saveLessonForm(cid, lid){
+  const title = document.getElementById("lf-title")?.value.trim();
+  if(!title){toast("عنوان الدرس مطلوب","error");return;}
+  const rawYt = document.getElementById("lf-yt")?.value.trim()||"";
+  const ytVal = toYoutubeEmbed(rawYt);
+  const audioVal = document.getElementById("lf-audio")?.value.trim()||"";
+  const notesVal = document.getElementById("lf-notes")?.value||"";
+  const visibleVal = document.getElementById("lf-visible")?.checked!==false;
+  const lockedVal = document.getElementById("lf-locked")?.checked||false;
+  const c = findById(APP.courses, cid);
+  if(!c){toast("لم يُعثر على المقرر","error");return;}
+
+  if(lid && lid!=="null"){
+    const l = findById(c.lessons, lid);
+    if(l){ Object.assign(l,{title,youtube:ytVal,audio:audioVal,notes:notesVal,visible:visibleVal,locked:lockedVal}); }
+    toast("جارٍ الحفظ...","info",800);
+  } else {
+    if(c.lessons.length>=100){toast("الحد الأقصى 100 درس","error");return;}
+    c.lessons.push({id:uid(),title,youtube:ytVal,audio:audioVal,notes:notesVal,visible:visibleVal,locked:lockedVal,attachments:[],exercises:[]});
+    addNotif(`درس جديد في ${c.title}: ${title}`,"info");
+  }
+  saveState();
+  try{
+    await fbWriteCourse(c);
+    toast(lid&&lid!=="null"?"✅ تم تحديث الدرس":"✅ تم إضافة الدرس","success");
+  }catch(e){ toast("⚠️ خطأ في Firebase","error"); }
+  navTo("course-detail");
+}
+
+// ── Test Form Page ──
+function openTestForm(id){
+  const t = id && id!=="null" ? findById(APP.tests, id) : null;
+  const pageId = "app-page-test-detail";
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));
+  document.getElementById(pageId).classList.add("active");
+  APP.activePage = "test-detail";
+
+  // Initialize questions array from existing test or empty
+  window._editTestQs = t ? JSON.parse(JSON.stringify(t.questions||[])) : [];
+
+  document.getElementById(pageId).innerHTML=`
+  <div class="pg" style="padding:28px;max-width:800px;margin:0 auto">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px">
+      <button class="btn btn-ghost btn-sm" onclick="navTo('tests')">
+        <i data-lucide="arrow-right" style="width:14px;height:14px"></i> رجوع
+      </button>
+      <h2 style="color:var(--purple);font-size:20px;font-weight:800">${t?"تعديل الاختبار":"اختبار جديد"}</h2>
+    </div>
+
+    <div class="card" style="padding:24px;margin-bottom:20px">
+      <div class="inp-group">
+        <label>عنوان الاختبار *</label>
+        <input type="text" id="tf-title" value="${t?t.title:""}" placeholder="عنوان الاختبار"/>
+      </div>
+    </div>
+
+    <!-- Questions List -->
+    <div id="test-questions-container">
+      <!-- rendered by renderTestQuestions() -->
+    </div>
+
+    <button class="btn btn-gold" onclick="addTestQuestion()" style="width:100%;justify-content:center;margin-bottom:16px">
+      <i data-lucide="plus" style="width:15px;height:15px"></i> إضافة سؤال جديد
+    </button>
+
+    <button class="btn btn-primary" onclick="saveTestForm('${id||'null'}')" style="width:100%;justify-content:center;padding:14px;font-size:15px">
+      <i data-lucide="${t?"save":"check"}" style="width:16px;height:16px"></i> ${t?"حفظ التعديلات":"حفظ الاختبار"}
+    </button>
+  </div>`;
+
+  renderTestQuestions();
+  lucide.createIcons();
+}
+
+function renderTestQuestions(){
+  const container = document.getElementById("test-questions-container");
+  if(!container) return;
+  const qs = window._editTestQs||[];
+  if(qs.length===0){
+    container.innerHTML=`<div style="text-align:center;padding:32px;color:var(--muted);background:var(--bg);border-radius:14px;margin-bottom:16px">
+      <i data-lucide="help-circle" style="width:32px;height:32px;opacity:.25;margin-bottom:8px"></i>
+      <p style="font-size:13px">لا توجد أسئلة بعد — اضغط "إضافة سؤال" أدناه</p>
+    </div>`;
+    lucide.createIcons({nodes:[container]});
+    return;
+  }
+  container.innerHTML = qs.map((q,qi)=>`
+  <div class="card" style="padding:20px;margin-bottom:14px;border-right:4px solid var(--gold)">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+      <span style="font-size:12px;font-weight:700;color:var(--gold)">سؤال ${qi+1}</span>
+      <div style="display:flex;gap:6px">
+        <button class="btn-icon" onclick="moveTestQuestion(${qi},-1)" ${qi===0?"disabled":""} style="width:28px;height:28px;background:var(--bg);border-radius:8px;border:1px solid rgba(212,180,142,.2)" title="تحريك للأعلى">
+          <i data-lucide="arrow-up" style="width:12px;height:12px"></i>
+        </button>
+        <button class="btn-icon" onclick="moveTestQuestion(${qi},1)" ${qi===qs.length-1?"disabled":""} style="width:28px;height:28px;background:var(--bg);border-radius:8px;border:1px solid rgba(212,180,142,.2)" title="تحريك للأسفل">
+          <i data-lucide="arrow-down" style="width:12px;height:12px"></i>
+        </button>
+        <button class="btn-icon" onclick="removeTestQuestion(${qi})" style="width:28px;height:28px;background:#dc3545;border-radius:8px;color:#fff" title="حذف السؤال">
+          <i data-lucide="trash-2" style="width:12px;height:12px"></i>
+        </button>
+      </div>
+    </div>
+    <div class="inp-group" style="margin-bottom:10px">
+      <input type="text" value="${q.q||""}" placeholder="نص السؤال *" oninput="window._editTestQs[${qi}].q=this.value" style="font-weight:600"/>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:8px 12px;background:rgba(212,180,142,.06);border-radius:10px">
+      <label class="toggle" style="flex-shrink:0">
+        <input type="checkbox" ${q.multi?"checked":""} onchange="toggleTestQMulti(${qi},this.checked)">
+        <span class="toggle-slider"></span>
+      </label>
+      <span style="font-size:12px;color:var(--text)">إجابات متعددة (اختر أكثر من خيار)</span>
+    </div>
+    <div id="tq-opts-${qi}">
+      ${(q.options||[]).map((o,oi)=>`
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        ${q.multi?`
+        <input type="checkbox" ${(q.answers||[]).includes(oi)?"checked":""} onchange="toggleTestOptAnswer(${qi},${oi},this.checked)" style="accent-color:var(--purple);width:16px;height:16px;flex-shrink:0" title="صحيحة؟">
+        `:`
+        <input type="radio" name="tqans${qi}" ${q.answer===oi?"checked":""} onchange="window._editTestQs[${qi}].answer=${oi}" style="accent-color:var(--purple);width:16px;height:16px;flex-shrink:0" title="الإجابة الصحيحة">
+        `}
+        <input type="text" value="${o}" placeholder="نص الخيار" oninput="window._editTestQs[${qi}].options[${oi}]=this.value" style="flex:1"/>
+        <button class="btn-icon" onclick="removeTestOpt(${qi},${oi})" style="width:26px;height:26px;color:#dc3545;flex-shrink:0" ${q.options.length<=2?"disabled":""}>
+          <i data-lucide="x" style="width:11px;height:11px"></i>
+        </button>
+      </div>`).join("")}
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="addTestOpt(${qi})" style="margin-top:8px" ${(q.options||[]).length>=6?"disabled title='الحد الأقصى 6 خيارات'":""}>
+      <i data-lucide="plus" style="width:11px;height:11px"></i> إضافة خيار
+    </button>
+  </div>`).join("");
+  lucide.createIcons({nodes:[container]});
+}
+
+function addTestQuestion(){
+  if(!window._editTestQs) window._editTestQs=[];
+  window._editTestQs.push({q:"",options:["",""],answer:0,answers:[],multi:false});
+  renderTestQuestions();
+  // scroll to bottom
+  setTimeout(()=>{ const c=document.getElementById("test-questions-container"); if(c){ const last=c.lastElementChild; if(last) last.scrollIntoView({behavior:"smooth",block:"center"}); }},100);
+}
+function removeTestQuestion(qi){
+  window._editTestQs.splice(qi,1);
+  renderTestQuestions();
+}
+function moveTestQuestion(qi, dir){
+  const qs=window._editTestQs;
+  const ni=qi+dir;
+  if(ni<0||ni>=qs.length) return;
+  [qs[qi],qs[ni]]=[qs[ni],qs[qi]];
+  renderTestQuestions();
+}
+function addTestOpt(qi){
+  const q=window._editTestQs[qi];
+  if(!q||q.options.length>=6) return;
+  q.options.push("");
+  renderTestQuestions();
+}
+function removeTestOpt(qi,oi){
+  const q=window._editTestQs[qi];
+  if(!q||q.options.length<=2) return;
+  q.options.splice(oi,1);
+  // fix answer index
+  if(!q.multi){ if(q.answer>=oi) q.answer=Math.max(0,q.answer-1); }
+  else { q.answers=(q.answers||[]).filter(a=>a!==oi).map(a=>a>oi?a-1:a); }
+  renderTestQuestions();
+}
+function toggleTestQMulti(qi,val){
+  const q=window._editTestQs[qi];
+  if(!q) return;
+  q.multi=val;
+  if(val){ q.answers=q.answer!=null?[q.answer]:[]; }
+  else { q.answer=(q.answers&&q.answers.length)?q.answers[0]:0; q.answers=[]; }
+  renderTestQuestions();
+}
+function toggleTestOptAnswer(qi,oi,checked){
+  const q=window._editTestQs[qi];
+  if(!q) return;
+  if(!q.answers) q.answers=[];
+  if(checked){ if(!q.answers.includes(oi)) q.answers.push(oi); }
+  else { q.answers=q.answers.filter(a=>a!==oi); }
+}
+
+async function saveTestForm(rawId){
+  const id = (rawId===null||rawId==="null"||rawId===undefined)?null:String(rawId);
+  const title = document.getElementById("tf-title")?.value.trim();
+  if(!title){toast("عنوان الاختبار مطلوب","error");return;}
+  const qs = window._editTestQs||[];
+  if(qs.length===0){toast("أضف سؤالاً واحداً على الأقل","error");return;}
+  // Validate questions
+  for(let i=0;i<qs.length;i++){
+    if(!qs[i].q?.trim()){toast(`السؤال ${i+1} لا يحتوي نصاً`,"error");return;}
+    if((qs[i].options||[]).some(o=>!o?.trim())){toast(`أحد خيارات السؤال ${i+1} فارغ`,"error");return;}
+  }
+  if(id){
+    const t=findById(APP.tests,id);
+    if(!t){toast("لم يُعثر على الاختبار","error");return;}
+    t.title=title; t.questions=qs;
+    toast("جارٍ الحفظ...","info",800);
+    try{ await fsSaveTest(t); toast("✅ تم تحديث الاختبار","success"); }
+    catch(e){ toast("⚠️ خطأ في Firebase","error"); }
+  } else {
+    if(APP.tests.length>=100){toast("الحد الأقصى 100 اختبار","error");return;}
+    const newTest={id:uid(),title,questions:qs,visible:true,locked:false};
+    APP.tests.push(newTest);
+    addNotif(`اختبار جديد: ${title}`,"info");
+    try{ await fsSaveTest(newTest); toast("✅ تم إضافة الاختبار","success"); }
+    catch(e){ toast("⚠️ خطأ في Firebase","error"); }
+  }
+  saveState();
+  navTo("tests");
+}
+
 // Course CRUD
 function adminAddCourse(){
   openModal(`
@@ -3410,7 +3835,7 @@ function _refreshCoursesAdminTable(){
     </td>
     <td>
       <div style="display:flex;gap:5px">
-        <button class="btn-icon btn-sm" onclick="adminEditCourse('${c.id}')"><i data-lucide="edit-2" style="width:12px;height:12px"></i></button>
+        <button class="btn-icon btn-sm" onclick="openCourseForm('${c.id}')"><i data-lucide="edit-2" style="width:12px;height:12px"></i></button>
         <button class="btn-icon btn-sm" style="color:#dc3545" onclick="adminDeleteCourse('${c.id}')"><i data-lucide="trash-2" style="width:12px;height:12px"></i></button>
       </div>
     </td>
@@ -3418,12 +3843,10 @@ function _refreshCoursesAdminTable(){
   lucide.createIcons({nodes:[tbody]});
 }
 function adminDeleteCourse(id){
-  confirm2("هل تريد حذف هذا المقرر نهائياً؟",()=>{
+  confirm2("هل تريد حذف هذا المقرر نهائياً؟\n⚠️ سيتم حذف جميع الدروس المرتبطة به.",()=>{
     fbRemoveCourse(id).then(()=>{
-      _refreshCoursesAdminTable();
-      toast("تم حذف المقرر من Firebase ✅","info");
-      const cp=document.getElementById("app-page-courses");
-      if(cp?.classList.contains("active")) renderCourses();
+      toast("✅ تم حذف المقرر","info");
+      navTo("courses");
     });
   });
 }
@@ -3541,7 +3964,8 @@ function adminDeleteLesson(cid,lid){
     const c=findById(APP.courses,cid);
     if(c){
       c.lessons=c.lessons.filter(l=>toId(l.id)!==toId(lid));
-      fbWriteCourse(c).then(()=>toast("تم حذف الدرس من Firebase ✅","info"));
+      saveState();
+      fbWriteCourse(c).then(()=>toast("✅ تم حذف الدرس","info"));
       renderCourseDetail();
     }
   });
@@ -3688,8 +4112,8 @@ function adminDeleteExercise(cid,lid,ei){
 }
 
 // Test CRUD — يدعم خيارات متعددة وإجابات متعددة
-function adminAddTest(){ _buildTestModal(null); }
-function adminEditTest(id){ _buildTestModal(id); }
+function adminAddTest(){ openTestForm(null); }
+function adminEditTest(id){ openTestForm(id); }
 
 function _renderTestQsWrap(qs){
   return qs.map((q,qi)=>`
@@ -3861,8 +4285,8 @@ async function saveTest2(id){
 function adminDeleteTest(id){
   confirm2("حذف هذا الاختبار نهائياً؟",()=>{
     fbRemoveTest(id).then(()=>{
-      renderAdmin(); renderTests();
-      toast("تم حذف الاختبار من Firebase ✅","info");
+      toast("✅ تم حذف الاختبار","info");
+      navTo("tests");
     });
   });
 }
