@@ -649,47 +649,82 @@ async function doRegister(){
   const pass=document.getElementById("r-pass").value;
   const err=document.getElementById("reg-err");
   const showErr=msg=>{err.textContent=msg;err.style.cssText="display:block;color:#dc3545;font-size:13px;padding:9px 13px;background:#fff5f5;border-radius:9px;margin-bottom:12px;border:1px solid #ffcccc";};
-  const showOk=msg=>{err.textContent=msg;err.style.cssText="display:block;color:#28a745;font-size:13px;padding:9px 13px;background:#f0fff4;border-radius:9px;margin-bottom:12px;border:1px solid #b2dfdb";};
+  const showOk=msg=>{err.innerHTML=msg;err.style.cssText="display:block;color:#28a745;font-size:13px;padding:14px 16px;background:#f0fff4;border-radius:12px;margin-bottom:12px;border:1px solid #b2dfdb;line-height:1.8;text-align:center";};
 
-  if(!name||!email||!pass){ showErr("يرجى ملء الحقول المطلوبة (الاسم، البريد، كلمة المرور)"); return; }
-  if(pass.length<6){ showErr("كلمة المرور يجب أن تكون 6 أحرف على الأقل"); return; }
+  err.style.display="none";
+  if(!name){ showErr("⚠️ يرجى إدخال الاسم الثلاثي"); return; }
+  if(!email){ showErr("⚠️ يرجى إدخال البريد الإلكتروني"); return; }
+  if(!pass){ showErr("⚠️ يرجى إدخال كلمة المرور"); return; }
+  if(pass.length<6){ showErr("⚠️ كلمة المرور يجب أن تكون 6 أحرف على الأقل"); return; }
 
-  setBtnLoading("btn-register",true,"جاري التسجيل...");
+  // التحقق من تطابق كلمتي المرور
+  const pass2 = document.getElementById("r-pass2")?.value||"";
+  if(pass2 && pass !== pass2){ showErr("⚠️ كلمتا المرور غير متطابقتَين"); return; }
+
+  // التحقق من صيغة البريد
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if(!emailRegex.test(email)){
+    showErr("⚠️ صيغة البريد الإلكتروني غير صحيحة"); return;
+  }
+
+  setBtnLoading("btn-register",true,"جارٍ إنشاء الحساب...");
   try{
     // 1. إنشاء حساب Firebase Auth
     const cred = await FB_AUTH.createUserWithEmailAndPassword(email, pass);
+    const uid = cred.user.uid;
 
-    // 2. حفظ الملف الشخصي في Firestore
+    // 2. بناء الملف الشخصي
     const profile={
-      name, email,
+      uid,
+      name,
+      email,
       phone:   document.getElementById("r-phone")?.value.trim()||"",
       age:     document.getElementById("r-age")?.value||"",
       telegram:document.getElementById("r-tg")?.value.trim()||"",
       level:   document.getElementById("r-level")?.value||"",
-      status:"pending", completedLessons:[], testResults:[],
-      createdAt: new Date().toISOString(), provider:"email"
+      status:  "pending",
+      completedLessons: [],
+      testResults: [],
+      createdAt: new Date().toISOString(),
+      provider: "email"
     };
 
+    // 3. حفظ في Firestore (مع معالجة الأخطاء)
+    let savedToFirestore = false;
     try{
-      await fsSetUser(cred.user.uid, profile);
+      await FB_DB.collection("users").doc(uid).set(profile);
+      savedToFirestore = true;
     }catch(fsErr){
-      // Firestore فشل — نحفظ مؤقتاً في localStorage
-      console.warn("Firestore write failed, storing locally:", fsErr);
-      const pending = LS("ti_pending_users") || [];
-      pending.push({uid: cred.user.uid, ...profile});
-      SS("ti_pending_users", pending);
+      console.warn("Firestore write failed:", fsErr.code, fsErr.message);
+      // حفظ احتياطي في localStorage
+      try{
+        const pending = JSON.parse(localStorage.getItem("ti_pending_reg")||"[]");
+        pending.push(profile);
+        localStorage.setItem("ti_pending_reg", JSON.stringify(pending));
+      }catch(_){}
     }
 
-    // 3. تسجيل خروج فوري (انتظار موافقة المسؤول)
+    // 4. تسجيل خروج فوري (انتظار الموافقة)
     await FB_AUTH.signOut();
-    showOk("✅ تم التسجيل بنجاح! حسابك في انتظار موافقة المسؤول.");
 
-    // مسح الحقول
+    // 5. مسح الحقول
     ["r-name","r-email","r-pass","r-phone","r-age","r-tg"].forEach(id=>{
       const el=document.getElementById(id); if(el) el.value="";
     });
+    const lvl=document.getElementById("r-level"); if(lvl) lvl.value="";
+
+    // 6. رسالة نجاح
+    showOk(
+      "<strong>🎉 تم التسجيل بنجاح!</strong><br/>" +
+      "حسابك في انتظار موافقة المسؤول.<br/>" +
+      "<small style='color:var(--muted)'>ستتلقى إشعاراً عند القبول أو التواصل معنا على تيليجرام.</small>"
+    );
+
+    // العودة لتبويب الدخول بعد 3 ثوانٍ
+    setTimeout(()=>{ try{ switchTab("login"); }catch(_){} }, 3000);
 
   }catch(authErr){
+    console.error("Register error:", authErr.code, authErr.message);
     showErr(_fbErrMsg(authErr.code));
   }finally{
     setBtnLoading("btn-register",false,"إنشاء الحساب");
@@ -765,49 +800,106 @@ async function _handleSocialLogin(cred){
 
 // ── Common post-login handler ──
 async function _handleStudentFirebaseLogin(fbUser, profileArg){
-  // حاول الحصول على الملف الشخصي من Firestore
-  let profile = profileArg || await fsGetUser(fbUser.uid);
+  // ── جلب الملف الشخصي من Firestore ──
+  let profile = profileArg || null;
+  let fsError = null;
 
-  // إذا فشل Firestore أو لم يُوجد ملف — أنشئ ملفاً مبدئياً واسمح بالدخول
   if(!profile){
-    // ربما Firestore محجوب أو لم يُنشأ الملف بعد
-    // نبني ملفاً من بيانات Firebase Auth
-    profile = {
+    try{
+      const snap = await FB_DB.collection("users").doc(fbUser.uid).get();
+      if(snap.exists) profile = snap.data();
+    }catch(e){
+      fsError = e;
+      console.warn("Firestore read failed:", e.code, e.message);
+    }
+  }
+
+  // ── حالة: Firestore غير متاح ──
+  if(fsError && !profile){
+    // محاولة من localStorage كاحتياط
+    try{
+      const cached = JSON.parse(localStorage.getItem("ti_user_cache_"+fbUser.uid)||"null");
+      if(cached) profile = cached;
+    }catch(_){}
+
+    if(!profile){
+      // نسمح بالدخول المؤقت مع تحذير
+      toast("⚠️ تعذّر التحقق من حالة حسابك — دخول مؤقت","info",6000);
+      loginUser({
+        id: fbUser.uid,
+        name: fbUser.displayName || fbUser.email?.split("@")[0] || "طالب",
+        email: fbUser.email||"",
+        phone:"", age:"", telegram:"", level:"",
+        isAdmin: false,
+        completedLessons:[], testResults:[]
+      });
+      return;
+    }
+  }
+
+  // ── حالة: مستخدم جديد لم يُسجَّل عبر النموذج ──
+  if(!profile){
+    // تسجيل عبر Google/Apple بدون ملف — أنشئ ملف pending
+    const newProfile = {
+      uid: fbUser.uid,
       name: fbUser.displayName || fbUser.email?.split("@")[0] || "طالب",
-      email: fbUser.email || "",
-      status: "approved", // نسمح بالدخول — المسؤول يستطيع الحجب لاحقاً
-      completedLessons: [], testResults: [],
-      phone:"", age:"", telegram:"", level:""
+      email: fbUser.email||"",
+      phone:"", age:"", telegram:"", level:"",
+      status:"pending",
+      completedLessons:[], testResults:[],
+      createdAt: new Date().toISOString(),
+      provider: fbUser.providerData?.[0]?.providerId||"unknown"
     };
-    // نحاول حفظ الملف الشخصي
-    await fsSetUser(fbUser.uid, {...profile, status:"pending", provider:"email", createdAt:new Date().toISOString()});
-    // نُوقف: الحساب جديد — في الانتظار
-    toast("حسابك في انتظار موافقة المسؤول","info",5000);
+    try{ await FB_DB.collection("users").doc(fbUser.uid).set(newProfile); }catch(_){}
     await FB_AUTH.signOut();
+    _showLoginStatus("pending");
     return;
   }
 
-  if(profile.status==="pending"){
-    toast("حسابك في انتظار موافقة المسؤول","info",5000);
+  // ── فحص حالة الحساب ──
+  const status = (profile.status||"pending").toLowerCase();
+
+  if(status === "pending"){
     await FB_AUTH.signOut();
-    return;
-  }
-  if(profile.status==="rejected"){
-    toast("تم رفض تسجيلك من قِبل المسؤول","error",5000);
-    await FB_AUTH.signOut();
+    _showLoginStatus("pending");
     return;
   }
 
+  if(status === "rejected"){
+    await FB_AUTH.signOut();
+    _showLoginStatus("rejected");
+    return;
+  }
+
+  // ── حفظ مؤقت في localStorage للتسريع ──
+  try{ localStorage.setItem("ti_user_cache_"+fbUser.uid, JSON.stringify(profile)); }catch(_){}
+
+  // ── تسجيل الدخول ──
   loginUser({
     id: fbUser.uid,
     name: profile.name || fbUser.displayName || fbUser.email?.split("@")[0] || "طالب",
-    email: profile.email || fbUser.email || "",
+    email: profile.email || fbUser.email||"",
     phone: profile.phone||"", age: profile.age||"",
     telegram: profile.telegram||"", level: profile.level||"",
     isAdmin: false,
     completedLessons: profile.completedLessons||[],
     testResults: profile.testResults||[]
   });
+}
+
+// ── عرض رسالة حالة الحساب في نموذج الدخول ──
+function _showLoginStatus(status){
+  // نعرض الرسالة في حقل خطأ الدخول أو نُظهر toast
+  const loginErr = document.getElementById("login-err");
+  if(status === "pending"){
+    const msg = "⏳ حسابك في انتظار موافقة المسؤول. سيتم إشعارك قريباً.";
+    if(loginErr){ loginErr.textContent=msg; loginErr.style.cssText="display:block;color:#856404;font-size:13px;padding:11px 14px;background:#fff3cd;border-radius:10px;margin-bottom:12px;border:1px solid #ffc107"; }
+    else toast(msg,"info",6000);
+  } else if(status === "rejected"){
+    const msg = "❌ تم رفض طلب تسجيلك. يرجى التواصل مع المسؤول.";
+    if(loginErr){ loginErr.textContent=msg; loginErr.style.cssText="display:block;color:#dc3545;font-size:13px;padding:11px 14px;background:#fff5f5;border-radius:10px;margin-bottom:12px;border:1px solid #dc3545"; }
+    else toast(msg,"error",6000);
+  }
 }
 
 // ── Firebase error messages in Arabic ──
@@ -834,6 +926,17 @@ function _fbErrMsg(code){
 }
 
 // ── Button loading state ──
+// ── إظهار/إخفاء كلمة المرور ──
+function togglePassVis(inputId, btn){
+  const inp = document.getElementById(inputId);
+  if(!inp) return;
+  const isHidden = inp.type === "password";
+  inp.type = isHidden ? "text" : "password";
+  const icon = btn.querySelector("i");
+  if(icon) icon.setAttribute("data-lucide", isHidden ? "eye-off" : "eye");
+  lucide.createIcons({nodes:[btn]});
+}
+
 function setBtnLoading(id,loading,text){
   const btn=document.getElementById(id);
   if(!btn) return;
