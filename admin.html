@@ -81,6 +81,7 @@
           <button class="admin-tab-btn" onclick="showAdminTab('schedule', this)">📅 الجدول</button>
           <button class="admin-tab-btn" onclick="showAdminTab('courses', this)">📚 المقررات</button>
           <button class="admin-tab-btn" onclick="showAdminTab('announcements', this)">📢 الإعلانات</button>
+          <button class="admin-tab-btn" onclick="showAdminTab('contact', this)">📞 التواصل</button>
         </div>
 
         <!-- QUESTIONS TAB -->
@@ -166,6 +167,59 @@
           </div>
         </div>
 
+
+        <!-- CONTACT TAB -->
+        <div id="tab-contact" class="admin-panel-content" style="display:none;">
+          <div class="panel-card">
+            <h3>📞 معلومات التواصل العامة
+              <button class="btn btn-gold btn-sm" onclick="saveContactInfo()">💾 حفظ</button>
+            </h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+              <div class="form-group">
+                <label class="form-label">رقم الهاتف</label>
+                <input type="tel" class="form-control" id="ct_phone" placeholder="+968 XXXX XXXX">
+              </div>
+              <div class="form-group">
+                <label class="form-label">واتساب</label>
+                <input type="tel" class="form-control" id="ct_whatsapp" placeholder="+968 XXXX XXXX">
+              </div>
+              <div class="form-group">
+                <label class="form-label">البريد الإلكتروني</label>
+                <input type="email" class="form-control" id="ct_email" placeholder="info@taseel.com">
+              </div>
+              <div class="form-group">
+                <label class="form-label">تليجرام (رابط مباشر)</label>
+                <input type="url" class="form-control" id="ct_telegram" placeholder="https://t.me/...">
+              </div>
+            </div>
+          </div>
+
+          <div class="panel-card">
+            <h3>📢 القنوات والحسابات
+              <button class="btn btn-gold btn-sm" onclick="addChannel()">+ إضافة قناة</button>
+            </h3>
+            <div style="font-size:0.72rem;color:var(--text-soft);margin-bottom:12px;display:grid;grid-template-columns:120px 50px 1fr 1fr auto;gap:8px;padding:0 4px;">
+              <span>النوع</span><span>أيقونة</span><span>الاسم</span><span>الرابط</span><span></span>
+            </div>
+            <div id="channelsList"></div>
+            <button class="btn btn-primary" style="margin-top:16px;" onclick="saveChannels()">💾 حفظ القنوات</button>
+          </div>
+
+          <div class="panel-card">
+            <h3>🔒 القناة الخاصة بطلاب المعهد
+              <span style="font-size:0.75rem;color:var(--text-soft);font-weight:normal;">تظهر للطلاب المسجّلين فقط</span>
+            </h3>
+            <div class="form-group" style="max-width:500px;">
+              <label class="form-label">رابط القناة الخاصة</label>
+              <input type="url" class="form-control" id="ct_private" placeholder="https://t.me/...">
+            </div>
+            <div style="padding:14px 18px;background:rgba(212,180,142,0.08);border:1px solid rgba(212,180,142,0.25);border-radius:var(--radius-sm);font-size:0.82rem;color:var(--gold-dark);margin-bottom:16px;">
+              ⚠️ هذا الرابط يظهر فقط للطلاب المسجّلين في صفحة الملف الشخصي مع تحذير واضح بعدم المشاركة.
+            </div>
+            <button class="btn btn-primary" onclick="savePrivateChannel()">💾 حفظ الرابط الخاص</button>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -194,9 +248,30 @@
     import { getAuth, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
     import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs, addDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    document.getElementById('headerPlaceholder').innerHTML = renderHeader('');
-    document.getElementById('footerPlaceholder').innerHTML = renderFooter();
-    initHeaderBehavior();
+    // dynamic header
+    onAuthStateChanged(auth, async user => {
+      if (!user) { window.location.href = 'register.html'; return; }
+      const snap = await getDoc(doc(db,'users',user.uid));
+      if (!snap.exists()) { window.location.href = 'register.html'; return; }
+      const uData = snap.data();
+      if (uData.role !== 'superAdmin' && uData.role !== 'supervisor') {
+        document.getElementById('accessDenied').style.display = '';
+        return;
+      }
+      let contactData = null;
+      try {
+        const cs = await getDoc(doc(db,'contactInfo','main'));
+        if(cs.exists()){ contactData=cs.data(); const ch=await getDocs(collection(db,'contactInfo','main','channels')); const channels=[]; ch.forEach(d=>channels.push(d.data())); contactData.channels=channels; }
+      } catch(e){}
+      document.getElementById('headerPlaceholder').innerHTML = renderHeader('admin.html', uData);
+      document.getElementById('footerPlaceholder').innerHTML = renderFooter(contactData);
+      initHeaderBehavior();
+      currentAdmin = { uid: user.uid, ...uData };
+      isSuperAdmin = uData.role === 'superAdmin';
+      document.getElementById('adminContent').style.display = '';
+      if (!isSuperAdmin) { const supBtn=document.querySelector('[onclick*="supervisors"]'); if(supBtn) supBtn.style.opacity='0.4'; }
+      loadQuestions(); loadStudents(); loadSupervisors(); loadAdminSchedule(); loadCoursesAdmin(); loadAnnouncements(); loadContactInfo();
+    });
 
     const firebaseConfig = { apiKey:"AIzaSyC1sZ0cJeQMJ6QdnxwFkcfK3AGir0TRuuk", authDomain:"tasil-3lmi.firebaseapp.com", projectId:"tasil-3lmi", storageBucket:"tasil-3lmi.firebasestorage.app", messagingSenderId:"596405733121", appId:"1:596405733121:web:38ebadcc9eef8d8bb77d00" };
     const app2 = initializeApp(firebaseConfig, 'admin');
@@ -247,6 +322,7 @@
       loadAdminSchedule();
       loadCoursesAdmin();
       loadAnnouncements();
+      loadContactInfo();
     });
 
     // ===== TAB SWITCHER =====
@@ -814,6 +890,7 @@
       document.getElementById('annBody').value='';
       showToast('تم نشر الإعلان ✅','success');
       loadAnnouncements();
+      loadContactInfo();
     };
 
     // ===== NOTIFICATIONS =====
@@ -852,6 +929,79 @@
       window.addEventListener('scroll',()=>header.classList.toggle('scrolled',window.scrollY>40));
       hamburger&&hamburger.addEventListener('click',()=>mobileMenu.classList.toggle('open'));
     }
+
+    // ===== CONTACT INFO =====
+    let contactChannels = [];
+
+    async function loadContactInfo() {
+      try {
+        const snap = await getDoc(doc(db,'contactInfo','main'));
+        if (snap.exists()) {
+          const d = snap.data();
+          document.getElementById('ct_phone').value    = d.phone    || '';
+          document.getElementById('ct_whatsapp').value = d.whatsapp || '';
+          document.getElementById('ct_email').value    = d.email    || '';
+          document.getElementById('ct_telegram').value = d.telegram || '';
+          document.getElementById('ct_private').value  = d.privateChannelUrl || '';
+        }
+        // Load channels
+        const chSnap = await getDocs(collection(db,'contactInfo','main','channels'));
+        contactChannels = [];
+        chSnap.forEach(d => contactChannels.push({id:d.id,...d.data()}));
+        contactChannels.sort((a,b)=>(a.order||0)-(b.order||0));
+        renderChannels();
+      } catch(e){ console.log(e); }
+    }
+
+    function renderChannels() {
+      const el = document.getElementById('channelsList');
+      if (!el) return;
+      const types = ['تليجرام','يوتيوب','تويتر','انستغرام','فيسبوك','واتساب','أخرى'];
+      el.innerHTML = contactChannels.map((ch,i) => `
+        <div class="channel-admin-row">
+          <select onchange="contactChannels[${i}].type=this.value">
+            ${types.map(t=>`<option value="${t}" ${ch.type===t?'selected':''}>${t}</option>`).join('')}
+          </select>
+          <input type="text" value="${ch.icon||'🔗'}" placeholder="أيقونة" style="width:50px;text-align:center;" oninput="contactChannels[${i}].icon=this.value">
+          <input type="text" value="${ch.name||''}" placeholder="الاسم" oninput="contactChannels[${i}].name=this.value">
+          <input type="url" value="${ch.url||''}" placeholder="https://..." oninput="contactChannels[${i}].url=this.value">
+          <button class="del-btn" onclick="removeChannel(${i})">✕</button>
+        </div>`).join('');
+    }
+
+    window.addChannel = function() {
+      contactChannels.push({ type:'تليجرام', icon:'✈️', name:'', url:'', order: contactChannels.length });
+      renderChannels();
+    };
+    window.removeChannel = function(i) { contactChannels.splice(i,1); renderChannels(); };
+
+    window.saveContactInfo = async function() {
+      await setDoc(doc(db,'contactInfo','main'), {
+        phone:    document.getElementById('ct_phone').value.trim(),
+        whatsapp: document.getElementById('ct_whatsapp').value.trim(),
+        email:    document.getElementById('ct_email').value.trim(),
+        telegram: document.getElementById('ct_telegram').value.trim(),
+        updatedAt: new Date().toISOString(),
+        updatedBy: currentAdmin?.fullName || ''
+      }, { merge: true });
+      showToast('تم حفظ معلومات التواصل ✅','success');
+    };
+
+    window.saveChannels = async function() {
+      for (let i=0; i<contactChannels.length; i++) {
+        const ch = contactChannels[i];
+        const id = ch.id || 'ch_'+Date.now()+'_'+i;
+        await setDoc(doc(db,'contactInfo','main','channels',id), {...ch, id, order:i});
+      }
+      showToast('تم حفظ القنوات ✅','success');
+    };
+
+    window.savePrivateChannel = async function() {
+      const url = document.getElementById('ct_private').value.trim();
+      await setDoc(doc(db,'contactInfo','main'), { privateChannelUrl: url }, { merge:true });
+      showToast('تم حفظ رابط القناة الخاصة ✅','success');
+    };
+
     window.toggleNotifPanel=function(){const p=document.getElementById('notifPanel');if(p)p.style.display=p.style.display==='none'?'block':'none';};
     window.markAllRead=function(){};
   </script>
