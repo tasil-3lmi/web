@@ -615,31 +615,39 @@
   <div id="footerPlaceholder"></div>
 
   <script type="module">
-    import { renderHeader, renderFooter, LOGO_SRC } from './components.js';
+    import { renderHeader, renderFooter, LOGO_SRC, initSharedBehavior } from './components.js';
+    import { auth, db, onAuthStateChanged, doc, getDoc, collection, getDocs } from './firebase.js';
 
-    document.getElementById('headerPlaceholder').innerHTML = renderHeader('index.html');
-    document.getElementById('footerPlaceholder').innerHTML = renderFooter();
-
-    // Set logo
-    document.getElementById('heroLogoImg').src = LOGO_SRC;
-
-    // Init header behavior
-    const header = document.getElementById('siteHeader');
-    const hamburger = document.getElementById('hamburger');
-    const mobileMenu = document.getElementById('mobileMenu');
-    window.addEventListener('scroll', () => {
-      header.classList.toggle('scrolled', window.scrollY > 40);
+    // ── Redirect if already logged in ──
+    onAuthStateChanged(auth, async user => {
+      if (user) {
+        window.location.href = 'dashboard.html';
+        return;
+      }
+      // Not logged in — show public page
+      initPublicPage();
     });
-    hamburger && hamburger.addEventListener('click', () => mobileMenu.classList.toggle('open'));
 
-    // Scroll reveal
-    const revealEls = document.querySelectorAll('.reveal');
-    const obs = new IntersectionObserver((entries) => {
-      entries.forEach(e => {
-        if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); }
-      });
-    }, { threshold: 0.1 });
-    revealEls.forEach(el => obs.observe(el));
+    async function initPublicPage() {
+      // Load contact info for footer
+      let contactData = null;
+      try {
+        const snap = await getDoc(doc(db, 'contactInfo', 'main'));
+        if (snap.exists()) {
+          contactData = snap.data();
+          const chSnap = await getDocs(collection(db, 'contactInfo', 'main', 'channels'));
+          const channels = [];
+          chSnap.forEach(d => channels.push(d.data()));
+          channels.sort((a,b) => (a.order||0)-(b.order||0));
+          contactData.channels = channels;
+        }
+      } catch(e) {}
+
+      document.getElementById('headerPlaceholder').innerHTML = renderHeader('index.html', null);
+      document.getElementById('footerPlaceholder').innerHTML = renderFooter(contactData);
+      document.getElementById('heroLogoImg').src = LOGO_SRC;
+      initSharedBehavior();
+    }
   </script>
   <script>
     const YOUTUBE_ID = 'VIDEO_ID_HERE'; // ← ضع ID الفيديو هنا
