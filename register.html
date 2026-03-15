@@ -411,19 +411,26 @@
       const gender   = document.querySelector('input[name="gender"]:checked')?.value || 'male';
 
       try {
+        // الخطوة 1: إنشاء الحساب في Firebase Auth
         const userCred = await createUserWithEmailAndPassword(auth, email, password);
-        // حفظ Firestore في الخلفية — لا يعيق التحويل
-        setDoc(doc(db, 'users', userCred.user.uid), {
+
+        // الخطوة 2: حفظ بيانات المستخدم في Firestore
+        // ⚠️ يجب await هنا — dashboard.html يحتاج هذا المستند فور الوصول
+        await setDoc(doc(db, 'users', userCred.user.uid), {
           fullName, email, username, phone, telegram,
           level, gender, role: 'student',
           progress: {}, createdAt: new Date().toISOString()
         });
+
+        // الخطوة 3: التحويل بعد اكتمال الحفظ
         window.location.href = 'dashboard.html';
+
       } catch (err) {
         const msgs = {
           'auth/email-already-in-use': 'البريد الإلكتروني مستخدم مسبقاً.',
           'auth/weak-password':        'كلمة المرور ضعيفة (٦ أحرف على الأقل).',
           'auth/invalid-email':        'صيغة البريد الإلكتروني غير صحيحة.',
+          'auth/network-request-failed': 'تحقق من اتصالك بالإنترنت.',
         };
         errEl.textContent = msgs[err.code] || 'حدث خطأ، حاول مرة أخرى.';
         errEl.classList.add('show');
