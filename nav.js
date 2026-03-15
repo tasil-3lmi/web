@@ -25,7 +25,7 @@ function buildNav(activePage, user) {
 <nav id="main-nav">
   <div style="display:flex;align-items:center;gap:10px">
     <!-- Hamburger (mobile) -->
-    <button id="hamburger" onclick="toggleMobileMenu()" aria-label="القائمة" style="display:none;flex-direction:column;gap:5px;background:none;border:none;cursor:pointer;padding:6px">
+    <button id="hamburger" onclick="toggleMobileMenu()" aria-label="القائمة" class="hamburger-btn" style="flex-direction:column;gap:5px;background:none;border:none;cursor:pointer;padding:6px">
       <span style="display:block;width:22px;height:2px;background:var(--purple);border-radius:2px;transition:.3s"></span>
       <span style="display:block;width:22px;height:2px;background:var(--purple);border-radius:2px;transition:.3s"></span>
       <span style="display:block;width:22px;height:2px;background:var(--purple);border-radius:2px;transition:.3s"></span>
@@ -44,11 +44,10 @@ function buildNav(activePage, user) {
       <i data-lucide="bell" style="width:18px;height:18px"></i>
       <span id="notif-dot" style="position:absolute;top:5px;right:5px;width:8px;height:8px;background:#dc3545;border-radius:50%;border:2px solid #fff;display:none"></span>
     </button>
-    <!-- User name -->
-    <span id="nav-username" style="font-size:12px;font-weight:700;color:var(--purple)"></span>
+    <!-- User name - hidden, shown in mobile drawer -->
     <!-- Logout -->
-    <button onclick="logout()" style="display:flex;align-items:center;gap:5px;padding:7px 13px;border-radius:10px;border:none;cursor:pointer;font-family:'Zain',sans-serif;font-size:12px;font-weight:700;background:rgba(220,53,69,.1);color:#dc3545;transition:.2s" onmouseover="this.style.background='#dc3545';this.style.color='#fff'" onmouseout="this.style.background='rgba(220,53,69,.1)';this.style.color='#dc3545'">
-      <i data-lucide="log-out" style="width:13px;height:13px"></i>خروج
+    <button onclick="logout()" title="تسجيل الخروج" style="display:flex;align-items:center;gap:5px;padding:7px 13px;border-radius:10px;border:none;cursor:pointer;font-family:'Zain',sans-serif;font-size:12px;font-weight:700;background:rgba(220,53,69,.1);color:#dc3545;transition:.2s" onmouseover="this.style.background='#dc3545';this.style.color='#fff'" onmouseout="this.style.background='rgba(220,53,69,.1)';this.style.color='#dc3545'">
+      <i data-lucide="log-out" style="width:14px;height:14px"></i><span class="nav-label">خروج</span>
     </button>
   </div>
 </nav>
@@ -59,7 +58,10 @@ function buildNav(activePage, user) {
 <!-- Mobile drawer -->
 <div id="mob-drawer" style="display:none;position:fixed;top:0;right:0;bottom:0;width:260px;background:#fff;z-index:499;padding:20px 16px;overflow-y:auto;box-shadow:-8px 0 32px rgba(59,27,64,.2);transition:transform .3s;transform:translateX(100%)">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid rgba(212,180,142,.2)">
-    <span style="font-family:'Amiri',serif;font-size:16px;font-weight:700;color:var(--purple)">القائمة</span>
+    <div>
+      <div style="font-family:'Amiri',serif;font-size:15px;font-weight:700;color:var(--purple)">القائمة</div>
+      <div id="mob-username" style="font-size:11px;color:var(--muted);margin-top:2px"></div>
+    </div>
     <button onclick="closeMobileMenu()" style="background:#f5f0f8;border:none;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:14px;color:var(--muted)">✕</button>
   </div>
   ${pages.filter(p => !p.adminOnly || isAdmin).map(p => `
@@ -81,6 +83,13 @@ function buildNav(activePage, user) {
   </div>
   <div id="notif-list" style="max-height:320px;overflow-y:auto"></div>
 </div>`;
+}
+
+// ── Set username in nav ──
+function setNavUser(user) {
+  const name = user?.name || user?.fullName || user?.adminUsername || '';
+  const el = document.getElementById('mob-username');
+  if(el && name) el.textContent = name;
 }
 
 // ── Mobile menu toggle ──
