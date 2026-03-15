@@ -64,6 +64,7 @@ function showApp(){
   document.getElementById('spinner').style.display='none';
   document.getElementById('app').style.display='';
   document.getElementById('nav-ph').outerHTML=buildNav(PAGE_ID,currentUser);
+  if(typeof setNavUser==='function') setNavUser(currentUser);
   setTimeout(()=>{ if(window.lucide) lucide.createIcons(); },80);
   if(typeof onReady==='function') onReady();
 }
@@ -83,12 +84,15 @@ async function onReady(){
   document.getElementById('welcome-msg').textContent="أهلاً، "+(currentUser.name||currentUser.fullName||'طالب')+"! 👋";
   document.getElementById('welcome-sub').textContent=currentUser.isAdmin?('دورك: '+(currentUser.adminRole==='super'?'المشرف العام':'مشرف')):'مرحباً بك في معهد التأصيل العلمي';
 
-  // Quick stats
-  const snap=await db.collection('courses').get().catch(()=>null);
-  const courses=snap?snap.docs.map(d=>d.data()):[];
+  // Quick stats — always show 26 courses (plan size), update from Firestore in background
+  let courses = [];
   const done=(currentUser.completedLessons||[]).length;
+  const TOTAL_COURSES = 26; // fixed plan size
+  db.collection('courses').get().then(snap => {
+    if(snap && !snap.empty) courses = snap.docs.map(d=>d.data());
+  }).catch(()=>{});
   document.getElementById('stats-row').innerHTML=[
-    {icon:'book-open',label:'المقررات',val:courses.length||26,color:'var(--purple)',bg:'rgba(59,27,64,.08)'},
+    {icon:'book-open',label:'المقررات',val:TOTAL_COURSES,color:'var(--purple)',bg:'rgba(59,27,64,.08)'},
     {icon:'check-circle',label:'الدروس المكتملة',val:done,color:'#28a745',bg:'rgba(40,167,69,.08)'},
     {icon:'clipboard-check',label:'الاختبارات',val:(courses.length||26)*2,color:'var(--gold-d)',bg:'rgba(212,180,142,.12)'},
   ].map(s=>`<div style="background:#fff;border-radius:14px;padding:18px;border:1px solid rgba(212,180,142,.18);display:flex;align-items:center;gap:12px">
