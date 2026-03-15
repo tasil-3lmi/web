@@ -54,17 +54,17 @@ export function renderHeader(activePage = '', userData = null) {
 
   /* ── Right side ── */
   const rightSide = isLoggedIn ? `
-    <div style="display:flex;align-items:center;gap:8px;">
-      <button class="notif-bell" id="notifBell" onclick="toggleNotifPanel()" title="الإشعارات">
+    <div class="header-controls">
+      <button class="notif-bell" id="notifBell" onclick="toggleNotifPanel()" title="الإشعارات" aria-label="الإشعارات">
         🔔<span class="notif-count" id="notifCount" style="display:none;">0</span>
       </button>
       <div class="user-menu-wrap" id="userMenuWrap">
-        <button class="user-menu-btn" id="userMenuBtn" onclick="toggleUserMenu()">
+        <button class="user-menu-btn" id="userMenuBtn" onclick="toggleUserMenu()" aria-haspopup="true">
           <div class="user-avatar-mini">${userData.fullName ? userData.fullName.charAt(0) : '؟'}</div>
           <span class="user-menu-name" id="headerUserName">${userData.fullName || ''}</span>
           <span class="user-menu-arrow">▾</span>
         </button>
-        <div class="user-dropdown" id="userDropdown" style="display:none;">
+        <div class="user-dropdown" id="userDropdown" style="display:none;" role="menu">
           <a href="profile.html" class="user-dropdown-item">👤 ملفي الشخصي</a>
           ${isAdmin ? '<a href="admin.html" class="user-dropdown-item">🛠️ لوحة الإدارة</a>' : ''}
           <div class="user-dropdown-divider"></div>
@@ -75,7 +75,7 @@ export function renderHeader(activePage = '', userData = null) {
         <span></span><span></span><span></span>
       </button>
     </div>` : `
-    <div style="display:flex;align-items:center;gap:8px;">
+    <div class="header-controls">
       <a href="register.html" class="nav-link nav-btn">تسجيل الدخول</a>
       <button class="hamburger" id="hamburger" aria-label="القائمة">
         <span></span><span></span><span></span>
