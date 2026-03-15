@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>من نحن — معهد التأصيل العلمي</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* ===== PAGE HERO ===== */
+    .page-hero {
+      background: linear-gradient(150deg, var(--purple) 0%, var(--purple-light) 60%, rgba(212,180,142,0.3) 100%);
+      padding: 140px 0 80px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .page-hero::before {
+      content: '';
+      position: absolute;
+      top: -60px; right: -60px;
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(255,255,255,0.06), transparent 70%);
+      border-radius: 50%;
+    }
+    .page-hero h1 {
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      color: var(--white);
+      margin-bottom: 16px;
+      position: relative;
+    }
+    .page-hero p {
+      color: rgba(255,255,255,0.75);
+      font-size: 1.05rem;
+      max-width: 520px;
+      margin: 0 auto;
+      position: relative;
+    }
+    .breadcrumb {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      font-size: 0.82rem;
+      color: rgba(255,255,255,0.55);
+      margin-bottom: 20px;
+      position: relative;
+    }
+    .breadcrumb a { color: var(--gold); }
+    .breadcrumb span { color: rgba(255,255,255,0.35); }
+
+    /* ===== ABOUT SECTION ===== */
+    .about-intro {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 64px;
+      align-items: start;
+    }
+    .intro-body p {
+      font-size: 1rem;
+      color: var(--text-soft);
+      line-height: 1.9;
+      margin-bottom: 16px;
+    }
+
+    /* ===== GOALS BOX ===== */
+    .goals-box {
+      background: rgba(59,27,64,0.03);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+    }
+    .goals-box h3 {
+      font-size: 1.05rem;
+      font-weight: bold;
+      color: var(--purple);
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid rgba(212,180,142,0.3);
+    }
+    .goal-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(59,27,64,0.06);
+      font-size: 0.9rem;
+      color: var(--text-main);
+      line-height: 1.6;
+    }
+    .goal-item:last-child { border-bottom: none; }
+    .goal-item .check {
+      width: 22px; height: 22px;
+      background: linear-gradient(135deg, var(--purple), var(--gold-dark));
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 0.65rem;
+      flex-shrink: 0; margin-top: 1px;
+    }
+
+    /* ===== INFO CARDS ===== */
+    .info-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 24px;
+      margin-bottom: 56px;
+    }
+    .info-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 24px;
+      text-align: center;
+      box-shadow: var(--shadow);
+      transition: var(--transition);
+    }
+    .info-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); }
+    .info-card .icon { font-size: 2rem; margin-bottom: 12px; }
+    .info-card h4 { font-size: 0.82rem; color: var(--text-soft); margin-bottom: 8px; }
+    .info-card p { font-size: 1rem; font-weight: bold; color: var(--purple); }
+
+    /* ===== SHEIKH ===== */
+    .sheikh-section {
+      background: linear-gradient(135deg, var(--purple), var(--purple-dark));
+      padding: 80px 0;
+    }
+    .sheikh-inner {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 56px;
+      align-items: start;
+    }
+    .sheikh-card-left { position: sticky; top: 100px; }
+    .sheikh-avatar {
+      width: 220px; height: 220px;
+      background: linear-gradient(135deg, rgba(212,180,142,0.2), rgba(255,255,255,0.1));
+      border-radius: 50%;
+      margin: 0 auto 24px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 5rem;
+      border: 3px solid rgba(212,180,142,0.3);
+    }
+    .sheikh-name { text-align: center; font-size: 1.3rem; font-weight: bold; color: var(--white); margin-bottom: 8px; }
+    .sheikh-title { text-align: center; font-size: 0.85rem; color: var(--gold); margin-bottom: 20px; }
+    .sheikh-badges { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+    .sheikh-badge {
+      padding: 5px 14px;
+      background: rgba(212,180,142,0.15);
+      border: 1px solid rgba(212,180,142,0.3);
+      border-radius: 100px;
+      font-size: 0.75rem;
+      color: var(--gold-light);
+    }
+    .sheikh-details h3 {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: var(--gold);
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(212,180,142,0.2);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .sheikh-details h3 .ico { font-size: 1.2rem; }
+    .info-table { width: 100%; margin-bottom: 32px; }
+    .info-table tr td {
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      font-size: 0.88rem;
+      vertical-align: top;
+    }
+    .info-table tr td:first-child { color: var(--gold); font-weight: bold; width: 140px; }
+    .info-table tr td:last-child { color: rgba(255,255,255,0.8); }
+    .scholars-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 32px;
+    }
+    .scholar-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: rgba(255,255,255,0.05);
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+      color: rgba(255,255,255,0.75);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .scholar-item .snum {
+      width: 24px; height: 24px;
+      background: var(--gold);
+      color: var(--purple);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem; font-weight: bold;
+      flex-shrink: 0;
+    }
+    .books-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 32px; }
+    .book-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 16px;
+      background: rgba(255,255,255,0.04);
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+      color: rgba(255,255,255,0.75);
+      border: 1px solid rgba(212,180,142,0.1);
+    }
+    .book-item .bnum { color: var(--gold); font-weight: bold; flex-shrink: 0; }
+    .ijazat-list { display: flex; flex-direction: column; gap: 8px; }
+    .ijaza-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: rgba(212,180,142,0.08);
+      border-radius: var(--radius-sm);
+      border-right: 3px solid var(--gold);
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.8);
+    }
+    .ijaza-item .ico { font-size: 1rem; flex-shrink: 0; }
+
+    @media (max-width: 900px) {
+      .about-intro { grid-template-columns: 1fr; gap: 40px; }
+      .sheikh-inner { grid-template-columns: 1fr; }
+      .sheikh-card-left { position: static; }
+      .scholars-list { grid-template-columns: 1fr; }
+      .books-list { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div id="headerPlaceholder"></div>
+
+  <div class="page-content">
+
+    <!-- PAGE HERO -->
+    <div class="page-hero">
+      <div class="container">
+        <div class="breadcrumb">
+          <a href="index.html">الرئيسية</a>
+          <span>/</span>
+          <span>من نحن</span>
+        </div>
+        <h1 class="fade-in-up">من نحن</h1>
+        <p class="fade-in-up delay-1">تعرف على معهد التأصيل العلمي وأهدافه ومميزاته</p>
+      </div>
+    </div>
+
+    <!-- ABOUT INTRO -->
+    <section class="section">
+      <div class="container">
+        <div class="info-row">
+          <div class="info-card reveal"><div class="icon">📚</div><h4>طبيعة البرنامج</h4><p>علمي ميسر</p></div>
+          <div class="info-card reveal"><div class="icon">⏱</div><h4>المدة</h4><p>سنة واحدة</p></div>
+          <div class="info-card reveal"><div class="icon">👥</div><h4>الفئة المستهدفة</h4><p>جميع طلاب العلم</p></div>
+          <div class="info-card reveal"><div class="icon">📜</div><h4>المخرجات</h4><p>إجازات علمية</p></div>
+          <div class="info-card reveal"><div class="icon">🕌</div><h4>التخصص</h4><p>علوم الشريعة</p></div>
+        </div>
+
+        <div class="about-intro">
+          <div class="intro-body reveal">
+            <div class="section-tag">الفكرة العامة</div>
+            <h2 class="section-title" style="margin-top:12px;">معهد التأصيل العلمي</h2>
+            <div class="gold-divider" style="margin:16px 0;"></div>
+            <p>
+              برنامج علمي ميسر يدرس الطالب فيه عدداً من المتون العلمية التي يحتاجها كل طالب علم، مع روافد متممة تُعين على استكمال بناء قوته العلمية والعملية.
+            </p>
+            <p>
+              يستهدف البرنامج طلاب العلم بمختلف أعمارهم ومستوياتهم ذكوراً وإناثاً، ويُعنى بالتأصيل العلمي السليم القائم على المتون المعتمدة في شتى الفنون.
+            </p>
+
+            <div style="margin-top:32px;">
+              <h3 style="font-size:1rem;color:var(--purple);margin-bottom:16px;font-weight:bold;">مميزات البرنامج</h3>
+              <div style="display:flex;flex-direction:column;gap:12px;">
+                <div style="display:flex;align-items:center;gap:12px;padding:14px 18px;background:rgba(212,180,142,0.08);border-radius:8px;border:1px solid rgba(212,180,142,0.2);">
+                  <span>📜</span><span style="font-size:0.92rem;color:var(--text-main);">إجازات علمية وشهادات إتمام معتمدة</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;padding:14px 18px;background:rgba(212,180,142,0.08);border-radius:8px;border:1px solid rgba(212,180,142,0.2);">
+                  <span>🔗</span><span style="font-size:0.92rem;color:var(--text-main);">منهجية عامة في فنون الشريعة المقاصد منها وعلوم الآلة</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;padding:14px 18px;background:rgba(212,180,142,0.08);border-radius:8px;border:1px solid rgba(212,180,142,0.2);">
+                  <span>⏱</span><span style="font-size:0.92rem;color:var(--text-main);">سنة واحدة فقط — مدة قصيرة وتأهيل علمي عالي</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="goals-box reveal">
+            <h3>🎯 أهداف البرنامج</h3>
+            <div class="goal-item"><div class="check">✓</div><span>تدريس المتون المعتمدة في مختلف العلوم</span></div>
+            <div class="goal-item"><div class="check">✓</div><span>الاعتناء بحفظ المتون ومراجعتها</span></div>
+            <div class="goal-item"><div class="check">✓</div><span>الترقي في أخذ العلم</span></div>
+            <div class="goal-item"><div class="check">✓</div><span>الاعتناء بتكوين الملكة العلمية</span></div>
+            <div class="goal-item"><div class="check">✓</div><span>معرفة العلاقة بين العلوم</span></div>
+            <div class="goal-item"><div class="check">✓</div><span>القدرة على المباحثة والمناقشة</span></div>
+            <div class="goal-item"><div class="check">✓</div><span>التكامل المعرفي</span></div>
+            <div class="goal-item"><div class="check">✓</div><span>التعرف على المكتبة الإسلامية وكيفية الاستفادة منها</span></div>
+            <div class="goal-item"><div class="check">✓</div><span>معالجة الأغلاط المنهجية</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SHEIKH SECTION -->
+    <section class="sheikh-section">
+      <div class="container">
+        <div class="section-header" style="margin-bottom:56px;">
+          <div class="section-tag" style="background:rgba(212,180,142,0.15);color:var(--gold);">القائم على المعهد</div>
+          <h2 class="section-title" style="color:var(--white);">الشيخ مصعب بن صلاح</h2>
+          <div class="gold-divider"></div>
+        </div>
+
+        <div class="sheikh-inner">
+          <div class="sheikh-card-left reveal">
+            <div class="sheikh-avatar">🧔</div>
+            <div class="sheikh-name">مصعب بن صلاح بن علي</div>
+            <div class="sheikh-title">عالم وداعية إسلامي</div>
+            <div class="sheikh-badges">
+              <div class="sheikh-badge">محدّث</div>
+              <div class="sheikh-badge">فقيه</div>
+              <div class="sheikh-badge">مجاز</div>
+              <div class="sheikh-badge">مؤلف</div>
+            </div>
+          </div>
+
+          <div class="sheikh-details">
+            <!-- البيانات الشخصية -->
+            <div class="reveal" style="margin-bottom:40px;">
+              <h3><span class="ico">📋</span> البيانات الشخصية</h3>
+              <table class="info-table">
+                <tr><td>الاسم</td><td>مصعب بن صلاح بن علي</td></tr>
+                <tr><td>تاريخ الميلاد</td><td>1407هـ — 1987م</td></tr>
+                <tr><td>الأصل</td><td>محسي من الشمالية — عبري</td></tr>
+                <tr><td>الدراسة</td><td>جميع المراحل في السعودية — الشرقية — الأحساء</td></tr>
+              </table>
+              <div style="color:rgba(255,255,255,0.65);font-size:0.85rem;line-height:1.9;">
+                <p>تخرج من الثانوية عام 2004-2005م، ثم درس بكلية الطب جامعة العلوم والتقانة بأمدرمان سنة واحدة، ثم انتقل إلى الجامعة الإسلامية بالمدينة المنورة بكلية الحديث الشريف عام 2009-2010م.</p>
+              </div>
+            </div>
+
+            <!-- مشايخه بالحرم -->
+            <div class="reveal" style="margin-bottom:40px;">
+              <h3><span class="ico">🕌</span> مشايخه بالحرم النبوي</h3>
+              <div class="scholars-list">
+                <div class="scholar-item"><div class="snum">١</div><span>الشيخ محمد أحيد الشنقيطي — النحو</span></div>
+                <div class="scholar-item"><div class="snum">٢</div><span>الشيخ عبدالرحمن الشنقيطي — النحو</span></div>
+                <div class="scholar-item"><div class="snum">٣</div><span>الشيخ أحمد محمود الشنقيطي — أصول الفقه</span></div>
+                <div class="scholar-item"><div class="snum">٤</div><span>الشيخ صالح سندي — العقيدة</span></div>
+                <div class="scholar-item"><div class="snum">٥</div><span>الشيخ سليمان الرحيلي — رفع الملام</span></div>
+                <div class="scholar-item"><div class="snum">٦</div><span>الشيخ صالح العصيمي — مختلف الفنون</span></div>
+                <div class="scholar-item"><div class="snum">٧</div><span>العلامة عبدالمحسن العباد البدر</span></div>
+                <div class="scholar-item"><div class="snum">٨</div><span>العلامة صالح السحيمي</span></div>
+                <div class="scholar-item"><div class="snum">٩</div><span>العلامة عبدالرزاق البدر</span></div>
+                <div class="scholar-item"><div class="snum">١٠</div><span>العلامة عبدالكريم الخضير</span></div>
+              </div>
+            </div>
+
+            <!-- مشايخ آخرون -->
+            <div class="reveal" style="margin-bottom:40px;">
+              <h3><span class="ico">👨‍🎓</span> مشايخ آخرون</h3>
+              <div class="scholars-list">
+                <div class="scholar-item"><div class="snum">١١</div><span>الشيخ عبدالله البخاري — علل الترمذي</span></div>
+                <div class="scholar-item"><div class="snum">١٢</div><span>الشيخ محمد بن هادي المدخلي — سنن أبي داود</span></div>
+                <div class="scholar-item"><div class="snum">١٣</div><span>الشيخ عبيد الجابري</span></div>
+                <div class="scholar-item"><div class="snum">١٤</div><span>الشيخ أنيس طاهر — الجرح والتعديل</span></div>
+                <div class="scholar-item"><div class="snum">١٥</div><span>الشيخ ربيع المدخلي</span></div>
+                <div class="scholar-item"><div class="snum">١٦</div><span>المفتي عبدالعزيز آل الشيخ</span></div>
+                <div class="scholar-item"><div class="snum">١٧</div><span>العلامة صالح الفوزان</span></div>
+                <div class="scholar-item"><div class="snum">١٨</div><span>العلامة صالح اللحيدان</span></div>
+              </div>
+            </div>
+
+            <!-- مشايخ السودان -->
+            <div class="reveal" style="margin-bottom:40px;">
+              <h3><span class="ico">🌍</span> مشايخ السودان</h3>
+              <div class="scholars-list">
+                <div class="scholar-item"><div class="snum">١</div><span>الشيخ خالد عبداللطيف</span></div>
+                <div class="scholar-item"><div class="snum">٢</div><span>الشيخ حسن الهواري</span></div>
+                <div class="scholar-item"><div class="snum">٣</div><span>الشيخ عبدالرحمن حامد</span></div>
+                <div class="scholar-item"><div class="snum">٤</div><span>الشيخ محمد سيد حاج رحمه الله</span></div>
+                <div class="scholar-item"><div class="snum">٥</div><span>الشيخ صلاح الأمين</span></div>
+                <div class="scholar-item"><div class="snum">٦</div><span>الشيخ المرتضى الزين</span></div>
+                <div class="scholar-item"><div class="snum">٧</div><span>الشيخ معتصم صلاح</span></div>
+                <div class="scholar-item"><div class="snum">٨</div><span>الشيخ حاتم عز الدين</span></div>
+                <div class="scholar-item"><div class="snum">٩</div><span>الشيخ فخر الدين الزبير</span></div>
+              </div>
+            </div>
+
+            <!-- المؤلفات -->
+            <div class="reveal" style="margin-bottom:40px;">
+              <h3><span class="ico">📚</span> مؤلفاته ورسائله</h3>
+              <div class="books-list">
+                <div class="book-item"><span class="bnum">١</span><span>المدخل إلى طلب العلم</span></div>
+                <div class="book-item"><span class="bnum">٢</span><span>البيان المهم في حكم طلب العلم</span></div>
+                <div class="book-item"><span class="bnum">٣</span><span>ضوابط في التبديع</span></div>
+                <div class="book-item"><span class="bnum">٤</span><span>الرد على المخالف</span></div>
+                <div class="book-item"><span class="bnum">٥</span><span>ضوابط التعامل مع زلات العلماء</span></div>
+                <div class="book-item"><span class="bnum">٦</span><span>الجهل وأثره على الدعوة</span></div>
+                <div class="book-item"><span class="bnum">٧</span><span>الحزبية</span></div>
+                <div class="book-item"><span class="bnum">٨</span><span>التوضيح الأنفع شرح القواعد الأربع</span></div>
+                <div class="book-item"><span class="bnum">٩</span><span>خلاصة الكلام شرح نواقض الإسلام</span></div>
+              </div>
+            </div>
+
+            <!-- الأسانيد -->
+            <div class="reveal">
+              <h3><span class="ico">🔗</span> أسانيده وإجازاته</h3>
+              <p style="color:rgba(255,255,255,0.65);font-size:0.85rem;margin-bottom:16px;">الشيخ مُجازٌ برواية أكثر كتب العلم بالأسانيد المتصلة:</p>
+              <div class="ijazat-list">
+                <div class="ijaza-item"><span class="ico">📖</span><span>كتب السنة والحديث (الصحيحان والسنن والمسانيد)</span></div>
+                <div class="ijaza-item"><span class="ico">📖</span><span>كتب العقيدة</span></div>
+                <div class="ijaza-item"><span class="ico">📖</span><span>كتب التفاسير المشهورة</span></div>
+                <div class="ijaza-item"><span class="ico">📖</span><span>كتب شروح الحديث</span></div>
+                <div class="ijaza-item"><span class="ico">📖</span><span>كتب التاريخ والسيرة</span></div>
+                <div class="ijaza-item"><span class="ico">📖</span><span>كتب الزهد والرقائق</span></div>
+                <div class="ijaza-item"><span class="ico">📖</span><span>كتب الفقه وأصوله وقواعده</span></div>
+                <div class="ijaza-item"><span class="ico">📖</span><span>كتب اللغة والأدب</span></div>
+                <div class="ijaza-item"><span class="ico">📖</span><span>كتب علوم الحديث والمصطلح</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="section" style="text-align:center;">
+      <div class="container">
+        <div class="section-tag">انضم إلينا</div>
+        <h2 class="section-title" style="margin-top:12px;">هل أنت مستعد للبدء؟</h2>
+        <p class="section-sub">سجّل الآن وانضم إلى طلاب العلم في معهد التأصيل العلمي</p>
+        <div style="margin-top:32px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
+          <a href="register.html" class="btn btn-primary">سجّل الآن</a>
+          <a href="curriculum.html" class="btn btn-outline">استعرض المنهج</a>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <div id="footerPlaceholder"></div>
+
+  <script type="module">
+    import { renderHeader, renderFooter } from './components.js';
+    document.getElementById('headerPlaceholder').innerHTML = renderHeader('about.html');
+    document.getElementById('footerPlaceholder').innerHTML = renderFooter();
+
+    const header = document.getElementById('siteHeader');
+    const hamburger = document.getElementById('hamburger');
+    const mobileMenu = document.getElementById('mobileMenu');
+    window.addEventListener('scroll', () => header.classList.toggle('scrolled', window.scrollY > 40));
+    hamburger && hamburger.addEventListener('click', () => mobileMenu.classList.toggle('open'));
+
+    const revealEls = document.querySelectorAll('.reveal');
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+    }, { threshold: 0.08 });
+    revealEls.forEach(el => obs.observe(el));
+  </script>
+</body>
+</html>

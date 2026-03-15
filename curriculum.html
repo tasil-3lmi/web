@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>المنهج الدراسي — معهد التأصيل العلمي</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .page-hero {
+      background: linear-gradient(150deg, var(--purple) 0%, var(--purple-light) 60%, rgba(212,180,142,0.3) 100%);
+      padding: 140px 0 80px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .page-hero::before {
+      content: '';
+      position: absolute;
+      top: -60px; left: -60px;
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(255,255,255,0.05), transparent 70%);
+      border-radius: 50%;
+    }
+    .page-hero h1 { font-size: clamp(2rem, 5vw, 3.2rem); color: var(--white); margin-bottom: 16px; position: relative; }
+    .page-hero p { color: rgba(255,255,255,0.75); font-size: 1.05rem; max-width: 520px; margin: 0 auto; position: relative; }
+    .breadcrumb { display: flex; justify-content: center; gap: 8px; font-size: 0.82rem; color: rgba(255,255,255,0.55); margin-bottom: 20px; position: relative; }
+    .breadcrumb a { color: var(--gold); }
+    .breadcrumb span { color: rgba(255,255,255,0.35); }
+
+    /* Timeline */
+    .curriculum-wrapper { max-width: 960px; margin: 0 auto; padding: 0 32px; }
+
+    .phase-block {
+      margin-bottom: 48px;
+      position: relative;
+    }
+    .phase-header {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 24px 28px;
+      background: linear-gradient(135deg, var(--purple), var(--purple-light));
+      border-radius: var(--radius);
+      margin-bottom: 4px;
+      cursor: pointer;
+      user-select: none;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+    .phase-header::before {
+      content: '';
+      position: absolute;
+      top: 0; right: 0; bottom: 0;
+      width: 4px;
+      background: var(--gold);
+    }
+    .phase-header:hover { transform: translateX(-3px); }
+    .phase-num {
+      width: 48px; height: 48px;
+      background: var(--gold);
+      color: var(--purple);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; font-weight: bold;
+      flex-shrink: 0;
+    }
+    .phase-label { flex: 1; }
+    .phase-label h3 { font-size: 1.05rem; font-weight: bold; color: var(--white); margin-bottom: 4px; }
+    .phase-label p { font-size: 0.82rem; color: rgba(255,255,255,0.65); }
+    .phase-toggle {
+      color: var(--gold);
+      font-size: 1.3rem;
+      transition: transform 0.3s;
+    }
+    .phase-block.open .phase-toggle { transform: rotate(180deg); }
+
+    .phase-body {
+      display: none;
+      background: rgba(59,27,64,0.03);
+      border: 1px solid var(--border);
+      border-top: none;
+      border-radius: 0 0 var(--radius) var(--radius);
+      overflow: hidden;
+    }
+    .phase-block.open .phase-body { display: block; animation: fadeInUp 0.35s ease; }
+
+    .matn-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 18px 28px;
+      border-bottom: 1px solid var(--border);
+      transition: var(--transition);
+    }
+    .matn-item:last-child { border-bottom: none; }
+    .matn-item:hover { background: rgba(212,180,142,0.06); }
+    .matn-num {
+      width: 32px; height: 32px;
+      background: rgba(59,27,64,0.08);
+      color: var(--purple);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; font-weight: bold;
+      flex-shrink: 0; margin-top: 2px;
+    }
+    .matn-info h4 { font-size: 0.95rem; font-weight: bold; color: var(--purple); margin-bottom: 4px; }
+    .matn-info p { font-size: 0.8rem; color: var(--text-soft); }
+    .matn-badge { margin-top: 6px; }
+
+    /* Stats */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 20px;
+      margin-bottom: 56px;
+    }
+    .stat-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+    .stat-card .num { font-size: 2.4rem; font-weight: bold; color: var(--purple); display: block; }
+    .stat-card .lbl { font-size: 0.82rem; color: var(--text-soft); }
+
+    @media (max-width: 600px) {
+      .curriculum-wrapper { padding: 0 16px; }
+      .phase-header { padding: 18px 20px; gap: 12px; }
+      .matn-item { padding: 14px 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="headerPlaceholder"></div>
+
+  <div class="page-content">
+    <div class="page-hero">
+      <div class="container">
+        <div class="breadcrumb">
+          <a href="index.html">الرئيسية</a>
+          <span>/</span>
+          <span>المنهج الدراسي</span>
+        </div>
+        <h1 class="fade-in-up">المنهج الدراسي</h1>
+        <p class="fade-in-up delay-1">خطة علمية متكاملة في سنة دراسية واحدة</p>
+      </div>
+    </div>
+
+    <section class="section">
+      <div class="curriculum-wrapper">
+
+        <!-- Stats -->
+        <div class="stats-row">
+          <div class="stat-card reveal"><span class="num">٢</span><span class="lbl">كتاب في التمهيدية</span></div>
+          <div class="stat-card reveal"><span class="num">٦</span><span class="lbl">مراحل دراسية</span></div>
+          <div class="stat-card reveal"><span class="num">٢٠+</span><span class="lbl">متن علمي</span></div>
+          <div class="stat-card reveal"><span class="num">١</span><span class="lbl">سنة دراسية</span></div>
+        </div>
+
+        <!-- ===== المرحلة التمهيدية ===== -->
+        <div class="section-tag reveal" style="margin-bottom:20px;">نقطة الانطلاق</div>
+        <div class="phase-block open reveal" id="phase-0">
+          <div class="phase-header" onclick="togglePhase('phase-0')">
+            <div class="phase-num">٠</div>
+            <div class="phase-label">
+              <h3>المرحلة التمهيدية</h3>
+              <p>٢ كتابان + كتاب جرد</p>
+            </div>
+            <div class="phase-toggle">▾</div>
+          </div>
+          <div class="phase-body">
+            <div class="matn-item">
+              <div class="matn-num">١</div>
+              <div class="matn-info">
+                <h4>كتاب "المدخل إلى طلب العلم"</h4>
+                <p>للشيخ مصعب بن صلاح</p>
+                <div class="matn-badge"><span class="badge badge-purple">من مؤلفات الشيخ</span></div>
+              </div>
+            </div>
+            <div class="matn-item">
+              <div class="matn-num">٢</div>
+              <div class="matn-info">
+                <h4>كتاب "تذكرة السامع والمتكلم"</h4>
+                <p>في آداب طلب العلم والعلماء</p>
+              </div>
+            </div>
+            <div class="matn-item">
+              <div class="matn-num">+</div>
+              <div class="matn-info">
+                <h4>كتاب ثالث للجرد</h4>
+                <p>يختاره الشيخ — تطبيق عملي لما تعلمته</p>
+                <div class="matn-badge"><span class="badge badge-gold">يختاره الشيخ</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== المستوى الأول ===== -->
+        <div class="section-tag reveal" style="margin-bottom:20px;margin-top:16px;">المستوى الأول — ٦ مراحل</div>
+
+        <!-- المرحلة الأولى -->
+        <div class="phase-block reveal" id="phase-1">
+          <div class="phase-header" onclick="togglePhase('phase-1')">
+            <div class="phase-num">١</div>
+            <div class="phase-label">
+              <h3>المرحلة الأولى — العقيدة والتوحيد</h3>
+              <p>٤ متون</p>
+            </div>
+            <div class="phase-toggle">▾</div>
+          </div>
+          <div class="phase-body">
+            <div class="matn-item">
+              <div class="matn-num">١</div>
+              <div class="matn-info"><h4>القواعد الأربع</h4><p>لشيخ الإسلام محمد بن عبدالوهاب</p><div class="matn-badge"><span class="badge badge-purple">عقيدة</span></div></div>
+            </div>
+            <div class="matn-item">
+              <div class="matn-num">٢</div>
+              <div class="matn-info"><h4>نواقض الإسلام</h4><p>لمحمد بن عبدالوهاب</p><div class="matn-badge"><span class="badge badge-purple">عقيدة</span></div></div>
+            </div>
+            <div class="matn-item">
+              <div class="matn-num">٣</div>
+              <div class="matn-info"><h4>الأصول الثلاثة وأدلتها</h4><p>لمحمد بن عبدالوهاب</p><div class="matn-badge"><span class="badge badge-purple">توحيد</span></div></div>
+            </div>
+            <div class="matn-item">
+              <div class="matn-num">٤</div>
+              <div class="matn-info"><h4>كشف الشبهات</h4><p>لمحمد بن عبدالوهاب</p><div class="matn-badge"><span class="badge badge-purple">عقيدة</span></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- المرحلة الثانية -->
+        <div class="phase-block reveal" id="phase-2">
+          <div class="phase-header" onclick="togglePhase('phase-2')">
+            <div class="phase-num">٢</div>
+            <div class="phase-label">
+              <h3>المرحلة الثانية — علوم الآلة والسنة</h3>
+              <p>٥ متون</p>
+            </div>
+            <div class="phase-toggle">▾</div>
+          </div>
+          <div class="phase-body">
+            <div class="matn-item">
+              <div class="matn-num">١</div>
+              <div class="matn-info"><h4>متن الآجرومية</h4><p>في النحو</p><div class="matn-badge"><span class="badge badge-gold">نحو</span></div></div>
+            </div>
+            <div class="matn-item">
+              <div class="matn-num">٢</div>
+              <div class="matn-info"><h4>متن التذكرة في علوم الحديث</h4><p>لابن الملقن</p><div class="matn-badge"><span class="badge badge-gold">مصطلح الحديث</span></div></div>
+            </div>
+            <div class="matn-item">
+              <div class="matn-num">٣</div>
+              <div class="matn-info"><h4>متن الأرجوزة الميئية</h4><p>في السيرة النبوية</p><div class="matn-badge"><span class="badge badge-gold">سيرة</span></div></div>
+            </div>
+            <div class="matn-item">
+              <div class="matn-num">٤</div>
+              <div class="matn-info"><h4>متن الرسالة اللطيفة في أصول الفقه</h4><p>للسعدي</p><div class="matn-badge"><span class="badge badge-gold">أصول فقه</span></div></div>
+            </div>
+            <div class="matn-item">
+              <div class="matn-num">٥</div>
+              <div class="matn-info"><h4>الأربعون النووية مع زيادات ابن رجب</h4><p>في فقه الحديث</p><div class="matn-badge"><span class="badge badge-gold">حديث</span></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- المرحلة الثالثة -->
+        <div class="phase-block reveal" id="phase-3">
+          <div class="phase-header" onclick="togglePhase('phase-3')">
+            <div class="phase-num">٣</div>
+            <div class="phase-label">
+              <h3>المرحلة الثالثة — الفقه المالكي وأصوله وقواعده</h3>
+              <p>٦ متون</p>
+            </div>
+            <div class="phase-toggle">▾</div>
+          </div>
+          <div class="phase-body">
+            <div class="matn-item">
+              <div class="matn-num">١</div>
+              <div class="matn-info"><h4>مقدمات التفقه</h4><p>الرسائل المذكورة: رد السفاريني، رد ابن رجب، أقوال ابن تيمية</p><div class="matn-badge"><span class="badge badge-purple">فقه</span></div></div>
+            </div>
+            <div class="matn-item">
+              <div class="matn-num">٢</div>
+              <div class="matn-info"><h4>متن الأخضري</h4><p>في العبادات</p><div class="matn-badge"><span class="badge badge-purple">فقه مالكي</span></div></div>
+            </div>
+            <div class="matn-item">
+              <div class="matn-num">٣</div>
+              <div class="matn-info"><h4>متن العشماوية</h4><p>قراءة سريعة</p><div class="matn-badge"><span class="badge badge-purple">فقه مالكي</span></div></div>
+            </div>
+            <div class="matn-item">
+              <div class="matn-num">٤</div>
+              <div class="matn-info"><h4>نظم ابن أبي كف</h4><p>في أدلة المذهب</p><div class="matn-badge"><span class="badge badge-purple">فقه مالكي</span></div></div>
+            </div>
+            <div class="matn-item">
+              <div class="matn-num">٥</div>
+              <div class="matn-info"><h4>نظم المرشد المعين لابن عاشر</h4><p>دراسة نقدية</p><div class="matn-badge"><span class="badge badge-purple">فقه مالكي</span></div></div>
+            </div>
+            <div class="matn-item">
+              <div class="matn-num">٦</div>
+              <div class="matn-info"><h4>منظومة ابن سند في القواعد الفقهية</h4><p>قواعد فقه</p><div class="matn-badge"><span class="badge badge-purple">قواعد فقهية</span></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- المرحلة الرابعة -->
+        <div class="phase-block reveal" id="phase-4">
+          <div class="phase-header" onclick="togglePhase('phase-4')">
+            <div class="phase-num">٤</div>
+            <div class="phase-label">
+              <h3>المرحلة الرابعة — أصول التفسير والعقيدة</h3>
+              <p>٤ متون</p>
+            </div>
+            <div class="phase-toggle">▾</div>
+          </div>
+          <div class="phase-body">
+            <div class="matn-item">
+              <div class="matn-num">١</div>
+              <div class="matn-info"><h4>مقدمة في أصول التفسير</h4><p>لشيخ الإسلام ابن تيمية</p><div class="matn-badge"><span class="badge badge-gold">تفسير</span></div></div>
+            </div>
+            <div class="matn-item">
+              <div class="matn-num">٢</div>
+              <div class="matn-info"><h4>كتاب التوحيد</h4><p>الذي هو حق الله على العبيد — للشيخ محمد بن عبدالوهاب</p><div class="matn-badge"><span class="badge badge-gold">توحيد</span></div></div>
+            </div>
+            <div class="matn-item">
+              <div class="matn-num">٣</div>
+              <div class="matn-info"><h4>القواعد والضوابط السلفية في الأسماء والصفات</h4><div class="matn-badge"><span class="badge badge-gold">عقيدة</span></div></div>
+            </div>
+            <div class="matn-item">
+              <div class="matn-num">٤</div>
+              <div class="matn-info"><h4>العقيدة الواسطية</h4><p>لابن تيمية</p><div class="matn-badge"><span class="badge badge-gold">عقيدة</span></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- المرحلة الخامسة -->
+        <div class="phase-block reveal" id="phase-5">
+          <div class="phase-header" onclick="togglePhase('phase-5')">
+            <div class="phase-num">٥</div>
+            <div class="phase-label">
+              <h3>المرحلة الخامسة — المقاصد والآداب والسياسة الشرعية</h3>
+              <p>٣ متون</p>
+            </div>
+            <div class="phase-toggle">▾</div>
+          </div>
+          <div class="phase-body">
+            <div class="matn-item">
+              <div class="matn-num">١</div>
+              <div class="matn-info"><h4>منظومة تبصرة القاصد في علم المقاصد</h4><p>للشيخ العصيمي</p><div class="matn-badge"><span class="badge badge-purple">مقاصد الشريعة</span></div></div>
+            </div>
+            <div class="matn-item">
+              <div class="matn-num">٢</div>
+              <div class="matn-info"><h4>كتاب الجامع من "القوانين الفقهية"</h4><p>لابن جزي — في الآداب</p><div class="matn-badge"><span class="badge badge-purple">آداب</span></div></div>
+            </div>
+            <div class="matn-item">
+              <div class="matn-num">٣</div>
+              <div class="matn-info"><h4>منظومة السبل المرضية في السياسة الشرعية</h4><p>لحافظ الحكمي</p><div class="matn-badge"><span class="badge badge-purple">سياسة شرعية</span></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- المرحلة السادسة -->
+        <div class="phase-block reveal" id="phase-6">
+          <div class="phase-header" onclick="togglePhase('phase-6')">
+            <div class="phase-num">٦</div>
+            <div class="phase-label">
+              <h3>المرحلة السادسة — فقه الدعوة والمناظرة والردود والحصانة</h3>
+              <p>٤ متون</p>
+            </div>
+            <div class="phase-toggle">▾</div>
+          </div>
+          <div class="phase-body">
+            <div class="matn-item">
+              <div class="matn-num">١</div>
+              <div class="matn-info"><h4>رسالة الأمر بالمعروف والنهي عن المنكر</h4><p>لابن تيمية</p><div class="matn-badge"><span class="badge badge-gold">دعوة</span></div></div>
+            </div>
+            <div class="matn-item">
+              <div class="matn-num">٢</div>
+              <div class="matn-info"><h4>متن آداب البحث والمناظرة</h4><p>لطاشكبري زاده</p><div class="matn-badge"><span class="badge badge-gold">مناظرة</span></div></div>
+            </div>
+            <div class="matn-item">
+              <div class="matn-num">٣</div>
+              <div class="matn-info"><h4>متن الرد على المخالف</h4><p>للشيخ مصعب بن صلاح</p><div class="matn-badge"><span class="badge badge-gold">ردود</span><span class="badge badge-purple" style="margin-right:6px;">من مؤلفات الشيخ</span></div></div>
+            </div>
+            <div class="matn-item">
+              <div class="matn-num">٤</div>
+              <div class="matn-info"><h4>متن الحصانة الفكرية</h4><div class="matn-badge"><span class="badge badge-gold">حصانة</span></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CTA -->
+        <div style="text-align:center;margin-top:56px;padding:48px;background:linear-gradient(135deg,var(--purple),var(--purple-light));border-radius:var(--radius);position:relative;overflow:hidden;" class="reveal">
+          <div style="position:relative;z-index:1;">
+            <div class="section-tag" style="background:rgba(212,180,142,0.15);color:var(--gold);margin-bottom:16px;">ابدأ رحلتك</div>
+            <h2 style="font-size:1.8rem;color:var(--white);margin-bottom:12px;">مستعد لبدء المنهج؟</h2>
+            <p style="color:rgba(255,255,255,0.7);margin-bottom:28px;">سجّل الآن وابدأ رحلتك العلمية في معهد التأصيل العلمي</p>
+            <a href="register.html" class="btn btn-gold">سجّل الآن</a>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </div>
+
+  <div id="footerPlaceholder"></div>
+
+  <script type="module">
+    import { renderHeader, renderFooter } from './components.js';
+    document.getElementById('headerPlaceholder').innerHTML = renderHeader('curriculum.html');
+    document.getElementById('footerPlaceholder').innerHTML = renderFooter();
+    const header = document.getElementById('siteHeader');
+    const hamburger = document.getElementById('hamburger');
+    const mobileMenu = document.getElementById('mobileMenu');
+    window.addEventListener('scroll', () => header.classList.toggle('scrolled', window.scrollY > 40));
+    hamburger && hamburger.addEventListener('click', () => mobileMenu.classList.toggle('open'));
+    const revealEls = document.querySelectorAll('.reveal');
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+    }, { threshold: 0.08 });
+    revealEls.forEach(el => obs.observe(el));
+  </script>
+  <script>
+    function togglePhase(id) {
+      const block = document.getElementById(id);
+      block.classList.toggle('open');
+    }
+  </script>
+</body>
+</html>

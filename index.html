@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>معهد التأصيل العلمي</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* ===== HERO ===== */
+    .hero {
+      min-height: 100vh;
+      background: linear-gradient(160deg, var(--white) 0%, rgba(212,180,142,0.07) 50%, rgba(59,27,64,0.04) 100%);
+      display: flex;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+      padding: 120px 0 80px;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -120px; left: -120px;
+      width: 560px; height: 560px;
+      background: radial-gradient(circle, rgba(212,180,142,0.13) 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: -80px; right: -80px;
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(59,27,64,0.06) 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .hero-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 32px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+    }
+    .hero-text .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 18px;
+      background: rgba(212,180,142,0.12);
+      border: 1px solid rgba(212,180,142,0.3);
+      border-radius: 100px;
+      font-size: 0.82rem;
+      color: var(--gold-dark);
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+    .hero-title {
+      font-size: clamp(2.2rem, 5vw, 3.6rem);
+      font-weight: bold;
+      color: var(--purple);
+      line-height: 1.25;
+      margin-bottom: 20px;
+    }
+    .hero-title .highlight {
+      color: var(--gold-dark);
+      position: relative;
+    }
+    .hero-title .highlight::after {
+      content: '';
+      position: absolute;
+      bottom: 2px; right: 0; left: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--gold), transparent);
+      border-radius: 2px;
+    }
+    .hero-desc {
+      font-size: 1.08rem;
+      color: var(--text-soft);
+      line-height: 1.85;
+      margin-bottom: 36px;
+      max-width: 480px;
+    }
+    .hero-actions { display: flex; gap: 16px; flex-wrap: wrap; }
+    .hero-stats {
+      display: flex;
+      gap: 32px;
+      margin-top: 48px;
+      padding-top: 32px;
+      border-top: 1px solid var(--border);
+    }
+    .hero-stat-num {
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: var(--purple);
+      display: block;
+    }
+    .hero-stat-label {
+      font-size: 0.8rem;
+      color: var(--text-soft);
+    }
+    .hero-visual {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .logo-showcase {
+      width: 320px;
+      height: 320px;
+      background: linear-gradient(135deg, rgba(59,27,64,0.05), rgba(212,180,142,0.1));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: float 5s ease-in-out infinite;
+      box-shadow: 0 24px 80px rgba(59,27,64,0.12), 0 0 0 1px rgba(212,180,142,0.2);
+    }
+    .logo-showcase img {
+      width: 220px;
+      height: 220px;
+      object-fit: contain;
+    }
+    .hero-badge {
+      position: absolute;
+      bottom: -12px; left: 20px;
+      background: var(--purple);
+      color: var(--white);
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-size: 0.82rem;
+      font-weight: bold;
+      box-shadow: var(--shadow);
+      animation: scaleIn 0.6s ease 0.8s both;
+    }
+    .hero-badge .num { font-size: 1.5rem; display: block; color: var(--gold); }
+
+    /* ===== VIDEO SECTION ===== */
+    .video-section {
+      padding: 80px 0;
+      background: linear-gradient(180deg, transparent, rgba(59,27,64,0.03), transparent);
+    }
+    .video-wrapper {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 32px;
+    }
+    .video-container {
+      position: relative;
+      padding-bottom: 56.25%;
+      height: 0;
+      overflow: hidden;
+      border-radius: 20px;
+      box-shadow: 0 20px 80px rgba(59,27,64,0.2);
+      border: 1px solid rgba(212,180,142,0.2);
+    }
+    .video-container iframe {
+      position: absolute;
+      top: 0; right: 0;
+      width: 100%; height: 100%;
+      border: none;
+    }
+    .video-placeholder {
+      position: absolute;
+      top: 0; right: 0;
+      width: 100%; height: 100%;
+      background: linear-gradient(135deg, var(--purple), var(--purple-light));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .play-btn {
+      width: 80px; height: 80px;
+      background: var(--gold);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      animation: pulse 2.5s ease-in-out infinite;
+      color: var(--purple);
+    }
+    .video-placeholder p {
+      color: rgba(255,255,255,0.8);
+      font-size: 1rem;
+    }
+
+    /* ===== ABOUT SECTION ===== */
+    .about-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      align-items: start;
+    }
+    .about-text h2 {
+      font-size: clamp(1.6rem, 3vw, 2.4rem);
+      color: var(--purple);
+      margin-bottom: 20px;
+      line-height: 1.3;
+    }
+    .about-text p {
+      color: var(--text-soft);
+      line-height: 1.9;
+      margin-bottom: 16px;
+      font-size: 1rem;
+    }
+    .about-features { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .about-feature {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 20px;
+      background: rgba(59,27,64,0.03);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      transition: var(--transition);
+    }
+    .about-feature:hover {
+      background: rgba(212,180,142,0.08);
+      border-color: rgba(212,180,142,0.3);
+      transform: translateY(-3px);
+    }
+    .about-feature .icon { font-size: 1.5rem; flex-shrink: 0; margin-top: 2px; }
+    .about-feature h4 { font-size: 0.9rem; font-weight: bold; color: var(--purple); margin-bottom: 4px; }
+    .about-feature p { font-size: 0.8rem; color: var(--text-soft); margin: 0; }
+
+    /* ===== GOALS SECTION ===== */
+    .goals-bg {
+      background: linear-gradient(135deg, var(--purple) 0%, var(--purple-light) 100%);
+      padding: 80px 0;
+      position: relative;
+      overflow: hidden;
+    }
+    .goals-bg::before {
+      content: '';
+      position: absolute;
+      top: -100px; left: -100px;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(255,255,255,0.04), transparent 70%);
+      border-radius: 50%;
+    }
+    .goals-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 24px;
+    }
+    .goal-card {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: var(--radius);
+      padding: 28px 24px;
+      transition: var(--transition);
+      backdrop-filter: blur(8px);
+    }
+    .goal-card:hover {
+      background: rgba(255,255,255,0.12);
+      transform: translateY(-5px);
+      border-color: rgba(212,180,142,0.4);
+    }
+    .goal-card .num {
+      font-size: 2rem;
+      font-weight: bold;
+      color: var(--gold);
+      opacity: 0.5;
+      line-height: 1;
+      margin-bottom: 12px;
+    }
+    .goal-card h3 { font-size: 0.95rem; color: var(--white); font-weight: bold; }
+
+    /* ===== TARGET ===== */
+    .target-section { padding: 72px 0; }
+    .target-inner {
+      display: grid;
+      grid-template-columns: 1fr 1.5fr;
+      gap: 64px;
+      align-items: center;
+    }
+    .target-label {
+      font-size: clamp(1.4rem, 3vw, 2rem);
+      font-weight: bold;
+      color: var(--purple);
+      line-height: 1.4;
+    }
+    .target-label span { color: var(--gold-dark); }
+    .target-list { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .target-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 20px;
+      background: rgba(212,180,142,0.07);
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(212,180,142,0.2);
+      font-size: 0.9rem;
+      font-weight: bold;
+      color: var(--purple);
+    }
+    .target-item .dot {
+      width: 8px; height: 8px;
+      background: var(--gold);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ===== ADVANTAGES ===== */
+    .adv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 28px; }
+    .adv-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 36px 28px;
+      text-align: center;
+      transition: var(--transition);
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+    .adv-card::before {
+      content: '';
+      position: absolute;
+      top: 0; right: 0; left: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--purple), var(--gold));
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .adv-card:hover::before { opacity: 1; }
+    .adv-card:hover { transform: translateY(-8px); box-shadow: var(--shadow-lg); }
+    .adv-icon { font-size: 2.4rem; margin-bottom: 16px; }
+    .adv-card h3 { font-size: 1rem; font-weight: bold; color: var(--purple); margin-bottom: 10px; }
+    .adv-card p { font-size: 0.87rem; color: var(--text-soft); line-height: 1.7; }
+
+    /* ===== CTA ===== */
+    .cta-section {
+      background: linear-gradient(135deg, var(--purple), var(--purple-dark));
+      padding: 80px 0;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .cta-section::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.02'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    .cta-section h2 { font-size: clamp(1.8rem, 4vw, 3rem); color: var(--white); margin-bottom: 16px; position: relative; }
+    .cta-section h2 span { color: var(--gold); }
+    .cta-section p { color: rgba(255,255,255,0.7); font-size: 1.05rem; margin-bottom: 36px; position: relative; }
+    .cta-actions { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; position: relative; }
+
+    @media (max-width: 900px) {
+      .hero-inner { grid-template-columns: 1fr; gap: 40px; text-align: center; }
+      .hero-visual { display: none; }
+      .hero-actions { justify-content: center; }
+      .hero-stats { justify-content: center; }
+      .about-grid { grid-template-columns: 1fr; gap: 40px; }
+      .about-features { grid-template-columns: 1fr; }
+      .target-inner { grid-template-columns: 1fr; gap: 32px; }
+      .target-list { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+      .logo-showcase { width: 220px; height: 220px; }
+      .logo-showcase img { width: 160px; height: 160px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header placeholder -->
+  <div id="headerPlaceholder"></div>
+
+  <div class="page-content">
+
+    <!-- ===== HERO ===== -->
+    <section class="hero">
+      <div class="hero-inner">
+        <div class="hero-text">
+          <div class="tag fade-in-up">
+            <span>🕌</span>
+            <span>برنامج علمي متكامل</span>
+          </div>
+          <h1 class="hero-title fade-in-up delay-1">
+            معهد<br>
+            <span class="highlight">التأصيل العلمي</span>
+          </h1>
+          <p class="hero-desc fade-in-up delay-2">
+            برنامج علمي ميسر يدرس الطالب فيه عدداً من المتون العلمية مع روافد متممة تُعين على استكمال بناء قوته العلمية والعملية
+          </p>
+          <div class="hero-actions fade-in-up delay-3">
+            <a href="register.html" class="btn btn-primary">سجّل الآن</a>
+            <a href="curriculum.html" class="btn btn-outline">استعرض المنهج</a>
+          </div>
+          <div class="hero-stats fade-in-up delay-4">
+            <div>
+              <span class="hero-stat-num">١</span>
+              <span class="hero-stat-label">سنة دراسية</span>
+            </div>
+            <div>
+              <span class="hero-stat-num">٦</span>
+              <span class="hero-stat-label">مراحل دراسية</span>
+            </div>
+            <div>
+              <span class="hero-stat-num">٢٠+</span>
+              <span class="hero-stat-label">متن علمي</span>
+            </div>
+          </div>
+        </div>
+        <div class="hero-visual fade-in-up delay-2">
+          <div class="logo-showcase" id="heroLogo">
+            <img id="heroLogoImg" alt="شعار معهد التأصيل العلمي">
+          </div>
+          <div class="hero-badge">
+            <span class="num">١٠٠٪</span>
+            إجازات علمية معتمدة
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== VIDEO ===== -->
+    <section class="video-section reveal">
+      <div class="video-wrapper">
+        <div class="section-header">
+          <div class="section-tag">تعرّف علينا</div>
+          <h2 class="section-title">مقطع تعريفي</h2>
+          <div class="gold-divider"></div>
+        </div>
+        <div class="video-container" id="videoContainer">
+          <div class="video-placeholder" id="videoPlaceholder" onclick="loadVideo()">
+            <div class="play-btn">▶</div>
+            <p>اضغط لمشاهدة المقطع التعريفي</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== ABOUT ===== -->
+    <section class="section reveal">
+      <div class="container">
+        <div class="about-grid">
+          <div class="about-text">
+            <div class="section-tag">من نحن</div>
+            <h2>الفكرة العامة للمعهد</h2>
+            <div class="gold-divider" style="margin: 16px 0;"></div>
+            <p>
+              برنامج علمي ميسر يدرس الطالب فيه عدداً من المتون العلمية التي يحتاجها كل طالب علم، مع روافد متممة تُعين على استكمال بناء قوته العلمية والعملية.
+            </p>
+            <p>
+              يقوم على المعهد الشيخ مصعب بن صلاح، ويستهدف طلاب العلم بمختلف أعمارهم ومستوياتهم ذكوراً وإناثاً.
+            </p>
+            <a href="about.html" class="btn btn-outline" style="margin-top:8px;">اقرأ المزيد</a>
+          </div>
+          <div class="about-features">
+            <div class="about-feature reveal">
+              <div class="icon">📜</div>
+              <div>
+                <h4>إجازات علمية</h4>
+                <p>شهادات إتمام وإجازات علمية معتمدة</p>
+              </div>
+            </div>
+            <div class="about-feature reveal">
+              <div class="icon">🎓</div>
+              <div>
+                <h4>منهجية شاملة</h4>
+                <p>في فنون الشريعة والمقاصد وعلوم الآلة</p>
+              </div>
+            </div>
+            <div class="about-feature reveal">
+              <div class="icon">⏱</div>
+              <div>
+                <h4>سنة واحدة فقط</h4>
+                <p>منهج مكثف ومنظم في مدة قصيرة</p>
+              </div>
+            </div>
+            <div class="about-feature reveal">
+              <div class="icon">🌐</div>
+              <div>
+                <h4>للجميع</h4>
+                <p>ذكوراً وإناثاً بمختلف المستويات</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== GOALS ===== -->
+    <section class="goals-bg reveal">
+      <div class="container">
+        <div class="section-header" style="margin-bottom:48px;">
+          <div class="section-tag" style="background:rgba(212,180,142,0.15);color:var(--gold);">أهداف البرنامج</div>
+          <h2 class="section-title" style="color:var(--white);">ما الذي ستحققه <span>من هذا البرنامج؟</span></h2>
+          <div class="gold-divider"></div>
+        </div>
+        <div class="goals-grid">
+          <div class="goal-card reveal">
+            <div class="num">١</div>
+            <h3>تدريس المتون المعتمدة في مختلف العلوم</h3>
+          </div>
+          <div class="goal-card reveal">
+            <div class="num">٢</div>
+            <h3>الاعتناء بحفظ المتون ومراجعتها</h3>
+          </div>
+          <div class="goal-card reveal">
+            <div class="num">٣</div>
+            <h3>الترقي في أخذ العلم</h3>
+          </div>
+          <div class="goal-card reveal">
+            <div class="num">٤</div>
+            <h3>تكوين الملكة العلمية</h3>
+          </div>
+          <div class="goal-card reveal">
+            <div class="num">٥</div>
+            <h3>معرفة العلاقة بين العلوم</h3>
+          </div>
+          <div class="goal-card reveal">
+            <div class="num">٦</div>
+            <h3>القدرة على المباحثة والمناقشة</h3>
+          </div>
+          <div class="goal-card reveal">
+            <div class="num">٧</div>
+            <h3>التكامل المعرفي</h3>
+          </div>
+          <div class="goal-card reveal">
+            <div class="num">٨</div>
+            <h3>التعرف على المكتبة الإسلامية والاستفادة منها</h3>
+          </div>
+          <div class="goal-card reveal">
+            <div class="num">٩</div>
+            <h3>معالجة الأغلاط المنهجية</h3>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== TARGET ===== -->
+    <section class="target-section reveal">
+      <div class="container">
+        <div class="target-inner">
+          <div>
+            <div class="section-tag">الفئة المستهدفة</div>
+            <div class="target-label" style="margin-top:16px;">
+              هذا البرنامج مخصص<br>
+              <span>لكل طالب علم</span>
+            </div>
+          </div>
+          <div class="target-list">
+            <div class="target-item reveal"><span class="dot"></span>المبتدئون في طلب العلم</div>
+            <div class="target-item reveal"><span class="dot"></span>المتوسطون في دراستهم</div>
+            <div class="target-item reveal"><span class="dot"></span>طلاب الجامعات</div>
+            <div class="target-item reveal"><span class="dot"></span>الباحثون عن التأصيل</div>
+            <div class="target-item reveal"><span class="dot"></span>الذكور والإناث</div>
+            <div class="target-item reveal"><span class="dot"></span>مختلف الأعمار</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== ADVANTAGES ===== -->
+    <section class="section reveal" style="background: rgba(59,27,64,0.02);">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-tag">مميزات البرنامج</div>
+          <h2 class="section-title">لماذا تختار <span>التأصيل العلمي؟</span></h2>
+          <div class="gold-divider"></div>
+        </div>
+        <div class="adv-grid">
+          <div class="adv-card reveal">
+            <div class="adv-icon">📜</div>
+            <h3>إجازات علمية وشهادات إتمام</h3>
+            <p>تحصل على إجازة علمية معتمدة بعد إتمام البرنامج</p>
+          </div>
+          <div class="adv-card reveal">
+            <div class="adv-icon">🔗</div>
+            <h3>منهجية في الشريعة والمقاصد</h3>
+            <p>منهج شامل يجمع بين فنون الشريعة وعلوم الآلة</p>
+          </div>
+          <div class="adv-card reveal">
+            <div class="adv-icon">⏱</div>
+            <h3>سنة واحدة فقط</h3>
+            <p>برنامج مكثف يستغرق عاماً دراسياً واحداً فقط</p>
+          </div>
+          <div class="adv-card reveal">
+            <div class="adv-icon">👨‍🏫</div>
+            <h3>إشراف الشيخ مباشرة</h3>
+            <p>يُشرف على البرنامج الشيخ مصعب بن صلاح مباشرة</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== CTA ===== -->
+    <section class="cta-section reveal">
+      <div class="container">
+        <h2>ابدأ رحلتك العلمية<br><span>اليوم</span></h2>
+        <p>سجّل الآن وكن جزءاً من هذا البرنامج العلمي المتميز</p>
+        <div class="cta-actions">
+          <a href="register.html" class="btn btn-gold">سجّل الآن</a>
+          <a href="curriculum.html" class="btn" style="background:rgba(255,255,255,0.1);color:white;border-color:rgba(255,255,255,0.3);">استعرض المنهج</a>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Footer placeholder -->
+  <div id="footerPlaceholder"></div>
+
+  <script type="module">
+    import { renderHeader, renderFooter, LOGO_SRC } from './components.js';
+
+    document.getElementById('headerPlaceholder').innerHTML = renderHeader('index.html');
+    document.getElementById('footerPlaceholder').innerHTML = renderFooter();
+
+    // Set logo
+    document.getElementById('heroLogoImg').src = LOGO_SRC;
+
+    // Init header behavior
+    const header = document.getElementById('siteHeader');
+    const hamburger = document.getElementById('hamburger');
+    const mobileMenu = document.getElementById('mobileMenu');
+    window.addEventListener('scroll', () => {
+      header.classList.toggle('scrolled', window.scrollY > 40);
+    });
+    hamburger && hamburger.addEventListener('click', () => mobileMenu.classList.toggle('open'));
+
+    // Scroll reveal
+    const revealEls = document.querySelectorAll('.reveal');
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); }
+      });
+    }, { threshold: 0.1 });
+    revealEls.forEach(el => obs.observe(el));
+  </script>
+  <script>
+    const YOUTUBE_ID = 'VIDEO_ID_HERE'; // ← ضع ID الفيديو هنا
+    function loadVideo() {
+      const container = document.getElementById('videoContainer');
+      container.innerHTML = `<iframe
+        src="https://www.youtube.com/embed/${YOUTUBE_ID}?autoplay=1&rel=0"
+        frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen
+        style="position:absolute;top:0;right:0;width:100%;height:100%;border-radius:20px;">
+      </iframe>`;
+    }
+  </script>
+</body>
+</html>

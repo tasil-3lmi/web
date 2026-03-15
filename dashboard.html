@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة التحكم — معهد التأصيل العلمي</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body { background: #f7f5fa; }
+
+    /* ===== LOADING ===== */
+    .loading-screen {
+      position: fixed; inset: 0;
+      background: var(--white);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 9999; gap: 16px;
+      transition: opacity 0.4s;
+    }
+    .loading-screen.hidden { opacity: 0; pointer-events: none; }
+    .loading-screen img { width: 80px; height: 80px; object-fit: contain; animation: float 2s ease-in-out infinite; }
+    .loading-screen p { font-size: 0.9rem; color: var(--text-soft); }
+
+    /* ===== DASHBOARD LAYOUT ===== */
+    .dash-wrapper {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      min-height: 100vh;
+      padding-top: 80px;
+    }
+
+    /* SIDEBAR */
+    .dash-sidebar {
+      background: var(--white);
+      border-left: 1px solid var(--border);
+      padding: 32px 0;
+      position: sticky;
+      top: 80px;
+      height: calc(100vh - 80px);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    .sidebar-user {
+      padding: 0 24px 24px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 16px;
+    }
+    .user-avatar {
+      width: 56px; height: 56px;
+      background: linear-gradient(135deg, var(--purple), var(--purple-light));
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem; color: white;
+      margin-bottom: 12px;
+    }
+    .user-name { font-size: 0.95rem; font-weight: bold; color: var(--purple); margin-bottom: 4px; }
+    .user-role-badge { display: inline-block; padding: 3px 10px; border-radius: 100px; font-size: 0.72rem; font-weight: bold; }
+    .role-student { background: rgba(59,27,64,0.08); color: var(--purple); }
+    .role-admin { background: rgba(212,180,142,0.2); color: var(--gold-dark); }
+
+    .sidebar-nav { padding: 0 12px; flex: 1; }
+    .sidebar-nav-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+      color: var(--text-soft);
+      cursor: pointer;
+      transition: var(--transition);
+      border: none; background: none; width: 100%;
+      text-align: right; font-family: inherit;
+    }
+    .sidebar-nav-item:hover, .sidebar-nav-item.active {
+      background: rgba(59,27,64,0.07);
+      color: var(--purple);
+      font-weight: bold;
+    }
+    .sidebar-nav-item .ico { font-size: 1.1rem; flex-shrink: 0; }
+
+    .sidebar-logout {
+      padding: 16px 24px 0;
+      border-top: 1px solid var(--border);
+      margin-top: auto;
+    }
+    .logout-btn {
+      width: 100%; padding: 12px; border-radius: var(--radius-sm);
+      border: 1.5px solid rgba(185,45,58,0.2);
+      background: rgba(185,45,58,0.05);
+      color: #b92d3a;
+      font-family: inherit; font-size: 0.88rem; font-weight: bold;
+      cursor: pointer; transition: var(--transition);
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .logout-btn:hover { background: #b92d3a; color: white; }
+
+    /* MAIN CONTENT */
+    .dash-main {
+      padding: 40px;
+      max-width: 960px;
+    }
+
+    /* WELCOME */
+    .welcome-banner {
+      background: linear-gradient(135deg, var(--purple), var(--purple-light));
+      border-radius: 20px;
+      padding: 36px 40px;
+      margin-bottom: 32px;
+      position: relative;
+      overflow: hidden;
+    }
+    .welcome-banner::after {
+      content: '';
+      position: absolute;
+      top: -60px; left: -60px;
+      width: 280px; height: 280px;
+      background: radial-gradient(circle, rgba(255,255,255,0.06), transparent 70%);
+      border-radius: 50%;
+    }
+    .welcome-banner .greeting { font-size: 0.85rem; color: rgba(255,255,255,0.65); margin-bottom: 6px; }
+    .welcome-banner h2 { font-size: 1.6rem; color: var(--white); margin-bottom: 6px; }
+    .welcome-banner h2 span { color: var(--gold); }
+    .welcome-banner p { font-size: 0.88rem; color: rgba(255,255,255,0.6); }
+
+    /* STATS ROW */
+    .student-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .stat-box {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 20px;
+      box-shadow: 0 2px 12px rgba(59,27,64,0.06);
+    }
+    .stat-box .s-num { font-size: 2rem; font-weight: bold; color: var(--purple); display: block; line-height: 1; margin-bottom: 6px; }
+    .stat-box .s-lbl { font-size: 0.78rem; color: var(--text-soft); }
+
+    /* PROGRESS CARD */
+    .progress-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 12px rgba(59,27,64,0.06);
+    }
+    .progress-card h3 { font-size: 1.05rem; font-weight: bold; color: var(--purple); margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+    .overall-progress { margin-bottom: 28px; }
+    .op-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+    .op-label { font-size: 0.9rem; font-weight: bold; color: var(--purple); }
+    .op-pct { font-size: 1.2rem; font-weight: bold; color: var(--gold-dark); }
+    .progress-bar-bg { height: 10px; background: rgba(59,27,64,0.08); border-radius: 5px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--purple), var(--gold)); border-radius: 5px; transition: width 1s cubic-bezier(0.4,0,0.2,1); }
+
+    /* CURRICULUM CHECKLIST */
+    .curriculum-section { margin-bottom: 16px; }
+    .cs-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 18px;
+      background: linear-gradient(135deg, rgba(59,27,64,0.06), rgba(212,180,142,0.06));
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      user-select: none;
+      transition: var(--transition);
+    }
+    .cs-header:hover { background: rgba(59,27,64,0.09); }
+    .cs-header-left { display: flex; align-items: center; gap: 12px; }
+    .cs-num {
+      width: 32px; height: 32px;
+      background: var(--purple);
+      color: white;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; font-weight: bold; flex-shrink: 0;
+    }
+    .cs-title { font-size: 0.92rem; font-weight: bold; color: var(--purple); }
+    .cs-count { font-size: 0.78rem; color: var(--text-soft); margin-top: 2px; }
+    .cs-progress-mini { font-size: 0.82rem; color: var(--gold-dark); font-weight: bold; }
+    .cs-toggle { color: var(--purple); transition: transform 0.3s; font-size: 1rem; }
+    .curriculum-section.open .cs-toggle { transform: rotate(180deg); }
+    .cs-items { display: none; padding: 8px 0 4px; }
+    .curriculum-section.open .cs-items { display: block; }
+
+    .matn-check {
+      display: flex; align-items: center; gap: 14px;
+      padding: 12px 18px;
+      border-radius: var(--radius-sm);
+      transition: var(--transition);
+      cursor: pointer;
+    }
+    .matn-check:hover { background: rgba(59,27,64,0.04); }
+    .matn-check input[type=checkbox] {
+      width: 18px; height: 18px;
+      accent-color: var(--purple);
+      cursor: pointer; flex-shrink: 0;
+    }
+    .matn-check label { font-size: 0.88rem; color: var(--text-main); cursor: pointer; flex: 1; }
+    .matn-check.done label { text-decoration: line-through; color: var(--text-soft); }
+
+    /* SUPERVISOR VIEW */
+    .sup-table-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      box-shadow: 0 2px 12px rgba(59,27,64,0.06);
+      margin-bottom: 24px;
+    }
+    .sup-table-card h3 { font-size: 1.05rem; font-weight: bold; color: var(--purple); margin-bottom: 20px; }
+    .students-table { width: 100%; border-collapse: collapse; }
+    .students-table th, .students-table td { padding: 12px 16px; text-align: right; border-bottom: 1px solid var(--border); font-size: 0.88rem; }
+    .students-table th { font-weight: bold; color: var(--purple); background: rgba(59,27,64,0.03); }
+    .students-table tr:hover td { background: rgba(212,180,142,0.05); }
+    .prog-mini { height: 6px; background: rgba(59,27,64,0.08); border-radius: 3px; overflow: hidden; width: 80px; display: inline-block; vertical-align: middle; }
+    .prog-mini-fill { height: 100%; background: linear-gradient(90deg, var(--purple), var(--gold)); border-radius: 3px; }
+
+    /* PANEL VISIBILITY */
+    .panel { display: none; }
+    .panel.active { display: block; animation: fadeIn 0.3s ease; }
+
+    @media (max-width: 860px) {
+      .dash-wrapper { grid-template-columns: 1fr; }
+      .dash-sidebar { display: none; position: static; height: auto; }
+      .dash-main { padding: 24px 20px; }
+      .welcome-banner { padding: 24px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Loading -->
+  <div class="loading-screen" id="loadingScreen">
+    <img id="loadingLogo" alt="loading">
+    <div class="spinner" style="border-color:rgba(59,27,64,0.2);border-top-color:var(--purple);width:32px;height:32px;border-width:3px;"></div>
+    <p>جارٍ التحقق من هويتك...</p>
+  </div>
+
+  <div id="headerPlaceholder"></div>
+
+  <div class="page-content">
+    <div class="dash-wrapper" id="dashWrapper" style="display:none;">
+
+      <!-- SIDEBAR -->
+      <aside class="dash-sidebar">
+        <div class="sidebar-user">
+          <div class="user-avatar" id="sideAvatar">👤</div>
+          <div class="user-name" id="sideUserName">...</div>
+          <span class="user-role-badge" id="sideRoleBadge">طالب</span>
+        </div>
+        <nav class="sidebar-nav" id="sidebarNav">
+          <!-- Student nav -->
+          <div id="studentNav">
+            <button class="sidebar-nav-item active" onclick="showPanel('welcome')"><span class="ico">🏠</span> الرئيسية</button>
+            <button class="sidebar-nav-item" onclick="showPanel('progress')"><span class="ico">📊</span> تقرير الإنجاز</button>
+            <button class="sidebar-nav-item" onclick="showPanel('curriculum')"><span class="ico">📚</span> خطة الدراسة</button>
+          </div>
+          <!-- Supervisor nav -->
+          <div id="supervisorNav" style="display:none;">
+            <button class="sidebar-nav-item active" onclick="showPanel('supWelcome')"><span class="ico">🏠</span> الرئيسية</button>
+            <button class="sidebar-nav-item" onclick="showPanel('supStudents')"><span class="ico">👥</span> الطلاب</button>
+          </div>
+        </nav>
+        <div class="sidebar-logout">
+          <button class="logout-btn" onclick="handleLogout()">🚪 تسجيل الخروج</button>
+        </div>
+      </aside>
+
+      <!-- MAIN -->
+      <main class="dash-main">
+
+        <!-- ===== STUDENT: WELCOME ===== -->
+        <div class="panel active" id="panel-welcome">
+          <div class="welcome-banner">
+            <div class="greeting">مرحباً بك في</div>
+            <h2>معهد التأصيل العلمي 🕌<br><span id="welcomeName">...</span></h2>
+            <p>نتمنى لك رحلة علمية مثمرة ومباركة</p>
+          </div>
+          <div class="student-stats">
+            <div class="stat-box"><span class="s-num" id="stat-done">٠</span><span class="s-lbl">متن مكتمل</span></div>
+            <div class="stat-box"><span class="s-num" id="stat-remain">٢٠+</span><span class="s-lbl">متن متبقٍ</span></div>
+            <div class="stat-box"><span class="s-num" id="stat-pct">٠٪</span><span class="s-lbl">نسبة الإنجاز</span></div>
+            <div class="stat-box"><span class="s-num">١</span><span class="s-lbl">سنة دراسية</span></div>
+          </div>
+          <!-- Quick progress -->
+          <div class="progress-card">
+            <h3>📈 نظرة سريعة على تقدمك</h3>
+            <div class="overall-progress">
+              <div class="op-header">
+                <span class="op-label">الإنجاز الكلي</span>
+                <span class="op-pct" id="overallPct">٠٪</span>
+              </div>
+              <div class="progress-bar-bg"><div class="progress-bar-fill" id="overallBar" style="width:0%"></div></div>
+            </div>
+            <div style="margin-top:16px;">
+              <button class="btn btn-primary" onclick="showPanel('curriculum')" style="font-size:0.88rem;padding:12px 24px;">
+                📚 عرض خطة الدراسة
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== STUDENT: PROGRESS ===== -->
+        <div class="panel" id="panel-progress">
+          <h2 style="font-size:1.4rem;color:var(--purple);margin-bottom:24px;">📊 تقرير الإنجاز</h2>
+          <div class="progress-card">
+            <h3>📈 الإنجاز الكلي</h3>
+            <div class="overall-progress">
+              <div class="op-header">
+                <span class="op-label">نسبة إتمام المنهج</span>
+                <span class="op-pct" id="overallPct2">٠٪</span>
+              </div>
+              <div class="progress-bar-bg"><div class="progress-bar-fill" id="overallBar2" style="width:0%"></div></div>
+            </div>
+          </div>
+          <!-- Phase by phase progress -->
+          <div class="progress-card" id="phaseProgressContainer">
+            <h3>📋 تفصيل المراحل</h3>
+            <div id="phaseProgressList"></div>
+          </div>
+        </div>
+
+        <!-- ===== STUDENT: CURRICULUM ===== -->
+        <div class="panel" id="panel-curriculum">
+          <h2 style="font-size:1.4rem;color:var(--purple);margin-bottom:24px;">📚 خطة الدراسة</h2>
+          <div class="progress-card">
+            <h3>🎯 إجمالي التقدم</h3>
+            <div class="overall-progress">
+              <div class="op-header">
+                <span class="op-label">الإنجاز</span>
+                <span class="op-pct" id="overallPct3">٠٪</span>
+              </div>
+              <div class="progress-bar-bg"><div class="progress-bar-fill" id="overallBar3" style="width:0%"></div></div>
+            </div>
+          </div>
+
+          <div class="progress-card" id="curriculumChecklistContainer">
+            <h3>✅ قائمة المتون — ضع علامة على ما أتممته</h3>
+            <div id="curriculumChecklist"></div>
+          </div>
+        </div>
+
+        <!-- ===== SUPERVISOR: WELCOME ===== -->
+        <div class="panel" id="panel-supWelcome">
+          <div class="welcome-banner">
+            <div class="greeting">مرحباً بك أيها المشرف في</div>
+            <h2>معهد التأصيل العلمي 🕌<br><span id="supWelcomeName">...</span></h2>
+            <p>إدارة الطلاب ومتابعة تقدمهم</p>
+          </div>
+          <div class="student-stats">
+            <div class="stat-box"><span class="s-num" id="sup-stat-students">٠</span><span class="s-lbl">طالب مسجل</span></div>
+          </div>
+        </div>
+
+        <!-- ===== SUPERVISOR: STUDENTS ===== -->
+        <div class="panel" id="panel-supStudents">
+          <h2 style="font-size:1.4rem;color:var(--purple);margin-bottom:24px;">👥 قائمة الطلاب</h2>
+          <div class="sup-table-card">
+            <h3>الطلاب المسجلون</h3>
+            <div style="overflow-x:auto;">
+              <table class="students-table">
+                <thead>
+                  <tr>
+                    <th>الاسم</th>
+                    <th>البريد</th>
+                    <th>المرحلة</th>
+                    <th>نسبة الإنجاز</th>
+                  </tr>
+                </thead>
+                <tbody id="studentsTableBody">
+                  <tr><td colspan="4" style="text-align:center;color:var(--text-soft);padding:24px;">جارٍ التحميل...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <div id="footerPlaceholder"></div>
+
+  <script type="module">
+    import { renderHeader, renderFooter, LOGO_SRC } from './components.js';
+    import {
+      auth, db,
+      signOut, onAuthStateChanged,
+      doc, getDoc, updateDoc, collection, getDocs
+    } from './firebase.js';
+
+    document.getElementById('headerPlaceholder').innerHTML = renderHeader('');
+    document.getElementById('footerPlaceholder').innerHTML = renderFooter();
+    document.getElementById('loadingLogo').src = LOGO_SRC;
+
+    const header = document.getElementById('siteHeader');
+    const hamburger = document.getElementById('hamburger');
+    const mobileMenu = document.getElementById('mobileMenu');
+    window.addEventListener('scroll', () => header.classList.toggle('scrolled', window.scrollY > 40));
+    hamburger && hamburger.addEventListener('click', () => mobileMenu.classList.toggle('open'));
+
+    // ===== CURRICULUM DATA =====
+    const CURRICULUM = [
+      {
+        id: 'prep', label: 'المرحلة التمهيدية', items: [
+          { id: 'prep_1', label: 'كتاب المدخل إلى طلب العلم' },
+          { id: 'prep_2', label: 'كتاب تذكرة السامع والمتكلم' },
+          { id: 'prep_3', label: 'كتاب الجرد (يختاره الشيخ)' },
+        ]
+      },
+      {
+        id: 'p1', label: 'المرحلة الأولى — العقيدة والتوحيد', items: [
+          { id: 'p1_1', label: 'القواعد الأربع' },
+          { id: 'p1_2', label: 'نواقض الإسلام' },
+          { id: 'p1_3', label: 'الأصول الثلاثة وأدلتها' },
+          { id: 'p1_4', label: 'كشف الشبهات' },
+        ]
+      },
+      {
+        id: 'p2', label: 'المرحلة الثانية — علوم الآلة والسنة', items: [
+          { id: 'p2_1', label: 'متن الآجرومية' },
+          { id: 'p2_2', label: 'التذكرة في علوم الحديث' },
+          { id: 'p2_3', label: 'الأرجوزة الميئية (السيرة)' },
+          { id: 'p2_4', label: 'الرسالة اللطيفة في أصول الفقه' },
+          { id: 'p2_5', label: 'الأربعون النووية مع زيادات ابن رجب' },
+        ]
+      },
+      {
+        id: 'p3', label: 'المرحلة الثالثة — الفقه المالكي', items: [
+          { id: 'p3_1', label: 'مقدمات التفقه' },
+          { id: 'p3_2', label: 'متن الأخضري' },
+          { id: 'p3_3', label: 'متن العشماوية' },
+          { id: 'p3_4', label: 'نظم ابن أبي كف' },
+          { id: 'p3_5', label: 'المرشد المعين لابن عاشر' },
+          { id: 'p3_6', label: 'منظومة ابن سند في القواعد الفقهية' },
+        ]
+      },
+      {
+        id: 'p4', label: 'المرحلة الرابعة — أصول التفسير والعقيدة', items: [
+          { id: 'p4_1', label: 'مقدمة في أصول التفسير' },
+          { id: 'p4_2', label: 'كتاب التوحيد' },
+          { id: 'p4_3', label: 'القواعد والضوابط السلفية في الأسماء والصفات' },
+          { id: 'p4_4', label: 'العقيدة الواسطية' },
+        ]
+      },
+      {
+        id: 'p5', label: 'المرحلة الخامسة — المقاصد والآداب', items: [
+          { id: 'p5_1', label: 'منظومة تبصرة القاصد في علم المقاصد' },
+          { id: 'p5_2', label: 'الجامع من القوانين الفقهية (الآداب)' },
+          { id: 'p5_3', label: 'منظومة السبل المرضية في السياسة الشرعية' },
+        ]
+      },
+      {
+        id: 'p6', label: 'المرحلة السادسة — فقه الدعوة والمناظرة', items: [
+          { id: 'p6_1', label: 'رسالة الأمر بالمعروف والنهي عن المنكر' },
+          { id: 'p6_2', label: 'متن آداب البحث والمناظرة' },
+          { id: 'p6_3', label: 'متن الرد على المخالف' },
+          { id: 'p6_4', label: 'متن الحصانة الفكرية' },
+        ]
+      }
+    ];
+    const TOTAL_ITEMS = CURRICULUM.reduce((a, p) => a + p.items.length, 0);
+
+    let currentUser = null;
+    let currentUserData = null;
+    let userProgress = {};
+
+    // ===== AUTH LISTENER =====
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = 'register.html';
+        return;
+      }
+      currentUser = user;
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (!userDoc.exists()) { window.location.href = 'register.html'; return; }
+      currentUserData = userDoc.data();
+      userProgress = currentUserData.progress || {};
+
+      document.getElementById('loadingScreen').classList.add('hidden');
+      document.getElementById('dashWrapper').style.display = '';
+
+      const isAdmin = currentUserData.role === 'superAdmin' || currentUserData.role === 'supervisor';
+
+      // Sidebar user info
+      document.getElementById('sideUserName').textContent = currentUserData.fullName || 'مستخدم';
+      document.getElementById('sideRoleBadge').textContent = isAdmin ? 'مشرف' : 'طالب';
+      document.getElementById('sideRoleBadge').className = 'user-role-badge ' + (isAdmin ? 'role-admin' : 'role-student');
+
+      if (isAdmin) {
+        document.getElementById('studentNav').style.display = 'none';
+        document.getElementById('supervisorNav').style.display = '';
+        document.getElementById('panel-welcome').classList.remove('active');
+        document.getElementById('panel-supWelcome').classList.add('active');
+        document.getElementById('supWelcomeName').textContent = currentUserData.fullName;
+        loadStudentsList();
+      } else {
+        document.getElementById('welcomeName').textContent = currentUserData.fullName;
+        buildCurriculum();
+        updateAllProgress();
+      }
+    });
+
+    // ===== PANEL SWITCHER =====
+    window.showPanel = function(panelId) {
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('panel-' + panelId).classList.add('active');
+      document.querySelectorAll('.sidebar-nav-item').forEach(b => b.classList.remove('active'));
+      event.target.closest('.sidebar-nav-item').classList.add('active');
+
+      if (panelId === 'supStudents') loadStudentsList();
+    };
+
+    // ===== BUILD CURRICULUM CHECKLIST =====
+    function buildCurriculum() {
+      const container = document.getElementById('curriculumChecklist');
+      container.innerHTML = '';
+      CURRICULUM.forEach((phase, pi) => {
+        const doneCount = phase.items.filter(item => userProgress[item.id]).length;
+        const section = document.createElement('div');
+        section.className = 'curriculum-section';
+        section.id = 'cs-' + phase.id;
+        section.innerHTML = `
+          <div class="cs-header" onclick="toggleCS('cs-${phase.id}')">
+            <div class="cs-header-left">
+              <div class="cs-num">${pi === 0 ? '٠' : pi}</div>
+              <div>
+                <div class="cs-title">${phase.label}</div>
+                <div class="cs-count">${phase.items.length} متن</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <span class="cs-progress-mini" id="csp-${phase.id}">${doneCount}/${phase.items.length}</span>
+              <span class="cs-toggle">▾</span>
+            </div>
+          </div>
+          <div class="cs-items">
+            ${phase.items.map(item => `
+              <label class="matn-check ${userProgress[item.id] ? 'done' : ''}" id="mc-${item.id}">
+                <input type="checkbox" ${userProgress[item.id] ? 'checked' : ''}
+                  onchange="toggleItem('${item.id}', '${phase.id}', this.checked)">
+                <span>${item.label}</span>
+              </label>
+            `).join('')}
+          </div>
+        `;
+        container.appendChild(section);
+      });
+
+      // Build phase progress list
+      const phaseList = document.getElementById('phaseProgressList');
+      if (phaseList) {
+        phaseList.innerHTML = '';
+        CURRICULUM.forEach((phase, pi) => {
+          const doneCount = phase.items.filter(item => userProgress[item.id]).length;
+          const pct = Math.round((doneCount / phase.items.length) * 100);
+          const div = document.createElement('div');
+          div.style.cssText = 'margin-bottom:20px;';
+          div.innerHTML = `
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+              <span style="font-size:0.88rem;color:var(--text-main);">${phase.label}</span>
+              <span style="font-size:0.82rem;color:var(--gold-dark);font-weight:bold;">${doneCount}/${phase.items.length}</span>
+            </div>
+            <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+          `;
+          phaseList.appendChild(div);
+        });
+      }
+    }
+
+    window.toggleCS = function(id) {
+      document.getElementById(id).classList.toggle('open');
+    };
+
+    window.toggleItem = async function(itemId, phaseId, checked) {
+      userProgress[itemId] = checked;
+      const el = document.getElementById('mc-' + itemId);
+      if (el) el.classList.toggle('done', checked);
+      // Save to Firestore
+      await updateDoc(doc(db, 'users', currentUser.uid), { progress: userProgress });
+      updateAllProgress();
+      buildCurriculum();
+    };
+
+    function updateAllProgress() {
+      const done = Object.values(userProgress).filter(Boolean).length;
+      const pct = Math.round((done / TOTAL_ITEMS) * 100);
+      const pctAr = pct + '٪';
+
+      // Stat boxes
+      const el = document.getElementById('stat-done');
+      if (el) el.textContent = done;
+      const el2 = document.getElementById('stat-remain');
+      if (el2) el2.textContent = TOTAL_ITEMS - done;
+      const el3 = document.getElementById('stat-pct');
+      if (el3) el3.textContent = pctAr;
+
+      // Progress bars
+      ['overallPct','overallPct2','overallPct3'].forEach(id => {
+        const e = document.getElementById(id);
+        if (e) e.textContent = pctAr;
+      });
+      ['overallBar','overallBar2','overallBar3'].forEach(id => {
+        const e = document.getElementById(id);
+        if (e) setTimeout(() => e.style.width = pct + '%', 200);
+      });
+    }
+
+    // ===== SUPERVISOR: LOAD STUDENTS =====
+    async function loadStudentsList() {
+      const tbody = document.getElementById('studentsTableBody');
+      if (!tbody) return;
+      const snapshot = await getDocs(collection(db, 'users'));
+      const students = [];
+      snapshot.forEach(d => { if (d.data().role === 'student') students.push(d.data()); });
+      document.getElementById('sup-stat-students').textContent = students.length;
+      if (students.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-soft);padding:24px;">لا يوجد طلاب مسجلون بعد</td></tr>';
+        return;
+      }
+      tbody.innerHTML = students.map(s => {
+        const done = Object.values(s.progress || {}).filter(Boolean).length;
+        const pct = Math.round((done / TOTAL_ITEMS) * 100);
+        const levelMap = { primary:'ابتدائي', middle:'متوسط', high:'ثانوي', bachelor:'بكالوريوس', master:'ماجستير', phd:'دكتوراه', work:'وظيفة' };
+        return `<tr>
+          <td><strong>${s.fullName || '—'}</strong></td>
+          <td>${s.email || '—'}</td>
+          <td>${levelMap[s.level] || '—'}</td>
+          <td>
+            <span style="font-weight:bold;color:var(--purple);margin-left:8px;">${pct}٪</span>
+            <div class="prog-mini" style="display:inline-block;"><div class="prog-mini-fill" style="width:${pct}%"></div></div>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    // ===== LOGOUT =====
+    window.handleLogout = async function() {
+      await signOut(auth);
+      window.location.href = 'index.html';
+    };
+  </script>
+</body>
+</html>
