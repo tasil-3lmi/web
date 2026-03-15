@@ -653,9 +653,16 @@ async function markDone(lid){
   var list=[...(currentUser.completedLessons||[])];
   if(list.indexOf(lid)<0)list.push(lid);
   currentUser.completedLessons=list;
+  // Update localStorage immediately
   localStorage.setItem('ti_user',JSON.stringify(currentUser));
-  try{await db.collection('users').doc(currentUser.uid).update({completedLessons:list});}catch(e){}
-  showToast('✓ تم تسجيل الإنجاز','success');
+  // Sync to Firestore
+  try{
+    await db.collection('users').doc(currentUser.uid).update({completedLessons:list});
+    showToast('✓ تم تسجيل الإنجاز','success');
+  }catch(e){
+    console.log('markDone sync error:',e.message);
+    showToast('✓ تم التسجيل محلياً (سيُزامَن لاحقاً)','info');
+  }
   buildSidebar();openLesson(lid);
 }
 async function unmarkDone(lid){
@@ -889,8 +896,35 @@ async function delTQ(tid,qid){
 // SAVE / HELPERS
 // ══════════════════════════════════════════════
 async function saveCourse(){
-  try{await db.collection('courses').doc(courseId).set(courseData,{merge:true});}
-  catch(e){showToast('خطأ في الحفظ: '+e.message,'error');console.log('save:',e.message);}
+  try{
+    // Save full course with all lessons, tests, exercises
+    await db.collection('courses').doc(courseId).set(courseData, {merge:true});
+    console.log('✅ Course saved to Firestore:', courseId);
+  }catch(e){
+    console.log('❌ saveCourse error:', e.code, e.message);
+    // If document too large, try saving parts separately
+    if(e.code === 'resource-exhausted' || e.message.includes('exceeds')){
+      showToast('⚠️ المقرر كبير جداً - جارٍ تقسيم البيانات...','warn');
+      try{
+        await db.collection('courses').doc(courseId).update({
+          title:courseData.title, desc:courseData.desc, author:courseData.author,
+          color:courseData.color, youtube:courseData.youtube
+        });
+        // Save lessons in chunks
+        for(var i=0;i<courseData.lessons.length;i+=5){
+          var chunk=courseData.lessons.slice(i,i+5);
+          var update={};
+          chunk.forEach(function(l,j){update['lessons.'+(i+j)]=l;});
+          await db.collection('courses').doc(courseId).update(update);
+        }
+        showToast('✅ تم الحفظ (مُقسَّم)','success');
+      }catch(e2){
+        showToast('❌ خطأ في الحفظ: ' + e2.message,'error');
+      }
+    } else {
+      showToast('❌ خطأ في الحفظ: ' + e.message,'error');
+    }
+  }
 }
 function showLocked(){showToast('🔒 هذا الدرس مقفل من قِبل المشرف','warn');}
 function toYtEmbed(url){
