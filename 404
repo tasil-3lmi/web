@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>معهد التأصيل العلمي</title>
+<script>
+// GitHub Pages 404 → HashRouter redirect
+// يحفظ المسار المطلوب ثم يُوجّه لـ index.html
+var dest = window.location.pathname; // e.g. /dashboard.html
+sessionStorage.setItem('_gh404', dest);
+// Redirect to root (works for both / and /repo-name/)
+var base = window.location.pathname.split('/').slice(0,-1).join('/') || '/';
+window.location.replace(base + '/index.html');
+</script>
+</head>
+<body style="font-family:'Zain',Tajawal,sans-serif;text-align:center;padding:80px 20px;background:#faf8f5;color:#3B1B40">
+<div style="font-size:20px;font-weight:700;margin-bottom:8px">جارٍ التحويل...</div>
+<div style="font-size:14px;color:#7a6a7e">يرجى الانتظار</div>
+</body>
+</html>
