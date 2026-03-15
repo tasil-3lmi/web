@@ -3,13 +3,14 @@
 // ==========================================
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
 import {
   getAuth,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
-  onAuthStateChanged
+  onAuthStateChanged,
+  browserLocalPersistence,
+  setPersistence
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import {
   getFirestore,
@@ -18,7 +19,9 @@ import {
   getDoc,
   updateDoc,
   collection,
-  getDocs
+  getDocs,
+  deleteDoc,
+  addDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -31,48 +34,29 @@ const firebaseConfig = {
   measurementId: "G-L7Z7LBH42Z"
 };
 
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app);
+const db   = getFirestore(app);
 
-// ==============================
-// إنشاء حساب المشرف العام تلقائياً
-// ==============================
-async function createSuperAdmin() {
-  const adminEmail = "abwdahm645@gmail.com";
-  const adminPassword = "12341234";
-  try {
-    const userCred = await createUserWithEmailAndPassword(auth, adminEmail, adminPassword);
-    await setDoc(doc(db, "users", userCred.user.uid), {
-      fullName: "أبو الجواد الحنبلي",
-      username: "esero7",
-      email: adminEmail,
-      role: "superAdmin",
-      createdAt: new Date().toISOString()
-    });
-    console.log("✅ تم إنشاء حساب المشرف العام");
-  } catch (e) {
-    if (e.code === "auth/email-already-in-use") {
-      console.log("✅ حساب المشرف موجود مسبقاً");
-    } else {
-      console.error("خطأ:", e.message);
-    }
-  }
+// ── تعيين الاستمرارية مرة واحدة عند تهيئة التطبيق ──
+// هذا يُغني عن استدعاء setPersistence قبل كل عملية دخول
+setPersistence(auth, browserLocalPersistence).catch(() => {});
+
+// ── Analytics تُحمَّل في الخلفية فقط — لا تعيق التحميل ──
+if ('requestIdleCallback' in window) {
+  requestIdleCallback(() => {
+    import("https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js")
+      .then(({ getAnalytics }) => getAnalytics(app))
+      .catch(() => {});
+  });
 }
 
 export {
-  auth,
-  db,
+  auth, db,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
-  doc,
-  setDoc,
-  getDoc,
-  updateDoc,
-  collection,
-  getDocs,
-  createSuperAdmin
+  doc, setDoc, getDoc, updateDoc,
+  collection, getDocs, deleteDoc, addDoc
 };
