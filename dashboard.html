@@ -400,73 +400,89 @@
     onAuthStateChanged(auth, async (user) => {
       if (!user) { window.location.href = 'index.html'; return; }
 
-      // ── جلب بيانات المستخدم والاتصال معاً (متوازي) ──
-      const [userDocFirst, contactSnap] = await Promise.all([
-        getDoc(doc(db, 'users', user.uid)),
-        getDoc(doc(db, 'contactInfo', 'main')).catch(() => null),
-      ]);
+      try {
+        // ── جلب بيانات المستخدم والاتصال معاً (متوازي) ──
+        const [userDocFirst, contactSnap] = await Promise.all([
+          getDoc(doc(db, 'users', user.uid)),
+          getDoc(doc(db, 'contactInfo', 'main')).catch(() => null),
+        ]);
 
-      // ── حماية من race condition عند التسجيل الجديد:
-      //    dashboard قد يصل قبل اكتمال setDoc في register.html
-      //    الحل: انتظر 1.2 ثانية وأعد المحاولة مرة واحدة ──
-      let finalDoc = userDocFirst;
-      if (!userDocFirst.exists()) {
-        await new Promise(r => setTimeout(r, 1200));
-        finalDoc = await getDoc(doc(db, 'users', user.uid));
-        if (!finalDoc.exists()) { window.location.href = 'index.html'; return; }
+        // ── حماية من race condition عند التسجيل الجديد:
+        //    dashboard قد يصل قبل اكتمال setDoc في register.html
+        //    الحل: انتظر 1.2 ثانية وأعد المحاولة مرة واحدة ──
+        let finalDoc = userDocFirst;
+        if (!userDocFirst.exists()) {
+          await new Promise(r => setTimeout(r, 1200));
+          finalDoc = await getDoc(doc(db, 'users', user.uid));
+          if (!finalDoc.exists()) { window.location.href = 'index.html'; return; }
+        }
+
+        const userData = finalDoc.data();
+        userProgress    = userData.progress || {};
+        currentUser     = user;
+        currentUserData = userData;
+
+        // ── بناء contactData ──
+        let contactData = null;
+        if (contactSnap?.exists()) {
+          contactData = contactSnap.data();
+          // القنوات تُحمَّل في الخلفية — لا تعيق العرض
+          getDocs(collection(db, 'contactInfo', 'main', 'channels'))
+            .then(ch => {
+              const channels = [];
+              ch.forEach(d => channels.push(d.data()));
+              contactData.channels = channels.sort((a,b) => (a.order||0)-(b.order||0));
+              const fp = document.getElementById('footerPlaceholder');
+              if (fp) fp.innerHTML = renderFooter(contactData);
+            }).catch(() => {});
+        }
+
+        // ── رسم الهيدر والفوتر فوراً ──
+        document.getElementById('headerPlaceholder').innerHTML = renderHeader('dashboard.html', userData);
+        document.getElementById('footerPlaceholder').innerHTML = renderFooter(contactData);
+        initSharedBehavior();
+
+        // ── إخفاء شاشة التحميل وإظهار المحتوى ──
+        document.getElementById('loadingScreen').classList.add('hidden');
+        document.getElementById('dashWrapper').style.display = '';
+
+        // ── تحديث الواجهة ──
+        const isAdmin = userData.role === 'superAdmin' || userData.role === 'supervisor';
+        document.getElementById('sideUserName').textContent = userData.fullName || 'مستخدم';
+        document.getElementById('sideRoleBadge').textContent = isAdmin ? 'مشرف' : 'طالب';
+        document.getElementById('sideRoleBadge').className = 'user-role-badge ' + (isAdmin ? 'role-admin' : 'role-student');
+
+        if (isAdmin) {
+          document.getElementById('studentNav').style.display = 'none';
+          document.getElementById('supervisorNav').style.display = '';
+          document.getElementById('panel-welcome').classList.remove('active');
+          document.getElementById('panel-supWelcome').classList.add('active');
+          document.getElementById('supWelcomeName').textContent = userData.fullName;
+          loadStudentsList();
+        } else {
+          document.getElementById('welcomeName').textContent = userData.fullName;
+          buildCurriculum();
+          updateAllProgress();
+        }
+
+        // ── الإشعارات في الخلفية — لا تعيق العرض ──
+        loadNotifications(user.uid);
+
+      } catch (err) {
+        // ── في حالة أي خطأ: أخفِ شاشة التحميل وأظهر رسالة واضحة ──
+        console.error('خطأ في تحميل بيانات المستخدم:', err);
+        document.getElementById('loadingScreen').classList.add('hidden');
+        document.getElementById('dashWrapper').style.display = '';
+        document.getElementById('headerPlaceholder').innerHTML = renderHeader('dashboard.html', null);
+        document.getElementById('footerPlaceholder').innerHTML = renderFooter(null);
+        initSharedBehavior();
+        // أظهر إشعار خطأ للمستخدم
+        const errDiv = document.createElement('div');
+        errDiv.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#c0392b;color:#fff;padding:14px 24px;border-radius:10px;z-index:9999;font-size:0.95rem;box-shadow:0 4px 20px rgba(0,0,0,0.2);';
+        errDiv.textContent = 'حدث خطأ في تحميل البيانات. تحقق من الاتصال بالإنترنت وأعد المحاولة.';
+        document.body.appendChild(errDiv);
+        setTimeout(() => errDiv.remove(), 6000);
       }
-
-      const userData = finalDoc.data();
-      userProgress   = userData.progress || {};
-      currentUser    = user;
-      currentUserData = userData;
-
-      // ── بناء contactData ──
-      let contactData = null;
-      if (contactSnap?.exists()) {
-        contactData = contactSnap.data();
-        // القنوات تُحمَّل في الخلفية — لا تعيق العرض
-        getDocs(collection(db, 'contactInfo', 'main', 'channels'))
-          .then(ch => {
-            const channels = [];
-            ch.forEach(d => channels.push(d.data()));
-            contactData.channels = channels.sort((a,b) => (a.order||0)-(b.order||0));
-            // تحديث الفوتر بعد وصول القنوات
-            const fp = document.getElementById('footerPlaceholder');
-            if (fp) fp.innerHTML = renderFooter(contactData);
-          }).catch(() => {});
-      }
-
-      // ── رسم الهيدر والفوتر فوراً ──
-      document.getElementById('headerPlaceholder').innerHTML = renderHeader('dashboard.html', userData);
-      document.getElementById('footerPlaceholder').innerHTML = renderFooter(contactData);
-      initSharedBehavior();
-
-      // ── إخفاء شاشة التحميل وإظهار المحتوى ──
-      document.getElementById('loadingScreen').classList.add('hidden');
-      document.getElementById('dashWrapper').style.display = '';
-
-      // ── تحديث الواجهة ──
-      const isAdmin = userData.role === 'superAdmin' || userData.role === 'supervisor';
-      document.getElementById('sideUserName').textContent = userData.fullName || 'مستخدم';
-      document.getElementById('sideRoleBadge').textContent = isAdmin ? 'مشرف' : 'طالب';
-      document.getElementById('sideRoleBadge').className = 'user-role-badge ' + (isAdmin ? 'role-admin' : 'role-student');
-
-      if (isAdmin) {
-        document.getElementById('studentNav').style.display = 'none';
-        document.getElementById('supervisorNav').style.display = '';
-        document.getElementById('panel-welcome').classList.remove('active');
-        document.getElementById('panel-supWelcome').classList.add('active');
-        document.getElementById('supWelcomeName').textContent = userData.fullName;
-        loadStudentsList();
-      } else {
-        document.getElementById('welcomeName').textContent = userData.fullName;
-        buildCurriculum();
-        updateAllProgress();
-      }
-
-      // ── الإشعارات في الخلفية — لا تعيق العرض ──
-      loadNotifications(user.uid);
     });
 
     async function loadNotifications(uid) {
@@ -499,39 +515,7 @@
     window.markNotifRead = async function(nId, uid) {
       try { await updateDoc(doc(db,'notifications',uid,'items',nId),{read:true}); } catch(e){}
     };
-      if (!user) {
-        window.location.href = 'register.html';
-        return;
-      }
-      currentUser = user;
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      if (!userDoc.exists()) { window.location.href = 'register.html'; return; }
-      currentUserData = userDoc.data();
-      userProgress = currentUserData.progress || {};
 
-      document.getElementById('loadingScreen').classList.add('hidden');
-      document.getElementById('dashWrapper').style.display = '';
-
-      const isAdmin = currentUserData.role === 'superAdmin' || currentUserData.role === 'supervisor';
-
-      // Sidebar user info
-      document.getElementById('sideUserName').textContent = currentUserData.fullName || 'مستخدم';
-      document.getElementById('sideRoleBadge').textContent = isAdmin ? 'مشرف' : 'طالب';
-      document.getElementById('sideRoleBadge').className = 'user-role-badge ' + (isAdmin ? 'role-admin' : 'role-student');
-
-      if (isAdmin) {
-        document.getElementById('studentNav').style.display = 'none';
-        document.getElementById('supervisorNav').style.display = '';
-        document.getElementById('panel-welcome').classList.remove('active');
-        document.getElementById('panel-supWelcome').classList.add('active');
-        document.getElementById('supWelcomeName').textContent = currentUserData.fullName;
-        loadStudentsList();
-      } else {
-        document.getElementById('welcomeName').textContent = currentUserData.fullName;
-        buildCurriculum();
-        updateAllProgress();
-      }
-    });
 
     // ===== PANEL SWITCHER =====
     window.showPanel = function(panelId) {
