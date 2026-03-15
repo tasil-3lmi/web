@@ -233,8 +233,7 @@
 
   <!-- Loading -->
   <div class="loading-screen" id="loadingScreen">
-    <div class="spinner" style="border-color:rgba(59,27,64,0.2);border-top-color:var(--purple);width:32px;height:32px;border-width:3px;"></div>
-    <p>جارٍ التحقق من هويتك...</p>
+    <div class="spinner" style="border-color:rgba(59,27,64,0.2);border-top-color:var(--purple);width:40px;height:40px;border-width:3px;"></div>
   </div>
 
   <div id="headerPlaceholder"></div>
@@ -390,43 +389,57 @@
       doc, getDoc, updateDoc, collection, getDocs
     } from './firebase.js';
 
-    document.getElementById('loadingLogo').src = (await import('./components.js')).LOGO_SRC;
+    // ─── تحسين الأداء: إزالة جميع مصادر التأخير ───
+    //
+    // 1. onAuthStateChanged يُعيد حالة الجلسة من cache المتصفح فوراً
+    // 2. userDoc + contactInfo يُحمَّلان بالتوازي (Promise.all)
+    // 3. الهيدر يُرسم فوراً بمجرد معرفة المستخدم — قبل انتظار contactInfo
+    // 4. شاشة التحميل تختفي بعد رسم الهيدر مباشرةً
+    // ────────────────────────────────────────────
 
-    // Protect page — redirect if not logged in
     onAuthStateChanged(auth, async (user) => {
       if (!user) { window.location.href = 'index.html'; return; }
 
-      // Load user data
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      // ── جلب بيانات المستخدم والاتصال معاً (متوازي) ──
+      const [userDoc, contactSnap] = await Promise.all([
+        getDoc(doc(db, 'users', user.uid)),
+        getDoc(doc(db, 'contactInfo', 'main')).catch(() => null),
+      ]);
+
       if (!userDoc.exists()) { window.location.href = 'index.html'; return; }
+
       const userData = userDoc.data();
-      userProgress  = userData.progress || {};
+      userProgress   = userData.progress || {};
+      currentUser    = user;
+      currentUserData = userData;
 
-      // Load contact info for footer
+      // ── بناء contactData ──
       let contactData = null;
-      try {
-        const cs = await getDoc(doc(db,'contactInfo','main'));
-        if (cs.exists()) {
-          contactData = cs.data();
-          const ch = await getDocs(collection(db,'contactInfo','main','channels'));
-          const channels=[]; ch.forEach(d=>channels.push(d.data()));
-          contactData.channels = channels.sort((a,b)=>(a.order||0)-(b.order||0));
-        }
-      } catch(e){}
+      if (contactSnap?.exists()) {
+        contactData = contactSnap.data();
+        // القنوات تُحمَّل في الخلفية — لا تعيق العرض
+        getDocs(collection(db, 'contactInfo', 'main', 'channels'))
+          .then(ch => {
+            const channels = [];
+            ch.forEach(d => channels.push(d.data()));
+            contactData.channels = channels.sort((a,b) => (a.order||0)-(b.order||0));
+            // تحديث الفوتر بعد وصول القنوات
+            const fp = document.getElementById('footerPlaceholder');
+            if (fp) fp.innerHTML = renderFooter(contactData);
+          }).catch(() => {});
+      }
 
+      // ── رسم الهيدر والفوتر فوراً ──
       document.getElementById('headerPlaceholder').innerHTML = renderHeader('dashboard.html', userData);
       document.getElementById('footerPlaceholder').innerHTML = renderFooter(contactData);
       initSharedBehavior();
 
-      currentUser = user;
-      currentUserData = userData;
+      // ── إخفاء شاشة التحميل وإظهار المحتوى ──
+      document.getElementById('loadingScreen').classList.add('hidden');
+      document.getElementById('dashWrapper').style.display = '';
 
-      // Notifications
-      loadNotifications(user.uid);
-
+      // ── تحديث الواجهة ──
       const isAdmin = userData.role === 'superAdmin' || userData.role === 'supervisor';
-
-      // Sidebar user info
       document.getElementById('sideUserName').textContent = userData.fullName || 'مستخدم';
       document.getElementById('sideRoleBadge').textContent = isAdmin ? 'مشرف' : 'طالب';
       document.getElementById('sideRoleBadge').className = 'user-role-badge ' + (isAdmin ? 'role-admin' : 'role-student');
@@ -444,8 +457,8 @@
         updateAllProgress();
       }
 
-      document.getElementById('loadingScreen').classList.add('hidden');
-      document.getElementById('dashWrapper').style.display = '';
+      // ── الإشعارات في الخلفية — لا تعيق العرض ──
+      loadNotifications(user.uid);
     });
 
     async function loadNotifications(uid) {
