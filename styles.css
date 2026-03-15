@@ -1,163 +1,162 @@
-:root{
-  --white:#FFFFFF;--purple:#3B1B40;--purple-l:#5a2d63;--purple-d:#2a1230;
-  --gold:#D4B48E;--gold-l:#e8cfa8;--gold-d:#b8965e;
-  --bg:#faf8f5;--text:#1a0a1e;--muted:#7a6a7e;
-  --radius:14px;--shadow:0 4px 24px rgba(59,27,64,.08);
-  --transition:all .28s cubic-bezier(.4,0,.2,1);
+// ═══════════════════════════════════════════════════════
+// nav.js — شريط التنقل المشترك + القائمة الجانبية للجوال
+// ═══════════════════════════════════════════════════════
+
+function buildNav(activePage, user) {
+  const isAdmin = user?.isAdmin;
+  const pages = [
+    { id:'dashboard', href:'dashboard.html', icon:'home',            label:'الرئيسية' },
+    { id:'courses',   href:'courses.html',   icon:'book-open',       label:'المقررات' },
+    { id:'qa',        href:'qa.html',        icon:'message-circle',  label:'الأسئلة' },
+    { id:'about',     href:'about.html',     icon:'info',            label:'من نحن' },
+    { id:'admin',     href:'admin.html',     icon:'settings',        label:'الإدارة', adminOnly:true },
+    { id:'profile',   href:'profile.html',   icon:'user',            label:'ملفي' },
+  ];
+
+  const navItems = pages
+    .filter(p => !p.adminOnly || isAdmin)
+    .map(p => `
+      <a href="${p.href}" class="nav-btn${activePage===p.id?' active':''}" id="nb-${p.id}">
+        <i data-lucide="${p.icon}"></i>
+        <span class="nav-label">${p.label}</span>
+      </a>`).join('');
+
+  return `
+<nav id="main-nav">
+  <div style="display:flex;align-items:center;gap:10px">
+    <!-- Hamburger (mobile) -->
+    <button id="hamburger" onclick="toggleMobileMenu()" aria-label="القائمة" style="display:none;flex-direction:column;gap:5px;background:none;border:none;cursor:pointer;padding:6px">
+      <span style="display:block;width:22px;height:2px;background:var(--purple);border-radius:2px;transition:.3s"></span>
+      <span style="display:block;width:22px;height:2px;background:var(--purple);border-radius:2px;transition:.3s"></span>
+      <span style="display:block;width:22px;height:2px;background:var(--purple);border-radius:2px;transition:.3s"></span>
+    </button>
+    <a href="index.html" class="nav-logo">
+      <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36'%3E%3Ccircle cx='18' cy='18' r='18' fill='%233B1B40'/%3E%3Ctext x='18' y='24' text-anchor='middle' font-size='20' font-family='serif' fill='%23D4B48E' font-weight='900'%3Eت%3C/text%3E%3C/svg%3E" width="36" height="36" alt="شعار المعهد"/>
+      <span class="nav-logo-text">معهد التأصيل العلمي</span>
+    </a>
+  </div>
+  <div class="nav-links" id="nav-links-desktop">
+    ${navItems}
+  </div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <!-- Notifications -->
+    <button id="notif-btn" onclick="toggleNotifPanel()" style="position:relative;background:none;border:none;cursor:pointer;padding:8px;border-radius:10px;color:var(--muted);display:flex;align-items:center" title="الإشعارات">
+      <i data-lucide="bell" style="width:18px;height:18px"></i>
+      <span id="notif-dot" style="position:absolute;top:5px;right:5px;width:8px;height:8px;background:#dc3545;border-radius:50%;border:2px solid #fff;display:none"></span>
+    </button>
+    <!-- User name -->
+    <span id="nav-username" style="font-size:12px;font-weight:700;color:var(--purple)"></span>
+    <!-- Logout -->
+    <button onclick="logout()" style="display:flex;align-items:center;gap:5px;padding:7px 13px;border-radius:10px;border:none;cursor:pointer;font-family:'Zain',sans-serif;font-size:12px;font-weight:700;background:rgba(220,53,69,.1);color:#dc3545;transition:.2s" onmouseover="this.style.background='#dc3545';this.style.color='#fff'" onmouseout="this.style.background='rgba(220,53,69,.1)';this.style.color='#dc3545'">
+      <i data-lucide="log-out" style="width:13px;height:13px"></i>خروج
+    </button>
+  </div>
+</nav>
+
+<!-- Mobile menu overlay -->
+<div id="mob-overlay" onclick="closeMobileMenu()" style="display:none;position:fixed;inset:0;background:rgba(42,18,48,.6);z-index:498;backdrop-filter:blur(4px)"></div>
+
+<!-- Mobile drawer -->
+<div id="mob-drawer" style="display:none;position:fixed;top:0;right:0;bottom:0;width:260px;background:#fff;z-index:499;padding:20px 16px;overflow-y:auto;box-shadow:-8px 0 32px rgba(59,27,64,.2);transition:transform .3s;transform:translateX(100%)">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid rgba(212,180,142,.2)">
+    <span style="font-family:'Amiri',serif;font-size:16px;font-weight:700;color:var(--purple)">القائمة</span>
+    <button onclick="closeMobileMenu()" style="background:#f5f0f8;border:none;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:14px;color:var(--muted)">✕</button>
+  </div>
+  ${pages.filter(p => !p.adminOnly || isAdmin).map(p => `
+    <a href="${p.href}" style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;margin-bottom:4px;font-family:'Zain',sans-serif;font-size:14px;font-weight:700;color:var(--muted);text-decoration:none;transition:.2s;${activePage===p.id?'background:linear-gradient(135deg,var(--purple),var(--purple-l));color:#fff':''}" onmouseover="if(this.style.background!=='linear-gradient(135deg, var(--purple), var(--purple-l))')this.style.background='rgba(59,27,64,.06)'" onmouseout="if(this.style.color!=='rgb(255, 255, 255)')this.style.background=''">
+      <i data-lucide="${p.icon}" style="width:16px;height:16px"></i>${p.label}
+    </a>`).join('')}
+  <div style="margin-top:20px;padding-top:14px;border-top:1px solid rgba(212,180,142,.15)">
+    <button onclick="logout()" style="display:flex;align-items:center;gap:8px;width:100%;padding:11px 14px;border-radius:12px;border:none;cursor:pointer;font-family:'Zain',sans-serif;font-size:14px;font-weight:700;background:rgba(220,53,69,.1);color:#dc3545">
+      <i data-lucide="log-out" style="width:15px;height:15px"></i>تسجيل الخروج
+    </button>
+  </div>
+</div>
+
+<!-- Notification panel -->
+<div id="notif-panel" style="display:none;position:fixed;top:60px;left:16px;width:300px;background:#fff;border-radius:16px;box-shadow:0 12px 40px rgba(59,27,64,.18);border:1px solid rgba(212,180,142,.2);z-index:490;overflow:hidden">
+  <div style="padding:14px 16px;border-bottom:1px solid rgba(212,180,142,.15);display:flex;justify-content:space-between;align-items:center">
+    <span style="font-weight:800;font-size:14px;color:var(--purple)">الإشعارات</span>
+    <button onclick="clearNotifs()" style="font-size:11px;color:var(--muted);background:none;border:none;cursor:pointer">مسح الكل</button>
+  </div>
+  <div id="notif-list" style="max-height:320px;overflow-y:auto"></div>
+</div>`;
 }
-*{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-body{font-family:'Zain',sans-serif;background:var(--bg);color:var(--text);direction:rtl;overflow-x:hidden}
-::-webkit-scrollbar{width:5px}
-::-webkit-scrollbar-thumb{background:var(--gold);border-radius:3px}
 
-@keyframes fadeUp{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-@keyframes popIn{from{opacity:0;transform:scale(.88)}to{opacity:1;transform:scale(1)}}
-@keyframes slideR{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:none}}
-@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-@keyframes spin{to{transform:rotate(360deg)}}
-@keyframes ringRotate{from{transform:translate(-50%,-50%) rotate(0)}to{transform:translate(-50%,-50%) rotate(360deg)}}
-@keyframes gradShift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
-@keyframes navDrop{from{opacity:0;transform:translateY(-100%)}to{opacity:1;transform:none}}
-@keyframes page{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-@keyframes borderGlow{0%,100%{border-color:rgba(212,180,142,.25)}50%{border-color:rgba(212,180,142,.75)}}
-@keyframes goldPulse{0%,100%{box-shadow:0 0 0 0 rgba(212,180,142,.5)}60%{box-shadow:0 0 0 14px rgba(212,180,142,0)}}
-@keyframes progressFill{from{width:0}to{width:var(--prog)}}
-@keyframes notif{from{opacity:0;transform:translateX(120px)}to{opacity:1;transform:none}}
-@keyframes notifOut{from{opacity:1;transform:none}to{opacity:0;transform:translateX(120px)}}
-@keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
-
-.fu{animation:fadeUp .5s ease both}
-.fi{animation:fadeIn .4s ease both}
-.pi{animation:popIn .4s cubic-bezier(.34,1.56,.64,1) both}
-.sr{animation:slideR .4s ease both}
-.pg{animation:page .4s ease both}
-.float{animation:float 3s ease-in-out infinite}
-.gp{animation:goldPulse 2.5s ease-in-out infinite}
-.d1{animation-delay:.06s}.d2{animation-delay:.12s}.d3{animation-delay:.18s}
-.d4{animation-delay:.25s}.d5{animation-delay:.33s}.d6{animation-delay:.42s}
-
-.card{background:var(--white);border-radius:var(--radius);border:1px solid rgba(212,180,142,.2);box-shadow:var(--shadow);transition:var(--transition)}
-.card:hover{transform:translateY(-4px);box-shadow:0 16px 44px rgba(59,27,64,.13)}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:11px;border:none;font-family:'Zain',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:var(--transition)}
-.btn:hover{transform:translateY(-2px);filter:brightness(1.06)}
-.btn-primary{background:linear-gradient(135deg,var(--purple),var(--purple-l));color:var(--white)}
-.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold-d));color:var(--purple)}
-.btn-outline{background:transparent;color:var(--purple);border:2px solid var(--purple)}
-.btn-ghost{background:transparent;color:var(--muted);border:1.5px solid rgba(212,180,142,.4)}
-.btn-danger{background:linear-gradient(135deg,#dc3545,#c82333);color:var(--white)}
-.btn-sm{padding:7px 14px;font-size:12px;border-radius:9px}
-.btn-icon{padding:8px;border-radius:9px;background:var(--bg);border:1px solid rgba(212,180,142,.25);color:var(--purple);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:var(--transition)}
-.btn-icon:hover{background:var(--purple);color:var(--white)}
-
-.inp-group{margin-bottom:14px}
-.inp-group label{display:block;margin-bottom:5px;color:var(--purple);font-weight:600;font-size:13px}
-.inp-group input,.inp-group select,.inp-group textarea{width:100%;padding:11px 14px;border-radius:11px;border:1.5px solid rgba(212,180,142,.45);font-size:14px;color:var(--text);background:var(--bg);font-family:'Zain',sans-serif;transition:var(--transition);outline:none}
-.inp-group input:focus,.inp-group select:focus,.inp-group textarea:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(212,180,142,.2)}
-.inp-group textarea{resize:vertical;min-height:80px}
-.inp-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-
-#main-nav{position:sticky;top:0;z-index:200;background:rgba(255,255,255,.96);backdrop-filter:blur(18px);border-bottom:1px solid rgba(212,180,142,.2);padding:10px 24px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 18px rgba(59,27,64,.06);animation:navDrop .45s ease both}
-.nav-links{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
-.nav-btn{padding:7px 14px;border-radius:10px;border:none;cursor:pointer;font-family:'Zain',sans-serif;font-size:12px;font-weight:700;transition:var(--transition);background:transparent;color:var(--muted);display:flex;align-items:center;gap:5px;text-decoration:none}
-.nav-btn.active,.nav-btn:hover{background:linear-gradient(135deg,var(--purple),var(--purple-l));color:var(--white);box-shadow:0 4px 14px rgba(59,27,64,.2)}
-.nav-badge{background:rgba(212,180,142,.22);color:var(--gold-d);padding:3px 10px;border-radius:18px;font-size:10px;font-weight:700;border:1px solid rgba(212,180,142,.3)}
-
-.modal-overlay{position:fixed;inset:0;z-index:999;background:rgba(42,18,48,.65);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;padding:16px;animation:fadeIn .3s ease both}
-.modal-box{background:var(--white);border-radius:22px;padding:28px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 32px 80px rgba(59,27,64,.3);border:1px solid rgba(212,180,142,.2);animation:popIn .35s cubic-bezier(.34,1.56,.64,1) both}
-.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
-.modal-title{color:var(--purple);font-size:17px;font-weight:700}
-.modal-close{background:var(--bg);border:none;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:14px;color:var(--muted);display:flex;align-items:center;justify-content:center;transition:var(--transition)}
-.modal-close:hover{background:var(--purple);color:var(--white)}
-
-.page{display:none;animation:page .4s ease both}
-.page.active{display:block}
-
-.logo-wrap{display:flex;align-items:center;gap:8px;cursor:pointer;text-decoration:none}
-.logo-emblem{width:44px;height:44px;border-radius:0;background:transparent;display:flex;align-items:center;justify-content:center;}
-.logo-text{line-height:1.1}
-.logo-text .t1{color:var(--purple);font-size:13px;font-weight:800;font-family:'Amiri',serif}
-.logo-text .t2{color:var(--gold-d);font-size:11px;font-weight:700}
-
-#toast-container{position:fixed;bottom:24px;left:24px;z-index:9999;display:flex;flex-direction:column;gap:10px;pointer-events:none}
-.toast{background:var(--purple);color:var(--white);padding:13px 20px;border-radius:14px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:10px;box-shadow:0 8px 28px rgba(59,27,64,.35);border-right:4px solid var(--gold);animation:notif .4s ease both;max-width:320px;pointer-events:all}
-.toast.success{border-right-color:#28a745}
-.toast.error{border-right-color:#dc3545}
-.toast.info{border-right-color:var(--gold)}
-.toast.out{animation:notifOut .4s ease both forwards}
-
-.notif-badge{position:relative}
-.notif-badge .badge-dot{position:absolute;top:-2px;right:-2px;width:8px;height:8px;background:#dc3545;border-radius:50%;border:2px solid var(--white)}
-
-.dropzone{border:2px dashed rgba(212,180,142,.5);border-radius:14px;padding:24px;text-align:center;cursor:pointer;transition:var(--transition);background:var(--bg)}
-.dropzone.drag-over,.dropzone:hover{border-color:var(--gold);background:rgba(212,180,142,.08)}
-
-.progress-wrap{background:rgba(212,180,142,.2);border-radius:20px;height:8px;overflow:hidden;margin-top:6px}
-.progress-fill{height:100%;border-radius:20px;background:linear-gradient(90deg,var(--purple),var(--gold));animation:progressFill .8s ease both}
-
-.tbl{width:100%;border-collapse:collapse}
-.tbl th{background:var(--purple);color:var(--white);padding:11px 14px;font-size:12px;font-weight:700;text-align:right}
-.tbl th:first-child{border-radius:0 10px 0 0}
-.tbl th:last-child{border-radius:10px 0 0 0}
-.tbl td{padding:11px 14px;font-size:13px;border-bottom:1px solid rgba(212,180,142,.15)}
-.tbl tr:hover td{background:rgba(212,180,142,.06)}
-
-.qa-item{background:var(--white);border-radius:14px;padding:18px;margin-bottom:12px;border:1px solid rgba(212,180,142,.2);box-shadow:var(--shadow)}
-.qa-answer{color:var(--muted);font-size:13px;line-height:1.7;padding:10px 14px;background:rgba(212,180,142,.08);border-radius:10px;border-right:3px solid var(--gold);margin-top:8px}
-.qa-pending{background:rgba(255,193,7,.08);border:1px solid rgba(255,193,7,.3);border-radius:10px;padding:10px 14px;color:var(--muted);font-size:13px}
-
-.course-layout{display:grid;grid-template-columns:270px 1fr;min-height:calc(100vh - 110px)}
-@media(max-width:900px){.course-layout{grid-template-columns:1fr}}
-.lesson-sidebar{background:var(--white);border-left:1px solid rgba(212,180,142,.18);padding:16px;overflow-y:auto}
-.lesson-item{padding:12px 14px;border-radius:12px;margin-bottom:7px;cursor:pointer;border:1.5px solid rgba(212,180,142,.18);transition:var(--transition)}
-.lesson-item.active,.lesson-item:hover{background:rgba(59,27,64,.07);border-color:rgba(59,27,64,.22)}
-.lesson-item.done{border-color:rgba(40,167,69,.3);background:rgba(40,167,69,.04)}
-
-.tag{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
-.tag-gold{background:rgba(212,180,142,.18);color:var(--gold-d)}
-.tag-green{background:rgba(40,167,69,.12);color:#28a745}
-.tag-red{background:rgba(220,53,69,.1);color:#dc3545}
-.tag-blue{background:rgba(59,27,64,.08);color:var(--purple)}
-
-.admin-section{background:var(--white);border-radius:18px;padding:22px;margin-bottom:20px;border:1px solid rgba(212,180,142,.18);box-shadow:var(--shadow)}
-.admin-section h3{color:var(--purple);font-size:15px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px;padding-bottom:12px;border-bottom:1px solid rgba(212,180,142,.18)}
-
-.toggle{position:relative;display:inline-block;width:42px;height:22px}
-.toggle input{opacity:0;width:0;height:0}
-.toggle-slider{position:absolute;inset:0;cursor:pointer;background:#ccc;border-radius:22px;transition:.3s}
-.toggle-slider:before{content:"";position:absolute;width:16px;height:16px;right:3px;bottom:3px;background:white;border-radius:50%;transition:.3s}
-.toggle input:checked + .toggle-slider{background:var(--purple)}
-.toggle input:checked + .toggle-slider:before{transform:translateX(-20px)}
-
-.schedule-cell{padding:8px;border-radius:8px;background:rgba(212,180,142,.1);border:1px solid rgba(212,180,142,.25);font-size:12px;min-height:54px;transition:var(--transition)}
-.schedule-cell:hover{background:rgba(212,180,142,.18)}
-.schedule-cell.active-cell{background:linear-gradient(135deg,rgba(59,27,64,.08),rgba(212,180,142,.12));border-color:var(--gold)}
-
-.video-hero{position:relative;padding-bottom:56.25%;height:0;border-radius:18px;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.35)}
-.video-hero iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:none}
-
-#hamburger-btn{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:8px;border-radius:10px;border:none;background:transparent}
-#hamburger-btn span{display:block;width:24px;height:2.5px;background:var(--purple);border-radius:3px;transition:var(--transition)}
-#mobile-menu-overlay{display:none;position:fixed;inset:0;z-index:500;background:rgba(42,18,48,.7);backdrop-filter:blur(8px)}
-#mobile-menu{position:fixed;top:0;right:0;bottom:0;width:280px;background:var(--white);z-index:501;padding:24px 20px;overflow-y:auto;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);box-shadow:-8px 0 32px rgba(59,27,64,.2)}
-#mobile-menu.open{transform:translateX(0)}
-#mobile-menu .mob-nav-btn{display:flex;align-items:center;gap:10px;width:100%;padding:13px 16px;border-radius:12px;border:none;cursor:pointer;font-family:'Zain',sans-serif;font-size:14px;font-weight:700;transition:var(--transition);background:transparent;color:var(--muted);margin-bottom:4px;text-decoration:none}
-#mobile-menu .mob-nav-btn.active,#mobile-menu .mob-nav-btn:hover{background:linear-gradient(135deg,var(--purple),var(--purple-l));color:#fff}
-#mobile-menu .mob-close-btn{position:absolute;top:16px;left:16px;background:var(--bg);border:none;width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:16px;color:var(--muted);display:flex;align-items:center;justify-content:center}
-.file-chip{display:inline-flex;align-items:center;gap:6px;background:var(--bg);border:1px solid rgba(212,180,142,.3);border-radius:8px;padding:5px 10px;font-size:12px;color:var(--text);margin:3px}
-
-@media(max-width:768px){
-  #hamburger-btn{display:flex}
-  #main-nav .nav-links{display:none}
-  #main-nav{padding:10px 16px}
-  .inp-grid{grid-template-columns:1fr}
-  .modal-box{padding:20px}
-  .about-grid{grid-template-columns:1fr !important}
-  .courses-grid{grid-template-columns:1fr !important}
-  .dash-stats{flex-direction:column;gap:10px}
+// ── Mobile menu toggle ──
+function toggleMobileMenu() {
+  const drawer = document.getElementById('mob-drawer');
+  const overlay = document.getElementById('mob-overlay');
+  const open = drawer.style.transform === 'translateX(0px)' || drawer.style.transform === 'translateX(0)';
+  if(open) {
+    closeMobileMenu();
+  } else {
+    drawer.style.display = '';
+    overlay.style.display = '';
+    requestAnimationFrame(() => drawer.style.transform = 'translateX(0)');
+  }
 }
-@media(max-width:480px){
-  .modal-box{padding:16px;border-radius:16px}
-  .btn{padding:9px 14px;font-size:12px}
+function closeMobileMenu() {
+  const drawer = document.getElementById('mob-drawer');
+  const overlay = document.getElementById('mob-overlay');
+  drawer.style.transform = 'translateX(100%)';
+  setTimeout(() => { if(drawer) drawer.style.display='none'; if(overlay) overlay.style.display='none'; }, 300);
 }
+
+// ── Notification panel ──
+let _notifData = [];
+async function toggleNotifPanel() {
+  const panel = document.getElementById('notif-panel');
+  if(panel.style.display !== 'none') { panel.style.display = 'none'; return; }
+  panel.style.display = '';
+  const user = getCachedUser();
+  if(!user) return;
+  _notifData = await getNotifications(user.uid);
+  renderNotifPanel();
+  markNotifsRead(user.uid).then(updateNotifBadge);
+}
+function renderNotifPanel() {
+  const list = document.getElementById('notif-list');
+  if(!list) return;
+  if(!_notifData.length) {
+    list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">لا توجد إشعارات</div>';
+    return;
+  }
+  const icons = {info:'🔔', success:'✅', error:'❌', warn:'⚠️'};
+  list.innerHTML = _notifData.map(n => `
+    <div style="padding:12px 16px;border-bottom:1px solid rgba(212,180,142,.1);font-size:13px;${n.read?'':'background:rgba(212,180,142,.07)'}">
+      <div style="display:flex;gap:8px;align-items:flex-start">
+        <span>${icons[n.type]||'🔔'}</span>
+        <div>
+          <div style="color:#1a0a1e;line-height:1.6">${n.msg}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${n.createdAt?new Date(n.createdAt).toLocaleDateString('ar'):''}</div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+function clearNotifs() {
+  _notifData = [];
+  renderNotifPanel();
+  updateNotifBadge();
+}
+async function updateNotifBadge() {
+  const dot = document.getElementById('notif-dot');
+  if(!dot) return;
+  const user = getCachedUser();
+  if(!user) return;
+  try {
+    const snap = await db.collection('notifications').where('userId','==',user.uid).where('read','==',false).limit(1).get();
+    dot.style.display = snap.empty ? 'none' : '';
+  } catch(e) {
+    const list = lsGet('ti_notifs_'+user.uid)||[];
+    dot.style.display = list.some(n=>!n.read) ? '' : 'none';
+  }
+}
+
+// Close notif panel on outside click
+document.addEventListener('click', e => {
+  const panel = document.getElementById('notif-panel');
+  const btn = document.getElementById('notif-btn');
+  if(panel && btn && panel.style.display!=='none' && !panel.contains(e.target) && !btn.contains(e.target))
+    panel.style.display = 'none';
+});
