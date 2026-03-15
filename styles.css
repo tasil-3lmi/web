@@ -103,6 +103,14 @@ ul { list-style: none; }
 }
 
 .main-nav { display: flex; align-items: center; gap: 8px; }
+
+/* ── عناصر الجانب الأيسر من الرأس (🔔 + اسم المستخدم ▾) ── */
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
 .nav-link {
   padding: 8px 18px;
   font-size: 0.95rem;
@@ -589,7 +597,7 @@ select.form-control { appearance: none; background-image: url("data:image/svg+xm
 .site-header.scrolled .notif-bell:hover { background: rgba(255,255,255,0.1); }
 .notif-count {
   position: absolute;
-  top: 2px; left: 2px;
+  top: 2px; right: 2px; left: auto;
   background: #e05;
   color: white;
   font-size: 0.62rem;
@@ -600,7 +608,7 @@ select.form-control { appearance: none; background-image: url("data:image/svg+xm
 }
 .notif-panel {
   position: absolute;
-  top: 80px; left: 24px;
+  top: 80px; right: 24px; left: auto;
   width: 340px;
   background: var(--purple);
   border-radius: var(--radius);
@@ -1051,7 +1059,7 @@ select.form-control { appearance: none; background-image: url("data:image/svg+xm
 
 .user-dropdown {
   position: absolute;
-  top: calc(100% + 8px); left: 0;
+  top: calc(100% + 8px); right: 0; left: auto;
   min-width: 200px;
   background: var(--white);
   border: 1px solid var(--border);
