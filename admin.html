@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة الإدارة — معهد التأصيل العلمي</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body { background: #f7f5fa; }
+    .admin-header { background: linear-gradient(135deg,var(--purple),var(--purple-light)); padding: 110px 0 40px; }
+    .admin-header h1 { color: white; font-size: 1.8rem; }
+    .admin-header p { color: rgba(255,255,255,0.65); font-size: 0.9rem; margin-top: 6px; }
+    .admin-body { padding: 40px 0; }
+    .panel-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; box-shadow: var(--shadow); margin-bottom: 24px; }
+    .panel-card h3 { font-size: 1rem; font-weight: bold; color: var(--purple); margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .answer-textarea { width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-family: inherit; font-size: 0.88rem; resize: vertical; min-height: 80px; outline: none; transition: var(--transition); }
+    .answer-textarea:focus { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(59,27,64,0.08); }
+    .q-row { padding: 20px; background: rgba(59,27,64,0.02); border-radius: var(--radius-sm); margin-bottom: 12px; border: 1px solid var(--border); }
+    .q-row-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; gap: 12px; flex-wrap: wrap; }
+    .schedule-day-editor { margin-bottom: 20px; }
+    .schedule-day-editor h4 { font-size: 0.92rem; font-weight: bold; color: var(--purple); margin-bottom: 10px; padding: 8px 12px; background: rgba(59,27,64,0.05); border-radius: 6px; }
+    .time-slot-row { display: grid; grid-template-columns: 100px 1fr 1fr auto; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .time-slot-row input, .time-slot-row select { padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 0.82rem; outline: none; }
+    .time-slot-row input:focus, .time-slot-row select:focus { border-color: var(--purple); }
+    .del-btn { width: 30px; height: 30px; border-radius: 50%; border: none; background: rgba(185,45,58,0.1); color: #b92d3a; cursor: pointer; font-size: 0.9rem; transition: var(--transition); }
+    .del-btn:hover { background: #b92d3a; color: white; }
+    .add-slot-btn { font-size: 0.8rem; padding: 6px 14px; }
+    /* Course editor */
+    .course-editor-row { display: grid; grid-template-columns: 1fr 80px 80px 80px; gap: 12px; align-items: center; padding: 14px 16px; background: rgba(59,27,64,0.02); border-radius: var(--radius-sm); margin-bottom: 10px; border: 1px solid var(--border); }
+    .course-editor-row:hover { background: rgba(212,180,142,0.06); }
+    .toggle-switch { position: relative; width: 44px; height: 24px; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .toggle-slider { position: absolute; inset: 0; background: rgba(59,27,64,0.15); border-radius: 12px; cursor: pointer; transition: var(--transition); }
+    .toggle-slider::before { content: ''; position: absolute; width: 18px; height: 18px; border-radius: 50%; background: white; top: 3px; right: 3px; transition: var(--transition); box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
+    .toggle-switch input:checked + .toggle-slider { background: var(--purple); }
+    .toggle-switch input:checked + .toggle-slider::before { transform: translateX(-20px); }
+    .lesson-admin-row { display: grid; grid-template-columns: 1fr 1fr 60px 60px 80px; gap: 8px; align-items: center; padding: 10px 14px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 6px; font-size: 0.82rem; }
+    .exam-admin-block { border: 1px solid rgba(212,180,142,0.3); border-radius: var(--radius-sm); padding: 16px; background: rgba(212,180,142,0.04); margin-bottom: 12px; }
+    .question-admin-row { background: rgba(59,27,64,0.03); border: 1px solid var(--border); border-radius: 6px; padding: 14px; margin-bottom: 10px; }
+    .options-admin { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+    .option-admin-row { display: flex; align-items: center; gap: 8px; }
+    .option-admin-row input[type=text] { flex: 1; padding: 6px 10px; border: 1.5px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 0.82rem; outline: none; }
+    .option-admin-row input[type=text]:focus { border-color: var(--purple); }
+    .correct-check { accent-color: #1a7a4a; }
+    .notif-compose { display: flex; gap: 12px; flex-wrap: wrap; }
+    .notif-compose textarea { flex: 1; min-width: 200px; padding: 12px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-family: inherit; font-size: 0.88rem; resize: none; height: 80px; outline: none; }
+    .notif-compose textarea:focus { border-color: var(--purple); }
+    @media (max-width: 768px) {
+      .course-editor-row { grid-template-columns: 1fr 1fr; }
+      .time-slot-row { grid-template-columns: 1fr 1fr; }
+      .lesson-admin-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div id="headerPlaceholder"></div>
+  <div class="page-content">
+    <div class="admin-header">
+      <div class="container">
+        <h1>🛠️ لوحة الإدارة</h1>
+        <p>إدارة شاملة للمعهد — للمشرفين فقط</p>
+      </div>
+    </div>
+
+    <div id="accessDenied" style="display:none;">
+      <div class="container" style="padding-top:60px;text-align:center;">
+        <div style="font-size:4rem;margin-bottom:16px;">🚫</div>
+        <h2 style="color:var(--purple);">غير مصرح لك بالدخول</h2>
+        <p style="color:var(--text-soft);margin-bottom:24px;">هذه الصفحة للمشرفين فقط</p>
+        <a href="index.html" class="btn btn-primary">العودة للرئيسية</a>
+      </div>
+    </div>
+
+    <div id="adminContent" class="admin-body" style="display:none;">
+      <div class="container">
+        <!-- TABS -->
+        <div class="admin-tabs">
+          <button class="admin-tab-btn active" onclick="showAdminTab('questions', this)">💬 الأسئلة</button>
+          <button class="admin-tab-btn" onclick="showAdminTab('students', this)">👥 الطلاب</button>
+          <button class="admin-tab-btn" onclick="showAdminTab('supervisors', this)">👨‍💼 المشرفون</button>
+          <button class="admin-tab-btn" onclick="showAdminTab('schedule', this)">📅 الجدول</button>
+          <button class="admin-tab-btn" onclick="showAdminTab('courses', this)">📚 المقررات</button>
+          <button class="admin-tab-btn" onclick="showAdminTab('announcements', this)">📢 الإعلانات</button>
+        </div>
+
+        <!-- QUESTIONS TAB -->
+        <div id="tab-questions" class="admin-panel-content">
+          <div class="panel-card">
+            <h3>💬 الأسئلة والاستفسارات <span id="pendingCount" class="badge badge-gold"></span></h3>
+            <div class="filter-row" style="display:flex;gap:8px;margin-bottom:20px;">
+              <button class="filter-btn active" onclick="filterQs('all',this)">الكل</button>
+              <button class="filter-btn" onclick="filterQs('pending',this)">بانتظار الرد</button>
+              <button class="filter-btn" onclick="filterQs('answered',this)">تم الرد</button>
+            </div>
+            <div id="adminQsList"><p style="color:var(--text-soft);text-align:center;padding:24px;">جارٍ التحميل...</p></div>
+          </div>
+        </div>
+
+        <!-- STUDENTS TAB -->
+        <div id="tab-students" class="admin-panel-content" style="display:none;">
+          <div class="panel-card">
+            <h3>👥 إدارة الطلاب</h3>
+            <div style="overflow-x:auto;">
+              <table class="data-table" id="studentsAdminTable">
+                <thead><tr><th>الاسم</th><th>البريد</th><th>المرحلة</th><th>الجنس</th><th>الإنجاز</th><th>الحالة</th><th>الإجراءات</th></tr></thead>
+                <tbody id="studentsAdminBody"><tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-soft);">جارٍ التحميل...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUPERVISORS TAB -->
+        <div id="tab-supervisors" class="admin-panel-content" style="display:none;">
+          <div class="panel-card">
+            <h3>👨‍💼 إضافة مشرف جديد <span style="font-size:0.75rem;color:var(--text-soft);font-weight:normal;">(للمشرف العام فقط)</span></h3>
+            <div id="supAddForm">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="form-group"><label class="form-label">الاسم الثلاثي <span class="req">*</span></label><input type="text" class="form-control" id="supName" placeholder="أدخل الاسم"></div>
+                <div class="form-group"><label class="form-label">البريد الإلكتروني <span class="req">*</span></label><input type="email" class="form-control" id="supEmail" placeholder="email@example.com"></div>
+                <div class="form-group"><label class="form-label">اسم المستخدم <span class="req">*</span></label><input type="text" class="form-control" id="supUsername" placeholder="username"></div>
+                <div class="form-group"><label class="form-label">كلمة المرور <span class="req">*</span></label><input type="password" class="form-control" id="supPassword" placeholder="••••••••" minlength="6"></div>
+              </div>
+              <button class="btn btn-primary" onclick="addSupervisor()">إضافة المشرف</button>
+            </div>
+          </div>
+          <div class="panel-card">
+            <h3>قائمة المشرفين</h3>
+            <div id="supervisorsList"><p style="color:var(--text-soft);text-align:center;padding:24px;">جارٍ التحميل...</p></div>
+          </div>
+        </div>
+
+        <!-- SCHEDULE TAB -->
+        <div id="tab-schedule" class="admin-panel-content" style="display:none;">
+          <div class="panel-card">
+            <h3>📅 تعديل الجدول الأسبوعي
+              <button class="btn btn-gold btn-sm" onclick="saveSchedule()">💾 حفظ الجدول</button>
+            </h3>
+            <div class="filter-row" style="margin-bottom:20px;">
+              <button class="week-nav-btn" style="padding:8px 16px;background:var(--white);border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.82rem;cursor:pointer;" onclick="changeAdminWeek(-1)">→ السابق</button>
+              <span id="adminWeekLabel" style="font-size:0.9rem;font-weight:bold;color:var(--purple);padding:0 12px;"></span>
+              <button class="week-nav-btn" style="padding:8px 16px;background:var(--white);border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.82rem;cursor:pointer;" onclick="changeAdminWeek(1)">القادم ←</button>
+            </div>
+            <div id="scheduleEditor"></div>
+          </div>
+        </div>
+
+        <!-- COURSES TAB -->
+        <div id="tab-courses" class="admin-panel-content" style="display:none;">
+          <div class="panel-card">
+            <h3>📚 إدارة المقررات</h3>
+            <div id="coursesAdminList"><p style="color:var(--text-soft);text-align:center;padding:24px;">جارٍ التحميل...</p></div>
+          </div>
+        </div>
+
+        <!-- ANNOUNCEMENTS TAB -->
+        <div id="tab-announcements" class="admin-panel-content" style="display:none;">
+          <div class="panel-card">
+            <h3>📢 نشر إعلان جديد</h3>
+            <div class="form-group"><label class="form-label">عنوان الإعلان</label><input type="text" class="form-control" id="annTitle" placeholder="عنوان الإعلان..."></div>
+            <div class="form-group"><label class="form-label">نص الإعلان</label><textarea class="answer-textarea" id="annBody" rows="4" placeholder="اكتب نص الإعلان..."></textarea></div>
+            <button class="btn btn-primary" onclick="publishAnnouncement()">نشر الإعلان 📢</button>
+          </div>
+          <div class="panel-card">
+            <h3>الإعلانات السابقة</h3>
+            <div id="announcementsList"><p style="color:var(--text-soft);text-align:center;padding:24px;">جارٍ التحميل...</p></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Lesson Edit Modal -->
+  <div class="modal-overlay" id="lessonModal">
+    <div class="modal-box">
+      <div class="modal-title">تعديل الدرس <button class="modal-close" onclick="closeModal('lessonModal')">✕</button></div>
+      <div id="lessonModalBody"></div>
+    </div>
+  </div>
+
+  <!-- Exam Edit Modal -->
+  <div class="modal-overlay" id="examModal">
+    <div class="modal-box" style="max-width:780px;">
+      <div class="modal-title">إدارة الاختبار <button class="modal-close" onclick="closeModal('examModal')">✕</button></div>
+      <div id="examModalBody"></div>
+    </div>
+  </div>
+
+  <div id="footerPlaceholder"></div>
+
+  <script type="module">
+    import { renderHeader, renderFooter } from './components.js';
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs, addDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    document.getElementById('headerPlaceholder').innerHTML = renderHeader('');
+    document.getElementById('footerPlaceholder').innerHTML = renderFooter();
+    initHeaderBehavior();
+
+    const firebaseConfig = { apiKey:"AIzaSyC1sZ0cJeQMJ6QdnxwFkcfK3AGir0TRuuk", authDomain:"tasil-3lmi.firebaseapp.com", projectId:"tasil-3lmi", storageBucket:"tasil-3lmi.firebasestorage.app", messagingSenderId:"596405733121", appId:"1:596405733121:web:38ebadcc9eef8d8bb77d00" };
+    const app2 = initializeApp(firebaseConfig, 'admin');
+    const auth2 = getAuth(app2);
+    const db2 = getFirestore(app2);
+
+    import { auth, db } from './firebase.js';
+
+    const TOTAL_ITEMS = 23;
+    const CAT_MAP = { inquiry:'استفسار', scientific:'سؤال علمي', complaint:'شكوى', suggestion:'اقتراح' };
+    const DAYS_AR = ['السبت','الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة'];
+    const TIMES = ['الفجر','الصباح','الظهر','العصر','المغرب','العشاء'];
+    const DEFAULT_COURSES = [
+      {id:'prep',title:'المرحلة التمهيدية',phase:'تمهيدية',phaseNum:0},
+      {id:'p1',title:'العقيدة والتوحيد',phase:'الأولى',phaseNum:1},
+      {id:'p2',title:'علوم الآلة والسنة',phase:'الثانية',phaseNum:2},
+      {id:'p3',title:'الفقه المالكي',phase:'الثالثة',phaseNum:3},
+      {id:'p4',title:'أصول التفسير والعقيدة',phase:'الرابعة',phaseNum:4},
+      {id:'p5',title:'المقاصد والآداب',phase:'الخامسة',phaseNum:5},
+      {id:'p6',title:'فقه الدعوة والمناظرة',phase:'السادسة',phaseNum:6},
+    ];
+
+    let currentAdmin = null, isSuperAdmin = false;
+    let allQuestions = [], allStudents = [], allSupervisors = [];
+    let adminWeekStart = getWeekStart(new Date());
+    let scheduleData = {};
+    let activeTab = 'questions';
+
+    onAuthStateChanged(auth, async user => {
+      if (!user) { window.location.href = 'register.html'; return; }
+      const snap = await getDoc(doc(db, 'users', user.uid));
+      if (!snap.exists()) { window.location.href = 'register.html'; return; }
+      const data = snap.data();
+      if (data.role !== 'superAdmin' && data.role !== 'supervisor') {
+        document.getElementById('accessDenied').style.display = '';
+        return;
+      }
+      currentAdmin = { uid: user.uid, ...data };
+      isSuperAdmin = data.role === 'superAdmin';
+      document.getElementById('adminContent').style.display = '';
+      if (!isSuperAdmin) {
+        const supBtn = document.querySelector('[onclick*="supervisors"]');
+        if (supBtn) supBtn.style.opacity = '0.4';
+      }
+      loadQuestions();
+      loadStudents();
+      loadSupervisors();
+      loadAdminSchedule();
+      loadCoursesAdmin();
+      loadAnnouncements();
+    });
+
+    // ===== TAB SWITCHER =====
+    window.showAdminTab = function(tab, btn) {
+      document.querySelectorAll('.admin-panel-content').forEach(p => p.style.display = 'none');
+      document.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('tab-' + tab).style.display = '';
+      btn.classList.add('active');
+      activeTab = tab;
+    };
+
+    // ===== QUESTIONS =====
+    async function loadQuestions() {
+      const snap = await getDocs(collection(db, 'questions'));
+      allQuestions = [];
+      snap.forEach(d => allQuestions.push({ id: d.id, ...d.data() }));
+      allQuestions.sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
+      const pending = allQuestions.filter(q => q.status === 'pending').length;
+      document.getElementById('pendingCount').textContent = pending > 0 ? `${pending} جديد` : '';
+      renderAdminQuestions(allQuestions);
+    }
+
+    function renderAdminQuestions(list) {
+      const el = document.getElementById('adminQsList');
+      if (!list.length) { el.innerHTML = '<p style="text-align:center;padding:24px;color:var(--text-soft);">لا توجد أسئلة</p>'; return; }
+      el.innerHTML = list.map(q => `
+        <div class="q-row">
+          <div class="q-row-header">
+            <div>
+              <span class="badge ${q.status==='answered'?'badge-green':'badge-gold'}">${CAT_MAP[q.category]||q.category}</span>
+              <strong style="display:block;margin-top:6px;color:var(--purple);">${q.title}</strong>
+              <small style="color:var(--text-soft);">بقلم: ${q.studentName||'—'} | ${formatDate(q.createdAt)}</small>
+            </div>
+            <span class="q-status-badge ${q.status==='answered'?'q-status-answered':'q-status-pending'}">${q.status==='answered'?'✅ تم الرد':'⏳ بانتظار'}</span>
+          </div>
+          <p style="font-size:0.85rem;color:var(--text-soft);margin-bottom:14px;line-height:1.7;">${q.body}</p>
+          ${q.status==='answered' ? `<div class="q-answer-box"><div class="ans-label">الرد — ${q.answeredBy||'المشرف'}</div><div class="ans-text">${q.answer}</div></div>` : `
+          <div>
+            <textarea class="answer-textarea" id="ans_${q.id}" placeholder="اكتب الرد هنا..."></textarea>
+            <button class="btn btn-success btn-sm" style="margin-top:8px;" onclick="submitAnswer('${q.id}', '${q.studentId}')">إرسال الرد ✓</button>
+          </div>`}
+        </div>`).join('');
+    }
+
+    window.filterQs = function(status, btn) {
+      document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      renderAdminQuestions(status==='all'?allQuestions:allQuestions.filter(q=>q.status===status));
+    };
+
+    window.submitAnswer = async function(qId, studentId) {
+      const answer = document.getElementById('ans_'+qId)?.value.trim();
+      if (!answer) return showToast('الرجاء كتابة الرد', 'error');
+      await updateDoc(doc(db, 'questions', qId), {
+        answer, status: 'answered',
+        answeredBy: currentAdmin.fullName,
+        answeredAt: new Date().toISOString()
+      });
+      // Send notification to student
+      await sendNotification(studentId, '💬 تم الرد على سؤالك', 'تم الرد على استفسارك في معهد التأصيل العلمي', 'answer');
+      showToast('تم إرسال الرد ✅', 'success');
+      loadQuestions();
+    };
+
+    // ===== STUDENTS =====
+    async function loadStudents() {
+      const snap = await getDocs(collection(db, 'users'));
+      allStudents = [];
+      snap.forEach(d => { if(d.data().role==='student') allStudents.push({uid:d.id,...d.data()}); });
+      renderStudents();
+    }
+
+    function renderStudents() {
+      const tbody = document.getElementById('studentsAdminBody');
+      const levelMap = {primary:'ابتدائي',middle:'متوسط',high:'ثانوي',bachelor:'بكالوريوس',master:'ماجستير',phd:'دكتوراه',work:'وظيفة'};
+      if (!allStudents.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-soft);">لا يوجد طلاب</td></tr>'; return; }
+      tbody.innerHTML = allStudents.map(s => {
+        const done = Object.values(s.progress||{}).filter(Boolean).length;
+        const pct = Math.round((done/TOTAL_ITEMS)*100);
+        return `<tr>
+          <td><strong>${s.fullName||'—'}</strong><br><small style="color:var(--text-soft);">${s.username||''}</small></td>
+          <td style="direction:ltr;">${s.email||'—'}</td>
+          <td>${levelMap[s.level]||'—'}</td>
+          <td>${s.gender==='female'?'أنثى':'ذكر'}</td>
+          <td>
+            <span style="font-weight:bold;color:var(--purple);">${pct}٪</span>
+            <div style="height:4px;background:rgba(59,27,64,0.08);border-radius:2px;margin-top:4px;"><div style="height:100%;background:linear-gradient(90deg,var(--purple),var(--gold));width:${pct}%;border-radius:2px;"></div></div>
+          </td>
+          <td><span class="badge ${s.status==='rejected'?'badge-gold':'badge-green'}">${s.status==='rejected'?'مرفوض':'مقبول'}</span></td>
+          <td>
+            <div class="actions">
+              ${s.status!=='rejected'?`<button class="btn btn-sm btn-warn" onclick="rejectStudent('${s.uid}')">رفض</button>`:`<button class="btn btn-sm btn-success" onclick="acceptStudent('${s.uid}')">قبول</button>`}
+              <button class="btn btn-sm btn-danger" onclick="deleteStudent('${s.uid}','${s.fullName}')">حذف</button>
+            </div>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    window.rejectStudent = async function(uid) {
+      await updateDoc(doc(db,'users',uid),{status:'rejected'});
+      showToast('تم رفض الطالب','success'); loadStudents();
+    };
+    window.acceptStudent = async function(uid) {
+      await updateDoc(doc(db,'users',uid),{status:'accepted'});
+      showToast('تم قبول الطالب','success'); loadStudents();
+    };
+    window.deleteStudent = async function(uid, name) {
+      if (!confirm(`هل تريد حذف حساب "${name}"؟ لا يمكن التراجع.`)) return;
+      await deleteDoc(doc(db,'users',uid));
+      showToast('تم حذف الحساب','success'); loadStudents();
+    };
+
+    // ===== SUPERVISORS =====
+    async function loadSupervisors() {
+      const snap = await getDocs(collection(db,'users'));
+      allSupervisors = [];
+      snap.forEach(d => { if(['supervisor','superAdmin'].includes(d.data().role)) allSupervisors.push({uid:d.id,...d.data()}); });
+      const el = document.getElementById('supervisorsList');
+      el.innerHTML = allSupervisors.map(s => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:rgba(59,27,64,0.03);border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:8px;">
+          <div>
+            <strong style="color:var(--purple);">${s.fullName}</strong>
+            <span class="badge ${s.role==='superAdmin'?'badge-gold':'badge-purple'}" style="margin-right:8px;">${s.role==='superAdmin'?'مشرف عام':'مشرف'}</span>
+            <div style="font-size:0.75rem;color:var(--text-soft);margin-top:4px;">${s.email}</div>
+          </div>
+          ${isSuperAdmin && s.role!=='superAdmin' ? `<button class="btn btn-sm btn-danger" onclick="removeSupervisor('${s.uid}')">إزالة</button>` : ''}
+        </div>`).join('');
+    }
+
+    window.addSupervisor = async function() {
+      if (!isSuperAdmin) return showToast('هذه الميزة للمشرف العام فقط','error');
+      const name = document.getElementById('supName').value.trim();
+      const email = document.getElementById('supEmail').value.trim();
+      const username = document.getElementById('supUsername').value.trim();
+      const password = document.getElementById('supPassword').value;
+      if (!name||!email||!username||!password) return showToast('يرجاء تعبئة جميع الحقول','error');
+      try {
+        const cred = await createUserWithEmailAndPassword(auth2, email, password);
+        await setDoc(doc(db,'users',cred.user.uid),{fullName:name,email,username,role:'supervisor',createdAt:new Date().toISOString()});
+        showToast('تم إضافة المشرف ✅','success');
+        ['supName','supEmail','supUsername','supPassword'].forEach(id=>document.getElementById(id).value='');
+        loadSupervisors();
+      } catch(e) { showToast('خطأ: '+e.message,'error'); }
+    };
+
+    window.removeSupervisor = async function(uid) {
+      if (!confirm('هل تريد إزالة صلاحية هذا المشرف؟')) return;
+      await updateDoc(doc(db,'users',uid),{role:'student'});
+      showToast('تم إزالة المشرف','success'); loadSupervisors();
+    };
+
+    // ===== SCHEDULE =====
+    function getWeekStart(date) {
+      const d=new Date(date); const day=d.getDay();
+      const diff=day===6?0:day+1; d.setDate(d.getDate()-diff); d.setHours(0,0,0,0); return d;
+    }
+    function weekKey(d) { return 'week_'+d.toISOString().slice(0,10); }
+    function toHijri(date) { return date.toLocaleDateString('ar-SA-u-ca-islamic-umalqura',{month:'short',day:'numeric'}); }
+
+    async function loadAdminSchedule() {
+      const wk = weekKey(adminWeekStart);
+      try {
+        const snap = await getDoc(doc(db,'schedule',wk));
+        scheduleData = snap.exists() ? snap.data() : { days:{} };
+      } catch(e) { scheduleData = { days:{} }; }
+      if (!scheduleData.days) scheduleData.days = {};
+      renderScheduleEditor();
+    }
+
+    function renderScheduleEditor() {
+      const wk = weekKey(adminWeekStart);
+      const end = new Date(adminWeekStart); end.setDate(end.getDate()+6);
+      document.getElementById('adminWeekLabel').textContent =
+        adminWeekStart.toLocaleDateString('ar',{month:'short',day:'numeric'}) + ' — ' + end.toLocaleDateString('ar',{month:'short',day:'numeric'});
+      const el = document.getElementById('scheduleEditor');
+      el.innerHTML = DAYS_AR.map((dayName,i) => {
+        const d = new Date(adminWeekStart); d.setDate(d.getDate()+i);
+        const dateKey = d.toISOString().slice(0,10);
+        const dayData = scheduleData.days[dateKey] || {};
+        return `<div class="schedule-day-editor">
+          <h4>${dayName} — ${d.toLocaleDateString('ar',{month:'long',day:'numeric'})} | ${toHijri(d)}</h4>
+          ${TIMES.map(time => {
+            const lessons = dayData[time] || [];
+            return `<div style="margin-bottom:8px;">
+              <div style="font-size:0.78rem;color:var(--text-soft);margin-bottom:4px;">${time}</div>
+              <div id="slots_${dateKey}_${time}">
+                ${lessons.map((l,li)=>`
+                  <div class="time-slot-row" id="slot_${dateKey}_${time}_${li}">
+                    <input type="text" value="${l.time||''}" placeholder="الوقت" onchange="updateSlot('${dateKey}','${time}',${li},'time',this.value)">
+                    <input type="text" value="${l.title||''}" placeholder="عنوان الدرس" onchange="updateSlot('${dateKey}','${time}',${li},'title',this.value)">
+                    <input type="text" value="${l.note||''}" placeholder="ملاحظة" onchange="updateSlot('${dateKey}','${time}',${li},'note',this.value)">
+                    <button class="del-btn" onclick="removeSlot('${dateKey}','${time}',${li})">✕</button>
+                  </div>`).join('')}
+              </div>
+              <button class="btn btn-outline add-slot-btn" onclick="addSlot('${dateKey}','${time}')">+ إضافة</button>
+            </div>`;
+          }).join('')}
+        </div>`;
+      }).join('');
+    }
+
+    window.addSlot = function(dateKey, time) {
+      if (!scheduleData.days[dateKey]) scheduleData.days[dateKey] = {};
+      if (!scheduleData.days[dateKey][time]) scheduleData.days[dateKey][time] = [];
+      scheduleData.days[dateKey][time].push({ title:'', time:'', note:'' });
+      renderScheduleEditor();
+    };
+    window.removeSlot = function(dateKey, time, idx) {
+      scheduleData.days[dateKey][time].splice(idx,1);
+      renderScheduleEditor();
+    };
+    window.updateSlot = function(dateKey, time, idx, field, val) {
+      scheduleData.days[dateKey][time][idx][field] = val;
+    };
+    window.changeAdminWeek = function(dir) {
+      adminWeekStart = new Date(adminWeekStart);
+      adminWeekStart.setDate(adminWeekStart.getDate()+dir*7);
+      loadAdminSchedule();
+    };
+    window.saveSchedule = async function() {
+      const wk = weekKey(adminWeekStart);
+      await setDoc(doc(db,'schedule',wk), scheduleData);
+      showToast('تم حفظ الجدول ✅','success');
+    };
+
+    // ===== COURSES ADMIN =====
+    async function loadCoursesAdmin() {
+      let courses = [...DEFAULT_COURSES];
+      try {
+        const snap = await getDocs(collection(db,'courses'));
+        snap.forEach(d => {
+          const idx = courses.findIndex(c=>c.id===d.id);
+          if (idx>=0) courses[idx]={...courses[idx],...d.data(),id:d.id};
+        });
+      } catch(e) {}
+      renderCoursesAdmin(courses);
+    }
+
+    function renderCoursesAdmin(courses) {
+      const el = document.getElementById('coursesAdminList');
+      el.innerHTML = courses.map(c => `
+        <div style="border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:16px;overflow:hidden;">
+          <div class="course-editor-row" style="background:rgba(59,27,64,0.04);">
+            <strong style="color:var(--purple);">${c.title}</strong>
+            <div style="text-align:center;">
+              <div style="font-size:0.72rem;color:var(--text-soft);margin-bottom:4px;">ظاهر</div>
+              <label class="toggle-switch"><input type="checkbox" ${c.visible!==false?'checked':''} onchange="toggleCourse('${c.id}','visible',this.checked)"><span class="toggle-slider"></span></label>
+            </div>
+            <div style="text-align:center;">
+              <div style="font-size:0.72rem;color:var(--text-soft);margin-bottom:4px;">مقفل</div>
+              <label class="toggle-switch"><input type="checkbox" ${c.locked?'checked':''} onchange="toggleCourse('${c.id}','locked',this.checked)"><span class="toggle-slider"></span></label>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="toggleLessonsAdmin('${c.id}')">الدروس ▾</button>
+          </div>
+          <div id="lessons_admin_${c.id}" style="display:none;padding:16px;">
+            <div id="lessons_list_${c.id}"><p style="color:var(--text-soft);font-size:0.85rem;text-align:center;">جارٍ التحميل...</p></div>
+            <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:16px;">
+              <strong style="font-size:0.9rem;color:var(--purple);display:block;margin-bottom:12px;">🔒 الاختبارات</strong>
+              <div id="exams_list_${c.id}"></div>
+              <button class="btn btn-gold btn-sm" onclick="openNewExamModal('${c.id}')">+ إضافة اختبار</button>
+            </div>
+          </div>
+        </div>`).join('');
+    }
+
+    window.toggleCourse = async function(courseId, field, value) {
+      await setDoc(doc(db,'courses',courseId),{[field]:value},{merge:true});
+      if (field==='visible' && value) {
+        await notifyAllStudents('📚 مقرر جديد!', 'تم إتاحة مقرر جديد في معهد التأصيل العلمي', 'course');
+      }
+    };
+
+    window.toggleLessonsAdmin = async function(courseId) {
+      const el = document.getElementById('lessons_admin_'+courseId);
+      if (el.style.display==='none') {
+        el.style.display='';
+        await loadLessonsAdmin(courseId);
+        await loadExamsAdmin(courseId);
+      } else { el.style.display='none'; }
+    };
+
+    async function loadLessonsAdmin(courseId) {
+      let lessons = [];
+      try {
+        const snap = await getDocs(collection(db,'courses',courseId,'lessons'));
+        snap.forEach(d=>lessons.push({id:d.id,...d.data()}));
+        lessons.sort((a,b)=>(a.order||0)-(b.order||0));
+      } catch(e) {}
+      if (!lessons.length) {
+        for (let i=1;i<=20;i++) lessons.push({id:'l'+i,title:'الدرس '+i,order:i,visible:true,locked:false});
+      }
+      const el = document.getElementById('lessons_list_'+courseId);
+      el.innerHTML = `<div style="font-size:0.72rem;color:var(--text-soft);margin-bottom:6px;display:grid;grid-template-columns:1fr 1fr 60px 60px 80px;gap:8px;padding:0 4px;">
+        <span>عنوان الدرس</span><span>رابط الفيديو</span><span style="text-align:center;">ظاهر</span><span style="text-align:center;">مقفل</span><span></span></div>` +
+      lessons.map(l=>`
+        <div class="lesson-admin-row">
+          <input type="text" value="${l.title||''}" placeholder="عنوان الدرس" style="padding:6px 10px;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.82rem;outline:none;" onblur="saveLesson('${courseId}','${l.id}','title',this.value)">
+          <input type="text" value="${l.videoUrl||''}" placeholder="رابط يوتيوب" style="padding:6px 10px;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.82rem;outline:none;" onblur="saveLesson('${courseId}','${l.id}','videoUrl',this.value)">
+          <div style="text-align:center;"><label class="toggle-switch"><input type="checkbox" ${l.visible!==false?'checked':''} onchange="saveLesson('${courseId}','${l.id}','visible',this.checked)"><span class="toggle-slider"></span></label></div>
+          <div style="text-align:center;"><label class="toggle-switch"><input type="checkbox" ${l.locked?'checked':''} onchange="saveLessonLock('${courseId}','${l.id}',this.checked)"><span class="toggle-slider"></span></label></div>
+          <button class="btn btn-outline btn-sm" onclick="openLessonDetails('${courseId}','${l.id}')">تفاصيل</button>
+        </div>`).join('');
+    }
+
+    window.saveLesson = async function(courseId, lessonId, field, value) {
+      await setDoc(doc(db,'courses',courseId,'lessons',lessonId),{[field]:value},{merge:true});
+      if (field==='visible'&&value) {
+        await notifyAllStudents('📖 درس جديد!','تم إضافة درس جديد في أحد المقررات','lesson');
+      }
+    };
+    window.saveLessonLock = async function(courseId, lessonId, locked) {
+      await setDoc(doc(db,'courses',courseId,'lessons',lessonId),{locked},{merge:true});
+      if (!locked) await notifyAllStudents('🔓 تم فتح درس','تم فتح درس جديد، يمكنك الاطلاع عليه الآن','unlock');
+    };
+
+    window.openLessonDetails = async function(courseId, lessonId) {
+      let lesson = {};
+      try { const s=await getDoc(doc(db,'courses',courseId,'lessons',lessonId)); if(s.exists()) lesson=s.data(); } catch(e) {}
+      let exercises = [];
+      try {
+        const es = await getDocs(collection(db,'courses',courseId,'lessons',lessonId,'exercises'));
+        es.forEach(d=>exercises.push({id:d.id,...d.data()}));
+        exercises.sort((a,b)=>(a.order||0)-(b.order||0));
+      } catch(e) {}
+      window._editCourse = courseId; window._editLesson = lessonId;
+      window._exercises = exercises;
+      document.getElementById('lessonModalBody').innerHTML = `
+        <div class="form-group"><label class="form-label">رابط الصوت</label><input type="text" class="form-control" id="lm_audio" value="${lesson.audioUrl||''}" placeholder="https://..."></div>
+        <div class="form-group"><label class="form-label">رابط PDF</label><input type="text" class="form-control" id="lm_pdf" value="${lesson.pdfUrl||''}" placeholder="https://..."></div>
+        <div class="form-group"><label class="form-label">وصف الدرس</label><textarea class="answer-textarea" id="lm_desc">${lesson.desc||''}</textarea></div>
+        <button class="btn btn-primary btn-sm" style="margin-bottom:24px;" onclick="saveLessonDetails()">حفظ التفاصيل</button>
+        <hr style="margin-bottom:20px;border-color:var(--border);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <strong style="color:var(--purple);">✏️ التمارين (${exercises.length})</strong>
+          <button class="btn btn-gold btn-sm" onclick="addExerciseQ()">+ إضافة سؤال</button>
+        </div>
+        <div id="exercisesAdmin">${renderExercisesAdmin(exercises, courseId, lessonId)}</div>
+        <button class="btn btn-primary" onclick="saveExercises()" style="margin-top:16px;">حفظ التمارين</button>`;
+      openModal('lessonModal');
+    };
+
+    window.saveLessonDetails = async function() {
+      const courseId=window._editCourse, lessonId=window._editLesson;
+      await setDoc(doc(db,'courses',courseId,'lessons',lessonId),{
+        audioUrl:document.getElementById('lm_audio').value.trim(),
+        pdfUrl:document.getElementById('lm_pdf').value.trim(),
+        desc:document.getElementById('lm_desc').value.trim(),
+      },{merge:true});
+      showToast('تم الحفظ ✅','success');
+    };
+
+    function renderExercisesAdmin(exercises) {
+      const letters=['أ','ب','ج','د','هـ','و','ز','ح','ط','ي'];
+      return exercises.map((q,qi)=>`
+        <div class="question-admin-row" id="eq_${qi}">
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+            <strong style="font-size:0.85rem;color:var(--purple);">سؤال ${qi+1}</strong>
+            <button class="btn btn-sm btn-danger" onclick="removeExerciseQ(${qi})">حذف</button>
+          </div>
+          <input type="text" value="${q.question||''}" placeholder="نص السؤال" class="form-control" style="margin-bottom:10px;" oninput="window._exercises[${qi}].question=this.value">
+          <div style="margin-bottom:6px;font-size:0.78rem;color:var(--text-soft);">الخيارات (ضع ✓ على الصحيح)</div>
+          <div class="options-admin" id="opts_${qi}">
+            ${(q.options||['','']).map((opt,oi)=>`
+              <div class="option-admin-row">
+                <span class="option-letter" style="width:28px;height:28px;min-width:28px;">${letters[oi]}</span>
+                <input type="text" value="${opt}" placeholder="الخيار ${oi+1}" oninput="window._exercises[${qi}].options[${oi}]=this.value">
+                <input type="checkbox" class="correct-check" ${(q.correctIndexes||[]).includes(oi)?'checked':''} title="إجابة صحيحة" onchange="toggleCorrect(${qi},${oi},this.checked)">
+                ${oi>=2?`<button class="del-btn" style="width:24px;height:24px;font-size:0.75rem;" onclick="removeOption(${qi},${oi})">✕</button>`:''}
+              </div>`).join('')}
+          </div>
+          ${(q.options||[]).length < 10 ? `<button class="btn btn-outline add-slot-btn" style="margin-top:8px;" onclick="addOption(${qi})">+ خيار</button>` : ''}
+          <div style="margin-top:10px;display:flex;gap:12px;">
+            <label style="font-size:0.78rem;color:var(--text-soft);">ظاهر <input type="checkbox" ${q.visible!==false?'checked':''} onchange="window._exercises[${qi}].visible=this.checked"></label>
+            <label style="font-size:0.78rem;color:var(--text-soft);">مقفل <input type="checkbox" ${q.locked?'checked':''} onchange="window._exercises[${qi}].locked=this.checked"></label>
+          </div>
+        </div>`).join('');
+    }
+
+    window.addExerciseQ = function() {
+      window._exercises.push({question:'',options:['',''],correctIndexes:[],visible:true,locked:false});
+      document.getElementById('exercisesAdmin').innerHTML = renderExercisesAdmin(window._exercises);
+    };
+    window.removeExerciseQ = function(qi) {
+      window._exercises.splice(qi,1);
+      document.getElementById('exercisesAdmin').innerHTML = renderExercisesAdmin(window._exercises);
+    };
+    window.addOption = function(qi) {
+      window._exercises[qi].options.push('');
+      document.getElementById('exercisesAdmin').innerHTML = renderExercisesAdmin(window._exercises);
+    };
+    window.removeOption = function(qi, oi) {
+      window._exercises[qi].options.splice(oi,1);
+      window._exercises[qi].correctIndexes = (window._exercises[qi].correctIndexes||[]).filter(i=>i!==oi).map(i=>i>oi?i-1:i);
+      document.getElementById('exercisesAdmin').innerHTML = renderExercisesAdmin(window._exercises);
+    };
+    window.toggleCorrect = function(qi, oi, checked) {
+      if (!window._exercises[qi].correctIndexes) window._exercises[qi].correctIndexes=[];
+      if (checked) { if(!window._exercises[qi].correctIndexes.includes(oi)) window._exercises[qi].correctIndexes.push(oi); }
+      else window._exercises[qi].correctIndexes = window._exercises[qi].correctIndexes.filter(i=>i!==oi);
+    };
+
+    window.saveExercises = async function() {
+      const courseId=window._editCourse, lessonId=window._editLesson;
+      for (let i=0;i<window._exercises.length;i++) {
+        const ex=window._exercises[i];
+        const exId = ex.id || ('ex_'+Date.now()+'_'+i);
+        await setDoc(doc(db,'courses',courseId,'lessons',lessonId,'exercises',exId),{...ex,order:i,id:exId});
+      }
+      showToast('تم حفظ التمارين ✅','success');
+    };
+
+    // ===== EXAMS ADMIN =====
+    async function loadExamsAdmin(courseId) {
+      let exams=[];
+      try {
+        const snap=await getDocs(collection(db,'courses',courseId,'exams'));
+        snap.forEach(d=>exams.push({id:d.id,...d.data()}));
+      } catch(e){}
+      const el = document.getElementById('exams_list_'+courseId);
+      el.innerHTML = exams.map(ex=>`
+        <div class="exam-admin-block">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+            <div>
+              <strong style="color:var(--purple);">${ex.title||'اختبار'}</strong>
+              <span class="badge badge-gold" style="margin-right:8px;">${ex.timeLimit?ex.timeLimit+'د':'بلا حد'}</span>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <label style="font-size:0.78rem;color:var(--text-soft);">ظاهر <label class="toggle-switch" style="display:inline-block;vertical-align:middle;"><input type="checkbox" ${ex.visible!==false?'checked':''} onchange="toggleExam('${courseId}','${ex.id}','visible',this.checked)"><span class="toggle-slider"></span></label></label>
+              <label style="font-size:0.78rem;color:var(--text-soft);">مقفل <label class="toggle-switch" style="display:inline-block;vertical-align:middle;"><input type="checkbox" ${ex.locked?'checked':''} onchange="toggleExam('${courseId}','${ex.id}','locked',this.checked)"><span class="toggle-slider"></span></label></label>
+              <button class="btn btn-outline btn-sm" onclick="openExamEdit('${courseId}','${ex.id}')">تعديل</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteExam('${courseId}','${ex.id}')">حذف</button>
+            </div>
+          </div>
+        </div>`).join('');
+    }
+
+    window.toggleExam = async function(courseId, examId, field, value) {
+      await setDoc(doc(db,'courses',courseId,'exams',examId),{[field]:value},{merge:true});
+      if (field==='visible'&&value) await notifyAllStudents('📝 اختبار جديد!','تم إضافة اختبار جديد في أحد المقررات','exam');
+      if (field==='locked'&&!value) await notifyAllStudents('🔓 تم فتح اختبار','يمكنك الآن أداء الاختبار','unlock');
+    };
+    window.deleteExam = async function(courseId, examId) {
+      if(!confirm('حذف الاختبار؟')) return;
+      await deleteDoc(doc(db,'courses',courseId,'exams',examId));
+      loadExamsAdmin(courseId); showToast('تم حذف الاختبار','success');
+    };
+
+    window.openNewExamModal = function(courseId) {
+      window._examCourse = courseId; window._examId = null; window._examQs = [];
+      renderExamModal({title:'',desc:'',timeLimit:0,passingScore:60},[]);
+      openModal('examModal');
+    };
+    window.openExamEdit = async function(courseId, examId) {
+      window._examCourse = courseId; window._examId = examId; window._examQs = [];
+      let exam={},qs=[];
+      try {
+        const s=await getDoc(doc(db,'courses',courseId,'exams',examId)); if(s.exists()) exam=s.data();
+        const qsnap=await getDocs(collection(db,'courses',courseId,'exams',examId,'questions'));
+        qsnap.forEach(d=>qs.push({id:d.id,...d.data()}));
+        qs.sort((a,b)=>(a.order||0)-(b.order||0));
+      } catch(e){}
+      window._examQs = qs;
+      renderExamModal(exam, qs);
+      openModal('examModal');
+    };
+
+    function renderExamModal(exam, qs) {
+      document.getElementById('examModalBody').innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+          <div class="form-group"><label class="form-label">اسم الاختبار <span class="req">*</span></label><input type="text" class="form-control" id="em_title" value="${exam.title||''}" placeholder="اسم الاختبار"></div>
+          <div class="form-group"><label class="form-label">وصف الاختبار</label><input type="text" class="form-control" id="em_desc" value="${exam.desc||''}" placeholder="وصف اختياري"></div>
+          <div class="form-group"><label class="form-label">المدة (دقائق) — 0 = بلا حد</label><input type="number" class="form-control" id="em_time" value="${exam.timeLimit||0}" min="0"></div>
+          <div class="form-group"><label class="form-label">درجة النجاح (%)</label><input type="number" class="form-control" id="em_pass" value="${exam.passingScore||60}" min="0" max="100"></div>
+        </div>
+        <hr style="margin-bottom:20px;border-color:var(--border);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <strong style="color:var(--purple);">📝 الأسئلة (${qs.length})</strong>
+          <button class="btn btn-gold btn-sm" onclick="addExamQ()">+ إضافة سؤال</button>
+        </div>
+        <div id="examQsAdmin">${renderExamQsAdmin(qs)}</div>
+        <button class="btn btn-primary" onclick="saveExamFull()" style="margin-top:20px;width:100%;">💾 حفظ الاختبار</button>`;
+    }
+
+    function renderExamQsAdmin(qs) {
+      const letters=['أ','ب','ج','د','هـ','و','ز','ح','ط','ي'];
+      return qs.map((q,qi)=>`
+        <div class="question-admin-row" id="emq_${qi}">
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+            <strong style="font-size:0.85rem;color:var(--purple);">سؤال ${qi+1}</strong>
+            <div style="display:flex;gap:8px;">
+              <input type="number" value="${q.points||1}" min="1" style="width:60px;padding:4px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:0.82rem;" placeholder="نقاط" oninput="window._examQs[${qi}].points=+this.value">
+              <button class="btn btn-sm btn-danger" onclick="removeExamQ(${qi})">حذف</button>
+            </div>
+          </div>
+          <input type="text" value="${q.question||''}" placeholder="نص السؤال" class="form-control" style="margin-bottom:10px;" oninput="window._examQs[${qi}].question=this.value">
+          <div style="margin-bottom:6px;font-size:0.78rem;color:var(--text-soft);">الخيارات (ضع ✓ على الصحيح/الصحيحة)</div>
+          <div class="options-admin">
+            ${(q.options||['','']).map((opt,oi)=>`
+              <div class="option-admin-row">
+                <span class="option-letter" style="width:28px;height:28px;min-width:28px;">${letters[oi]}</span>
+                <input type="text" value="${opt}" placeholder="الخيار ${oi+1}" oninput="window._examQs[${qi}].options[${oi}]=this.value">
+                <input type="checkbox" class="correct-check" ${(q.correctIndexes||[]).includes(oi)?'checked':''} title="إجابة صحيحة" onchange="toggleExamCorrect(${qi},${oi},this.checked)">
+                ${oi>=2?`<button class="del-btn" style="width:24px;height:24px;font-size:0.75rem;" onclick="removeExamOption(${qi},${oi})">✕</button>`:''}
+              </div>`).join('')}
+          </div>
+          ${(q.options||[]).length<10?`<button class="btn btn-outline add-slot-btn" style="margin-top:8px;" onclick="addExamOption(${qi})">+ خيار</button>`:''}
+        </div>`).join('');
+    }
+
+    window.addExamQ = function() { window._examQs.push({question:'',options:['',''],correctIndexes:[],points:1}); document.getElementById('examQsAdmin').innerHTML=renderExamQsAdmin(window._examQs); };
+    window.removeExamQ = function(qi) { window._examQs.splice(qi,1); document.getElementById('examQsAdmin').innerHTML=renderExamQsAdmin(window._examQs); };
+    window.addExamOption = function(qi) { window._examQs[qi].options.push(''); document.getElementById('examQsAdmin').innerHTML=renderExamQsAdmin(window._examQs); };
+    window.removeExamOption = function(qi,oi) { window._examQs[qi].options.splice(oi,1); window._examQs[qi].correctIndexes=(window._examQs[qi].correctIndexes||[]).filter(i=>i!==oi).map(i=>i>oi?i-1:i); document.getElementById('examQsAdmin').innerHTML=renderExamQsAdmin(window._examQs); };
+    window.toggleExamCorrect = function(qi,oi,checked) { if(!window._examQs[qi].correctIndexes)window._examQs[qi].correctIndexes=[]; if(checked){if(!window._examQs[qi].correctIndexes.includes(oi))window._examQs[qi].correctIndexes.push(oi);}else window._examQs[qi].correctIndexes=window._examQs[qi].correctIndexes.filter(i=>i!==oi); };
+
+    window.saveExamFull = async function() {
+      const courseId=window._examCourse;
+      const examId=window._examId||'exam_'+Date.now();
+      await setDoc(doc(db,'courses',courseId,'exams',examId),{
+        title:document.getElementById('em_title').value.trim(),
+        desc:document.getElementById('em_desc').value.trim(),
+        timeLimit:+document.getElementById('em_time').value,
+        passingScore:+document.getElementById('em_pass').value,
+        visible:true, locked:false
+      },{merge:true});
+      for(let i=0;i<window._examQs.length;i++){
+        const q=window._examQs[i];
+        const qId=q.id||'q_'+Date.now()+'_'+i;
+        await setDoc(doc(db,'courses',courseId,'exams',examId,'questions',qId),{...q,order:i,id:qId});
+      }
+      if (!window._examId) await notifyAllStudents('📝 اختبار جديد!','تم إضافة اختبار جديد في أحد المقررات','exam');
+      closeModal('examModal');
+      showToast('تم حفظ الاختبار ✅','success');
+      loadExamsAdmin(courseId);
+    };
+
+    // ===== ANNOUNCEMENTS =====
+    async function loadAnnouncements() {
+      const el = document.getElementById('announcementsList');
+      try {
+        const snap = await getDocs(collection(db,'announcements'));
+        let anns=[]; snap.forEach(d=>anns.push({id:d.id,...d.data()}));
+        anns.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+        el.innerHTML = anns.length ? anns.map(a=>`
+          <div class="q-row">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <strong style="color:var(--purple);">${a.title}</strong>
+              <small style="color:var(--text-soft);">${formatDate(a.createdAt)}</small>
+            </div>
+            <p style="font-size:0.88rem;color:var(--text-soft);">${a.body}</p>
+          </div>`).join('')
+        : '<p style="text-align:center;padding:24px;color:var(--text-soft);">لا توجد إعلانات بعد</p>';
+      } catch(e){ el.innerHTML='<p style="color:var(--text-soft);text-align:center;">حدث خطأ</p>'; }
+    }
+
+    window.publishAnnouncement = async function() {
+      const title=document.getElementById('annTitle').value.trim();
+      const body=document.getElementById('annBody').value.trim();
+      if(!title||!body) return showToast('يرجاء ملء جميع الحقول','error');
+      const annId='ann_'+Date.now();
+      await setDoc(doc(db,'announcements',annId),{title,body,createdBy:currentAdmin.fullName,createdAt:new Date().toISOString()});
+      await notifyAllStudents('📢 '+title, body, 'announcement');
+      document.getElementById('annTitle').value='';
+      document.getElementById('annBody').value='';
+      showToast('تم نشر الإعلان ✅','success');
+      loadAnnouncements();
+    };
+
+    // ===== NOTIFICATIONS =====
+    async function sendNotification(uid, title, msg, type) {
+      const nId='n_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+      await setDoc(doc(db,'notifications',uid,'items',nId),{title,message:msg,type,read:false,createdAt:new Date().toISOString()});
+    }
+
+    async function notifyAllStudents(title, msg, type) {
+      const snap = await getDocs(collection(db,'users'));
+      const proms=[];
+      snap.forEach(d=>{ if(d.data().role==='student') proms.push(sendNotification(d.id,title,msg,type)); });
+      await Promise.all(proms);
+    }
+
+    // ===== MODAL =====
+    window.openModal = function(id) { document.getElementById(id).classList.add('open'); };
+    window.closeModal = function(id) { document.getElementById(id).classList.remove('open'); };
+    document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if(e.target===m) m.classList.remove('open'); }));
+
+    // ===== HELPERS =====
+    function formatDate(iso) {
+      if(!iso) return '';
+      return new Date(iso).toLocaleDateString('ar-SA',{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    }
+    function showToast(msg,type='') {
+      let t=document.getElementById('globalToast');
+      if(!t){t=document.createElement('div');t.id='globalToast';t.className='toast';document.body.appendChild(t);}
+      t.textContent=msg; t.className='toast '+type;
+      setTimeout(()=>t.classList.add('show'),50); setTimeout(()=>t.classList.remove('show'),3200);
+    }
+    function initHeaderBehavior() {
+      const header=document.getElementById('siteHeader');
+      const hamburger=document.getElementById('hamburger');
+      const mobileMenu=document.getElementById('mobileMenu');
+      window.addEventListener('scroll',()=>header.classList.toggle('scrolled',window.scrollY>40));
+      hamburger&&hamburger.addEventListener('click',()=>mobileMenu.classList.toggle('open'));
+    }
+    window.toggleNotifPanel=function(){const p=document.getElementById('notifPanel');if(p)p.style.display=p.style.display==='none'?'block':'none';};
+    window.markAllRead=function(){};
+  </script>
+</body>
+</html>
