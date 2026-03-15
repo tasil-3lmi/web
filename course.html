@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>المقرر — معهد التأصيل العلمي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Zain:wght@400;700;800&family=Amiri:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'"/>
+<noscript><link href="https://fonts.googleapis.com/css2?family=Zain:wght@400;700;800&family=Amiri:wght@400;700&display=swap" rel="stylesheet"/></noscript>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+<script>
+firebase.initializeApp({apiKey:"AIzaSyC1sZ0cJeQMJ6QdnxwFkcfK3AGir0TRuuk",authDomain:"tasil-3lmi.firebaseapp.com",projectId:"tasil-3lmi",storageBucket:"tasil-3lmi.firebasestorage.app",messagingSenderId:"596405733121",appId:"1:596405733121:web:38ebadcc9eef8d8bb77d00"});
+const auth=firebase.auth(); const db=firebase.firestore();
+</script>
+<link rel="stylesheet" href="styles.css"/>
+<script src="shared.js"></script>
+<script src="nav.js"></script>
+<style>
+body{margin:0}
+#course-app{display:none}
+/* Layout */
+.course-layout{display:grid;grid-template-columns:280px 1fr;height:calc(100vh - 56px);overflow:hidden}
+/* Sidebar */
+.sidebar{background:#fff;border-left:1px solid rgba(212,180,142,.18);display:flex;flex-direction:column;overflow:hidden}
+.sidebar-header{padding:14px 12px;border-bottom:1px solid rgba(212,180,142,.15);flex-shrink:0}
+.sidebar-course-title{font-family:'Amiri',serif;font-size:15px;font-weight:700;color:var(--purple);margin-bottom:8px;line-height:1.3}
+.progress-bar-wrap{background:rgba(212,180,142,.2);border-radius:10px;height:6px;margin-bottom:5px}
+.progress-bar-fill{height:100%;border-radius:10px;background:linear-gradient(90deg,var(--purple),var(--gold));transition:width .4s}
+.progress-text{font-size:11px;color:var(--muted)}
+.sidebar-list{flex:1;overflow-y:auto;padding:6px}
+/* Lesson row */
+.l-row{display:flex;align-items:center;gap:6px;padding:8px 9px;border-radius:10px;margin-bottom:3px;cursor:pointer;border:1.5px solid transparent;transition:.18s;position:relative}
+.l-row:hover{background:rgba(59,27,64,.05);border-color:rgba(59,27,64,.15)}
+.l-row.active{background:rgba(59,27,64,.08);border-color:var(--purple)}
+.l-row.l-done{border-color:rgba(40,167,69,.3);background:rgba(40,167,69,.04)}
+.l-row.l-locked{opacity:.5;cursor:not-allowed}
+.l-row.l-hidden{opacity:.4}
+.l-row.drag-over{border-color:var(--gold)!important;background:rgba(212,180,142,.1)!important}
+.l-num{width:22px;height:22px;border-radius:50%;background:rgba(212,180,142,.2);color:var(--gold-d);font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.l-num.done-num{background:rgba(40,167,69,.15);color:#28a745}
+.l-info{flex:1;min-width:0}
+.l-title{font-size:12px;font-weight:700;color:var(--purple);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.l-badges{display:flex;gap:3px;margin-top:2px;flex-wrap:wrap}
+.l-badge{font-size:9px;padding:1px 5px;border-radius:6px;font-weight:700}
+.l-actions{display:flex;gap:2px;opacity:0;transition:.15s;flex-shrink:0}
+.l-row:hover .l-actions{opacity:1}
+.l-act-btn{width:20px;height:20px;border-radius:5px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;transition:.15s}
+.drag-handle{cursor:grab;color:var(--muted);opacity:.3;font-size:11px;flex-shrink:0;padding:2px}
+.drag-handle:hover{opacity:.8}
+/* Test row in sidebar */
+.test-row{display:flex;align-items:center;gap:6px;padding:8px 9px;border-radius:10px;margin-bottom:3px;cursor:pointer;border:1.5px solid rgba(212,180,142,.25);transition:.18s;background:rgba(212,180,142,.06)}
+.test-row:hover{border-color:var(--gold);background:rgba(212,180,142,.12)}
+.test-row.active{border-color:var(--gold-d);background:rgba(212,180,142,.15)}
+.sidebar-divider{margin:8px 6px;border:none;border-top:1px dashed rgba(212,180,142,.3)}
+/* Content area */
+.content{overflow-y:auto;background:var(--bg)}
+.content-inner{padding:24px;max-width:860px}
+/* Video */
+.video-container{position:relative;padding-bottom:56.25%;height:0;border-radius:16px;overflow:hidden;background:#000;box-shadow:0 12px 40px rgba(0,0,0,.25);margin-bottom:20px}
+.video-container iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:none}
+.video-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:linear-gradient(135deg,var(--purple),var(--purple-l));color:rgba(255,255,255,.7);font-size:13px}
+/* Exercise */
+.exercise-card{background:#fff;border-radius:14px;padding:18px;margin-bottom:12px;border:1px solid rgba(212,180,142,.2)}
+.ex-q{font-size:14px;font-weight:700;color:var(--purple);margin-bottom:12px;line-height:1.6}
+.ex-opt{padding:10px 14px;border-radius:10px;border:1.5px solid rgba(212,180,142,.25);margin-bottom:7px;cursor:pointer;font-size:13px;transition:.18s;display:flex;align-items:center;gap:8px}
+.ex-opt:hover:not(.locked){border-color:var(--purple);background:rgba(59,27,64,.04)}
+.ex-opt.selected{border-color:var(--purple);background:rgba(59,27,64,.07)}
+.ex-opt.correct{border-color:#28a745!important;background:rgba(40,167,69,.09)!important;color:#28a745!important}
+.ex-opt.wrong  {border-color:#dc3545!important;background:rgba(220,53,69,.08)!important;color:#dc3545!important}
+.ex-opt.locked {cursor:not-allowed;opacity:.6}
+/* Admin toolbar */
+.admin-toolbar{background:rgba(59,27,64,.04);border:1px dashed rgba(59,27,64,.2);border-radius:12px;padding:10px 14px;margin-bottom:16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.admin-toolbar span{font-size:11px;font-weight:800;color:var(--purple);opacity:.7}
+/* Score display */
+.score-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:700;background:rgba(212,180,142,.15);color:var(--gold-d)}
+/* Mobile sidebar toggle */
+.mob-sidebar-toggle{display:none;position:fixed;bottom:20px;right:20px;width:48px;height:48px;border-radius:50%;background:var(--purple);color:#fff;border:none;cursor:pointer;box-shadow:0 6px 20px rgba(59,27,64,.4);z-index:99;align-items:center;justify-content:center;font-size:20px}
+@media(max-width:900px){
+  .course-layout{grid-template-columns:1fr;grid-template-rows:1fr}
+  .sidebar{position:fixed;top:56px;right:0;bottom:0;width:280px;z-index:200;transform:translateX(100%);transition:transform .3s;box-shadow:-8px 0 32px rgba(59,27,64,.15)}
+  .sidebar.open{transform:translateX(0)}
+  .mob-sidebar-toggle{display:flex}
+  .content{height:calc(100vh - 56px)}
+}
+</style>
+</head>
+<body>
+
+<!-- Spinner -->
+<div id="spinner" class="spinner-overlay"><div class="spin-ring"></div></div>
+
+<!-- Nav -->
+<div id="nav-ph"></div>
+
+<div id="course-app">
+  <!-- Course header (above layout) -->
+  <div id="course-header" style="background:#fff;border-bottom:1px solid rgba(212,180,142,.15);padding:10px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <a href="courses.html" style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--muted);text-decoration:none;padding:5px 10px;border-radius:8px;border:1px solid rgba(212,180,142,.25)">
+      ← المقررات
+    </a>
+    <div id="course-title-display" style="font-family:'Amiri',serif;font-size:17px;font-weight:700;color:var(--purple);flex:1"></div>
+    <div id="admin-course-controls" style="display:none;gap:6px;display:none">
+      <button onclick="editCourseTitle()" class="btn btn-gold btn-sm">✎ تعديل العنوان</button>
+    </div>
+  </div>
+
+  <!-- Main layout -->
+  <div class="course-layout">
+    <!-- SIDEBAR -->
+    <div class="sidebar" id="main-sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-course-title" id="sb-title"></div>
+        <div class="progress-bar-wrap"><div class="progress-bar-fill" id="prog-bar" style="width:0%"></div></div>
+        <div class="progress-text" id="prog-text">0 / 0 درس مكتمل</div>
+      </div>
+      <div class="sidebar-list" id="sidebar-list">
+        <div style="text-align:center;padding:30px;color:var(--muted)">جارٍ التحميل...</div>
+      </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content" id="main-content">
+      <div class="content-inner">
+        <div style="text-align:center;padding:80px 20px;color:var(--muted)">
+          <div style="font-size:48px;margin-bottom:12px">📖</div>
+          <div style="font-size:15px">اختر درساً من القائمة</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile sidebar toggle -->
+  <button class="mob-sidebar-toggle" onclick="toggleMobileSidebar()" id="mob-sb-btn">☰</button>
+  <div id="mob-sb-overlay" onclick="closeMobileSidebar()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:199"></div>
+</div>
+
+<!-- Modal -->
+<div id="modal-container"></div>
+<div id="toast-container"></div>
+
+<script>
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+let currentUser = null;
+let courseData   = null;   // full course object from Firestore
+let courseId     = null;
+let currentItem  = null;   // {type:'lesson'|'test', id}
+let dragSrcId    = null;
+let studentScores = {};    // {lessonId: {score, total, answers[]}}
+
+// ── Read URL param ──
+const params = new URLSearchParams(location.search);
+courseId = params.get('id');
+if(!courseId){ location.href = 'courses.html'; }
+
+// ═══════════════════════════════════════
+// DEFAULT DATA GENERATORS
+// ═══════════════════════════════════════
+function makeLessons(cid){
+  return Array.from({length:20},(_,i)=>({
+    id:`${cid}-l${i+1}`, order:i+1,
+    title:`الدرس ${i+1}`,
+    visible:true, locked:false,
+    youtube:'', exercises:[]
+  }));
+}
+function makeTests(cid, ctitle){
+  const make = (n, label) => ({
+    id:`${cid}-test${n}`, type:'test', order:20+n,
+    title:`${label} — ${ctitle}`,
+    visible:true, locked:false,
+    questions:[
+      {id:'q1',q:`ما موضوع ${ctitle}؟`,multi:false,options:["دراسة شرعية متخصصة","دراسة لغوية","دراسة تاريخية","دراسة فلسفية"],answers:[0]},
+      {id:'q2',q:"ما أول خطوة في طلب العلم؟",multi:false,options:["الإخلاص لله","شراء الكتب","البحث في الإنترنت","حضور الدروس"],answers:[0]},
+      {id:'q3',q:"ما الهدف من دراسة هذا المقرر؟",multi:false,options:["التعمق في العلم الشرعي","الحصول على شهادة","التفوق على الآخرين","بلا هدف محدد"],answers:[0]},
+      {id:'q4',q:"ما منهج المعهد في التدريس؟",multi:false,options:["منهج أهل السنة والجماعة","المنهج العقلاني","المنهج الفلسفي","منهج المتكلمين"],answers:[0]},
+      {id:'q5',q:"ما ثمرة العلم الشرعي؟",multi:false,options:["خشية الله والعمل به","الشهرة والمال","الجدل والمناظرة","النجاح الدراسي فقط"],answers:[0]},
+    ]
+  });
+  return [make(1,'اختبار الوحدة الأولى'), make(2,'الاختبار النهائي')];
+}
+
+// ═══════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════
+(function(){
+  const c = localStorage.getItem('ti_user');
+  if(c){ try{ currentUser = JSON.parse(c); }catch(e){} }
+})();
+
+auth.onAuthStateChanged(async user => {
+  if(!user){ location.href='login.html'; return; }
+  if(!currentUser){
+    const a = await db.collection('admins').doc(user.uid).get().catch(()=>null);
+    if(a?.exists){ currentUser={uid:user.uid,...a.data(),isAdmin:true}; }
+    else{
+      const u = await db.collection('users').doc(user.uid).get().catch(()=>null);
+      if(!u?.exists){ await auth.signOut(); location.href='login.html'; return; }
+      currentUser={uid:user.uid,...u.data(),isAdmin:false};
+    }
+    localStorage.setItem('ti_user',JSON.stringify(currentUser));
+  }
+  await loadCourse();
+  initUI();
+});
+
+// ═══════════════════════════════════════
+// LOAD COURSE
+// ═══════════════════════════════════════
+async function loadCourse(){
+  const snap = await db.collection('courses').doc(courseId).get().catch(()=>null);
+  if(snap?.exists){
+    courseData = snap.data();
+  } else {
+    // Build default from KNOWN_COURSES list
+    const known = KNOWN_COURSES[courseId];
+    if(!known){ toast('المقرر غير موجود','error'); setTimeout(()=>location.href='courses.html',2000); return; }
+    courseData = {
+      id:courseId, title:known.title, color:known.color||'#3B1B40',
+      lessons: makeLessons(courseId),
+      tests:   makeTests(courseId, known.title)
+    };
+    // Save to Firestore
+    db.collection('courses').doc(courseId).set(courseData).catch(e=>console.log('Init course:',e.message));
+  }
+  // Load student scores
+  if(!currentUser.isAdmin){
+    const scSnap = await db.collection('scores').doc(currentUser.uid+'_'+courseId).get().catch(()=>null);
+    if(scSnap?.exists) studentScores = scSnap.data().scores||{};
+  }
+}
+
+// All known courses
+const KNOWN_COURSES = {
+  t1:{title:'كتاب "المدخل إلى طلب العلم"',color:"#b8965e"},
+  t2:{title:'كتاب "تذكرة السامع والمتكلم"',color:"#a07840"},
+  t3:{title:"الجرد القرآني التطبيقي",color:"#8B6914"},
+  m1:{title:"القواعد الأربع",color:"#3B1B40"},
+  m2:{title:"نواقض الإسلام",color:"#4a2250"},
+  m3:{title:"الأصول الثلاثة وأدلتها",color:"#5a2d63"},
+  m4:{title:"كشف الشبهات",color:"#3B1B40"},
+  m5:{title:"متن الآجرومية في النحو",color:"#1a5276"},
+  m6:{title:"التذكرة في علوم الحديث",color:"#1b4f72"},
+  m7:{title:"الأرجوزة الميئية في السيرة",color:"#154360"},
+  m8:{title:"الرسالة اللطيفة في أصول الفقه",color:"#0e3251"},
+  m9:{title:"الأربعون النووية مع زيادات ابن رجب",color:"#1a5276"},
+  m10:{title:"مقدمات التفقه",color:"#117a65"},
+  m11:{title:"متن الأخضري في العبادات",color:"#0e6655"},
+  m12:{title:"متن العشماوية (قراءة سريعة)",color:"#117a65"},
+  m13:{title:"نظم ابن أبي كف في أدلة المذهب",color:"#0d5e4a"},
+  m14:{title:"نظم المرشد المعين لابن عاشر",color:"#117a65"},
+  m15:{title:"منظومة القواعد الفقهية",color:"#0a4d3a"},
+  m16:{title:"مقدمة في أصول التفسير",color:"#6e2f0a"},
+  m17:{title:"كتاب التوحيد",color:"#7d3410"},
+  m18:{title:"القواعد والضوابط السلفية في الأسماء والصفات",color:"#6e2f0a"},
+  m19:{title:"العقيدة الواسطية",color:"#8b3c11"},
+  m20:{title:"منظومة تبصرة القاصد في علم المقاصد",color:"#512e5f"},
+  m21:{title:'كتاب الجامع من "القوانين الفقهية" في الآداب',color:"#5b3068"},
+  m22:{title:"السبل المرضية في السياسة الشرعية",color:"#6c3483"},
+  m23:{title:"الأمر بالمعروف والنهي عن المنكر",color:"#922b21"},
+  m24:{title:"آداب البحث والمناظرة",color:"#a93226"},
+  m25:{title:"متن الرد على المخالف",color:"#922b21"},
+  m26:{title:"متن الحصانة الفكرية",color:"#b03a2e"},
+};
+
+// ═══════════════════════════════════════
+// INIT UI
+// ═══════════════════════════════════════
+function initUI(){
+  document.getElementById('spinner').style.display='none';
+  document.getElementById('course-app').style.display='';
+  document.getElementById('nav-ph').outerHTML = buildNav('courses',currentUser);
+  if(typeof setNavUser==='function') setNavUser(currentUser);
+  setTimeout(()=>{ if(window.lucide) lucide.createIcons(); },100);
+
+  // Course title
+  document.getElementById('course-title-display').textContent = courseData.title;
+  document.getElementById('sb-title').textContent = courseData.title;
+  document.title = courseData.title + ' — معهد التأصيل العلمي';
+
+  // Admin controls
+  if(currentUser.isAdmin){
+    const ctrl = document.getElementById('admin-course-controls');
+    ctrl.style.display = 'flex';
+  }
+
+  renderSidebar();
+}
+
+// ═══════════════════════════════════════
+// SIDEBAR
+// ═══════════════════════════════════════
+function renderSidebar(){
+  const lessons = courseData.lessons||[];
+  const tests   = courseData.tests||[];
+  const isAdm   = currentUser.isAdmin;
+  const done    = (currentUser.completedLessons||[]);
+  const completedCount = lessons.filter(l=>done.includes(l.id)).length;
+  const pct = lessons.length ? Math.round(completedCount/lessons.length*100) : 0;
+
+  document.getElementById('prog-bar').style.width = pct+'%';
+  document.getElementById('prog-text').textContent = `${completedCount} / ${lessons.length} درس مكتمل`;
+
+  let html = '';
+
+  // Lessons
+  const visibleLessons = isAdm ? lessons : lessons.filter(l=>l.visible);
+  visibleLessons.forEach((l,i) => {
+    const isDone   = done.includes(l.id);
+    const isActive = currentItem?.type==='lesson' && currentItem?.id===l.id;
+    const lockedClass = l.locked ? ' l-locked' : '';
+    const hiddenClass = !l.visible ? ' l-hidden' : '';
+    const doneClass   = isDone ? ' l-done' : '';
+    const activeClass = isActive ? ' active' : '';
+
+    html += `<div class="l-row${activeClass}${doneClass}${lockedClass}${hiddenClass}"
+      id="lr-${l.id}"
+      onclick="${l.locked && !isAdm ? `showLocked()` : `openLesson('${l.id}')`}"
+      draggable="${isAdm}"
+      ondragstart="if(event.dataTransfer)dragStart('${l.id}')"
+      ondragover="event.preventDefault();this.classList.add('drag-over')"
+      ondragleave="this.classList.remove('drag-over')"
+      ondrop="event.preventDefault();this.classList.remove('drag-over');dropOn('${l.id}')">
+      ${isAdm ? `<span class="drag-handle" title="اسحب لإعادة الترتيب">⋮⋮</span>` : ''}
+      <div class="l-num${isDone?' done-num':''}">${isDone?'✓':l.order}</div>
+      <div class="l-info">
+        <div class="l-title">${l.title}</div>
+        <div class="l-badges">
+          ${!l.visible ? '<span class="l-badge" style="background:rgba(220,53,69,.1);color:#dc3545">مخفي</span>' : ''}
+          ${l.locked ? '<span class="l-badge" style="background:rgba(255,193,7,.15);color:#856404">🔒 مقفل</span>' : ''}
+          ${isDone ? '<span class="l-badge" style="background:rgba(40,167,69,.12);color:#28a745">✓ مكتمل</span>' : ''}
+        </div>
+      </div>
+      ${isAdm ? `<div class="l-actions">
+        <button class="l-act-btn" onclick="event.stopPropagation();editLesson('${l.id}')" title="تعديل" style="background:rgba(212,180,142,.2);color:var(--gold-d)">✎</button>
+        <button class="l-act-btn" onclick="event.stopPropagation();toggleLessonProp('${l.id}','visible')" title="${l.visible?'إخفاء':'إظهار'}" style="background:rgba(59,27,64,.08);color:var(--purple)">${l.visible?'👁':'🚫'}</button>
+        <button class="l-act-btn" onclick="event.stopPropagation();toggleLessonProp('${l.id}','locked')" title="${l.locked?'فتح القفل':'قفل'}" style="background:rgba(255,193,7,.1);color:#856404">${l.locked?'🔓':'🔒'}</button>
+        <button class="l-act-btn" onclick="event.stopPropagation();deleteLesson('${l.id}')" title="حذف" style="background:rgba(220,53,69,.1);color:#dc3545">✕</button>
+      </div>` : ''}
+    </div>`;
+  });
+
+  // Admin: add lesson button
+  if(isAdm){
+    html += `<button onclick="addLesson()" style="display:flex;align-items:center;justify-content:center;gap:5px;width:100%;padding:7px;border-radius:10px;border:1.5px dashed rgba(59,27,64,.2);background:none;cursor:pointer;font-family:'Zain',sans-serif;font-size:12px;color:var(--muted);margin-top:4px;transition:.2s" onmouseover="this.style.borderColor='var(--purple)';this.style.color='var(--purple)'" onmouseout="this.style.borderColor='rgba(59,27,64,.2)';this.style.color='var(--muted)'">+ إضافة درس</button>`;
+  }
+
+  // Divider + Tests
+  if(tests.length || isAdm){
+    html += `<hr class="sidebar-divider"/>
+    <div style="font-size:11px;font-weight:800;color:var(--muted);padding:4px 8px;margin-bottom:4px">الاختبارات</div>`;
+  }
+
+  const visibleTests = isAdm ? tests : tests.filter(t=>t.visible);
+  visibleTests.forEach(t => {
+    const isActive = currentItem?.type==='test' && currentItem?.id===t.id;
+    const score = studentScores[t.id];
+    html += `<div class="test-row${isActive?' active':''}" 
+      onclick="${t.locked && !isAdm ? 'showLocked()' : `openTest('${t.id}')`}"
+      id="tr-${t.id}">
+      <span style="font-size:14px">${t.locked?'🔒':'📝'}</span>
+      <div class="l-info">
+        <div class="l-title">${t.title}</div>
+        ${score ? `<div style="font-size:10px;color:#28a745">✓ ${score.score}/${score.total}</div>` : ''}
+        ${!t.visible ? '<div style="font-size:10px;color:#dc3545">مخفي</div>' : ''}
+      </div>
+      ${isAdm ? `<div class="l-actions" style="display:flex!important">
+        <button class="l-act-btn" onclick="event.stopPropagation();editTest('${t.id}')" style="background:rgba(212,180,142,.2);color:var(--gold-d)">✎</button>
+        <button class="l-act-btn" onclick="event.stopPropagation();toggleTestProp('${t.id}','visible')" style="background:rgba(59,27,64,.08);color:var(--purple)">${t.visible?'👁':'🚫'}</button>
+        <button class="l-act-btn" onclick="event.stopPropagation();toggleTestProp('${t.id}','locked')" style="background:rgba(255,193,7,.1);color:#856404">${t.locked?'🔓':'🔒'}</button>
+        <button class="l-act-btn" onclick="event.stopPropagation();deleteTest('${t.id}')" style="background:rgba(220,53,69,.1);color:#dc3545">✕</button>
+      </div>` : ''}
+    </div>`;
+  });
+
+  if(isAdm){
+    html += `<button onclick="addTest()" style="display:flex;align-items:center;justify-content:center;gap:5px;width:100%;padding:7px;border-radius:10px;border:1.5px dashed rgba(212,180,142,.4);background:none;cursor:pointer;font-family:'Zain',sans-serif;font-size:12px;color:var(--muted);margin-top:4px;transition:.2s" onmouseover="this.style.borderColor='var(--gold-d)'" onmouseout="this.style.borderColor='rgba(212,180,142,.4)'">+ إضافة اختبار</button>`;
+  }
+
+  document.getElementById('sidebar-list').innerHTML = html;
+  if(window.lucide) setTimeout(()=>lucide.createIcons(),50);
+}
+
+// ═══════════════════════════════════════
+// LESSON CONTENT
+// ═══════════════════════════════════════
+function openLesson(lid){
+  const lesson = courseData.lessons.find(l=>l.id===lid);
+  if(!lesson) return;
+  currentItem = {type:'lesson', id:lid};
+  renderSidebar();
+  closeMobileSidebar();
+
+  const isAdm = currentUser.isAdmin;
+  const isDone = (currentUser.completedLessons||[]).includes(lid);
+  const exercises = lesson.exercises||[];
+
+  let content = `
+    <div class="content-inner">
+      <!-- Breadcrumb -->
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">
+        <a href="courses.html" style="color:var(--purple-l);font-weight:700;text-decoration:none">المقررات</a>
+        <span style="margin:0 6px">←</span>
+        <a href="course.html?id=${courseId}" style="color:var(--purple-l);font-weight:700;text-decoration:none">${courseData.title}</a>
+        <span style="margin:0 6px">←</span>
+        <span>${lesson.title}</span>
+      </div>
+
+      <!-- Title row -->
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+        <div>
+          <h1 style="font-family:'Amiri',serif;font-size:22px;color:var(--purple);margin-bottom:6px">${lesson.title}</h1>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <span class="badge badge-gold">الدرس ${lesson.order}</span>
+            ${isDone ? '<span class="badge badge-green">✓ مكتمل</span>' : ''}
+            ${!lesson.visible ? '<span class="badge badge-red">مخفي</span>' : ''}
+            ${lesson.locked ? '<span class="badge badge-yellow">🔒 مقفل</span>' : ''}
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          ${isAdm ? `<button onclick="editLesson('${lid}')" class="btn btn-gold btn-sm">✎ تعديل الدرس</button>` : ''}
+          ${!isDone && !lesson.locked ? `<button onclick="markDone('${lid}')" class="btn btn-primary btn-sm">✓ تم إنجاز الدرس</button>` : ''}
+          ${isDone ? `<button onclick="unmarkDone('${lid}')" class="btn btn-ghost btn-sm">↩ إلغاء الإنجاز</button>` : ''}
+        </div>
+      </div>
+
+      <!-- Video -->
+      <div class="video-container">
+        ${lesson.youtube
+          ? `<iframe src="${lesson.youtube}" allowfullscreen allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture"></iframe>`
+          : `<div class="video-empty">
+              <div style="font-size:44px">🎬</div>
+              <div>${isAdm ? 'انقر "تعديل الدرس" لإضافة رابط يوتيوب' : 'لم يتم إضافة فيديو بعد'}</div>
+            </div>`
+        }
+      </div>
+
+      <!-- Exercises -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;margin-top:8px">
+        <h2 style="font-size:16px;font-weight:800;color:var(--purple);display:flex;align-items:center;gap:6px">
+          📝 التمارين ${exercises.length ? `<span style="font-size:12px;color:var(--muted)">(${exercises.length} سؤال)</span>` : ''}
+        </h2>
+        ${isAdm ? `<button onclick="addExercise('${lid}')" class="btn btn-primary btn-sm">+ إضافة سؤال</button>` : ''}
+      </div>`;
+
+  if(!exercises.length){
+    content += `<div style="background:#fff;border-radius:12px;padding:24px;text-align:center;color:var(--muted);border:1px solid rgba(212,180,142,.15)">
+      ${isAdm ? 'لا توجد تمارين — انقر "+ إضافة سؤال" لإضافة أول سؤال' : 'لم تُضَف تمارين لهذا الدرس بعد'}
+    </div>`;
+  } else {
+    exercises.forEach((ex,ei) => {
+      const exScore = studentScores[lid+'_ex_'+ex.id];
+      content += `<div class="exercise-card" id="exc-${ex.id}">
+        ${isAdm ? `<div class="admin-toolbar">
+          <span>🛠 أدوات المشرف</span>
+          <button onclick="editExercise('${lid}','${ex.id}')" class="btn btn-xs btn-gold">✎ تعديل</button>
+          <button onclick="toggleExProp('${lid}','${ex.id}','locked')" class="btn btn-xs btn-ghost">${ex.locked?'🔓 فتح':'🔒 قفل'}</button>
+          <button onclick="toggleExProp('${lid}','${ex.id}','visible')" class="btn btn-xs btn-ghost">${ex.visible===false?'👁 إظهار':'🚫 إخفاء'}</button>
+          <button onclick="deleteExercise('${lid}','${ex.id}')" class="btn btn-xs btn-danger">✕ حذف</button>
+        </div>` : ''}
+        ${ex.visible===false && !isAdm ? '' : `
+        <div class="ex-q">${ei+1}. ${ex.q}
+          ${ex.multi ? '<span style="font-size:10px;background:rgba(59,27,64,.1);color:var(--purple);padding:2px 6px;border-radius:6px;margin-right:6px">إجابات متعددة</span>' : ''}
+        </div>
+        <div id="opts-${ex.id}">
+          ${(ex.options||[]).map((opt,oi)=>`
+            <div class="ex-opt${ex.locked&&!isAdm?' locked':''}" 
+              id="opt-${ex.id}-${oi}"
+              onclick="${ex.locked&&!isAdm?'':ex.multi?`toggleMulti('${lid}','${ex.id}',${oi})` : `answerSingle('${lid}','${ex.id}',${oi})`}">
+              <span style="width:20px;height:20px;border-radius:${ex.multi?'4px':'50%'};border:1.5px solid rgba(212,180,142,.4);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px" id="chk-${ex.id}-${oi}"></span>
+              ${opt}
+            </div>`).join('')}
+        </div>
+        ${ex.multi ? `<button onclick="submitMulti('${lid}','${ex.id}')" class="btn btn-primary btn-sm" style="margin-top:8px" id="submit-${ex.id}">تأكيد الإجابة</button>` : ''}
+        ${exScore ? `<div class="score-chip" style="margin-top:8px">✓ درجتك: ${exScore.correct?'صحيحة':'خاطئة'}</div>` : ''}
+        `}
+      </div>`;
+    });
+  }
+
+  content += `</div>`;
+  document.getElementById('main-content').innerHTML = content;
+  if(window.lucide) setTimeout(()=>lucide.createIcons(),50);
+  // Restore previous answers
+  restoreAnswers(lid);
+}
+
+// ── Answer single choice ──
+let pendingMulti = {}; // {exId: Set of selected}
+
+function answerSingle(lid, exId, chosen){
+  const lesson = courseData.lessons.find(l=>l.id===lid); if(!lesson) return;
+  const ex = lesson.exercises.find(e=>e.id===exId); if(!ex) return;
+  if(studentScores[lid+'_ex_'+exId]) return; // already answered
+
+  const isCorrect = ex.answers.includes(chosen);
+  const opts = document.getElementById('opts-'+exId);
+  if(!opts) return;
+
+  opts.querySelectorAll('.ex-opt').forEach((el,i)=>{
+    el.onclick = null;
+    if(ex.answers.includes(i)) el.classList.add('correct');
+    else if(i===chosen) el.classList.add('wrong');
+  });
+
+  // Save score
+  const scoreKey = lid+'_ex_'+exId;
+  studentScores[scoreKey] = {correct:isCorrect, chosen, exId};
+  saveScores();
+}
+
+function toggleMulti(lid, exId, oi){
+  if(!pendingMulti[exId]) pendingMulti[exId] = new Set();
+  const set = pendingMulti[exId];
+  if(set.has(oi)){ set.delete(oi); document.getElementById(`chk-${exId}-${oi}`).textContent=''; document.getElementById(`opt-${exId}-${oi}`).classList.remove('selected'); }
+  else{ set.add(oi); document.getElementById(`chk-${exId}-${oi}`).textContent='✓'; document.getElementById(`opt-${exId}-${oi}`).classList.add('selected'); }
+}
+
+function submitMulti(lid, exId){
+  const lesson = courseData.lessons.find(l=>l.id===lid); if(!lesson) return;
+  const ex = lesson.exercises.find(e=>e.id===exId); if(!ex) return;
+  const chosen = Array.from(pendingMulti[exId]||[]);
+  if(!chosen.length){ toast('اختر إجابة واحدة على الأقل','warn'); return; }
+
+  const correct = JSON.stringify(chosen.sort()) === JSON.stringify([...ex.answers].sort());
+  const opts = document.getElementById('opts-'+exId);
+  if(opts) opts.querySelectorAll('.ex-opt').forEach((el,i)=>{
+    el.onclick=null;
+    if(ex.answers.includes(i)) el.classList.add('correct');
+    else if(chosen.includes(i)) el.classList.add('wrong');
+  });
+
+  const btn = document.getElementById('submit-'+exId);
+  if(btn) btn.style.display='none';
+  studentScores[lid+'_ex_'+exId] = {correct, chosen, exId};
+  saveScores();
+}
+
+function restoreAnswers(lid){
+  const lesson = courseData.lessons.find(l=>l.id===lid); if(!lesson) return;
+  (lesson.exercises||[]).forEach(ex=>{
+    const sc = studentScores[lid+'_ex_'+ex.id];
+    if(!sc) return;
+    const opts = document.getElementById('opts-'+ex.id); if(!opts) return;
+    opts.querySelectorAll('.ex-opt').forEach((el,i)=>{
+      el.onclick=null;
+      if(ex.answers.includes(i)) el.classList.add('correct');
+      else if((Array.isArray(sc.chosen)?sc.chosen:[sc.chosen]).includes(i)) el.classList.add('wrong');
+    });
+    const btn = document.getElementById('submit-'+ex.id);
+    if(btn) btn.style.display='none';
+  });
+}
+
+// ── Mark done ──
+async function markDone(lid){
+  const list = [...(currentUser.completedLessons||[])];
+  if(!list.includes(lid)) list.push(lid);
+  currentUser.completedLessons = list;
+  localStorage.setItem('ti_user',JSON.stringify(currentUser));
+  try{ await db.collection('users').doc(currentUser.uid).update({completedLessons:list}); }catch(e){}
+  toast('✓ تم تسجيل إنجاز الدرس','success');
+  renderSidebar();
+  openLesson(lid);
+}
+async function unmarkDone(lid){
+  const list = (currentUser.completedLessons||[]).filter(x=>x!==lid);
+  currentUser.completedLessons = list;
+  localStorage.setItem('ti_user',JSON.stringify(currentUser));
+  try{ await db.collection('users').doc(currentUser.uid).update({completedLessons:list}); }catch(e){}
+  renderSidebar();
+  openLesson(lid);
+}
+
+// ═══════════════════════════════════════
+// TEST CONTENT
+// ═══════════════════════════════════════
+function openTest(tid){
+  const test = courseData.tests.find(t=>t.id===tid);
+  if(!test) return;
+  currentItem = {type:'test', id:tid};
+  renderSidebar();
+  closeMobileSidebar();
+
+  const isAdm = currentUser.isAdmin;
+  const prevScore = studentScores[tid];
+  const qs = test.questions||[];
+
+  let content = `<div class="content-inner">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">
+      <a href="courses.html" style="color:var(--purple-l);font-weight:700;text-decoration:none">المقررات</a>
+      <span style="margin:0 6px">←</span>
+      <a href="course.html?id=${courseId}" style="color:var(--purple-l);font-weight:700;text-decoration:none">${courseData.title}</a>
+      <span style="margin:0 6px">←</span>
+      <span>${test.title}</span>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+      <h1 style="font-family:'Amiri',serif;font-size:20px;color:var(--purple)">${test.title}</h1>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${isAdm?`<button onclick="editTest('${tid}')" class="btn btn-gold btn-sm">✎ تعديل الاختبار</button>
+        <button onclick="addTestQuestion('${tid}')" class="btn btn-primary btn-sm">+ إضافة سؤال</button>`:''}
+        ${prevScore?`<span class="score-chip">نتيجتك: ${prevScore.score}/${prevScore.total} (${Math.round(prevScore.score/prevScore.total*100)}%)</span>`:''}
+      </div>
+    </div>`;
+
+  if(prevScore && !isAdm){
+    // Show results
+    content += `<div style="background:#fff;border-radius:16px;padding:24px;border:1px solid rgba(212,180,142,.2);text-align:center;margin-bottom:20px">
+      <div style="font-size:48px;margin-bottom:10px">${prevScore.score/prevScore.total>=0.7?'🎉':'📚'}</div>
+      <div style="font-family:'Amiri',serif;font-size:28px;font-weight:700;color:var(--purple)">${prevScore.score} / ${prevScore.total}</div>
+      <div style="font-size:14px;color:var(--muted);margin-top:4px">${Math.round(prevScore.score/prevScore.total*100)}% — ${prevScore.score/prevScore.total>=0.7?'أحسنت! لقد اجتزت الاختبار':'راجع الدروس وحاول مجدداً'}</div>
+      <button onclick="retakeTest('${tid}')" class="btn btn-ghost btn-sm" style="margin-top:14px">↩ إعادة الاختبار</button>
+    </div>`;
+  }
+
+  if(!qs.length){
+    content += `<div style="background:#fff;border-radius:12px;padding:30px;text-align:center;color:var(--muted);border:1px solid rgba(212,180,142,.15)">
+      ${isAdm?'انقر "+ إضافة سؤال" لإضافة أسئلة الاختبار':'لم تُضَف أسئلة بعد'}
+    </div>`;
+  } else if(!prevScore || isAdm){
+    // Show questions
+    qs.forEach((q,qi)=>{
+      content += `<div class="exercise-card" id="tq-${q.id}">
+        ${isAdm?`<div class="admin-toolbar"><span>🛠 المشرف</span>
+          <button onclick="editTestQuestion('${tid}','${q.id}')" class="btn btn-xs btn-gold">✎</button>
+          <button onclick="deleteTestQuestion('${tid}','${q.id}')" class="btn btn-xs btn-danger">✕</button>
+        </div>`:''}
+        <div class="ex-q">${qi+1}. ${q.q}
+          ${q.multi?'<span style="font-size:10px;background:rgba(59,27,64,.1);color:var(--purple);padding:2px 6px;border-radius:6px;margin-right:6px">متعددة</span>':''}
+        </div>
+        <div id="topts-${q.id}">
+          ${(q.options||[]).map((opt,oi)=>`
+            <div class="ex-opt" id="topt-${q.id}-${oi}"
+              onclick="${q.multi?`toggleTMulti('${tid}','${q.id}',${oi})`:`selectTOpt('${tid}','${q.id}',${oi})`}">
+              <span style="width:20px;height:20px;border-radius:${q.multi?'4px':'50%'};border:1.5px solid rgba(212,180,142,.4);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px" id="tchk-${q.id}-${oi}"></span>
+              ${opt}
+            </div>`).join('')}
+        </div>
+        ${q.multi?`<button onclick="void(0)" class="btn btn-xs btn-ghost" style="margin-top:6px" id="tsubmit-${q.id}">تأكيد</button>`:''}
+      </div>`;
+    });
+
+    if(!prevScore){
+      content += `<div style="text-align:center;margin-top:20px">
+        <button onclick="submitTest('${tid}')" class="btn btn-primary" style="padding:12px 36px;font-size:15px">تسليم الاختبار</button>
+      </div>`;
+    }
+  }
+
+  content += '</div>';
+  document.getElementById('main-content').innerHTML = content;
+  if(window.lucide) setTimeout(()=>lucide.createIcons(),50);
+}
+
+let testAnswers = {}; // {qId: [chosen indices]}
+
+function selectTOpt(tid, qId, oi){
+  const test = courseData.tests.find(t=>t.id===tid); if(!test) return;
+  if(!testAnswers[qId]) testAnswers[qId]=[];
+  testAnswers[qId] = [oi];
+  // Update UI
+  const q = test.questions.find(q=>q.id===qId);
+  (q.options||[]).forEach((_,i)=>{
+    const el=document.getElementById(`topt-${qId}-${i}`);
+    const chk=document.getElementById(`tchk-${qId}-${i}`);
+    if(el){ el.classList.toggle('selected',i===oi); }
+    if(chk){ chk.textContent = i===oi?'●':''; }
+  });
+}
+
+function toggleTMulti(tid, qId, oi){
+  if(!testAnswers[qId]) testAnswers[qId]=[];
+  const arr = testAnswers[qId];
+  const idx = arr.indexOf(oi);
+  if(idx>=0){ arr.splice(idx,1); document.getElementById(`topt-${qId}-${oi}`)?.classList.remove('selected'); document.getElementById(`tchk-${qId}-${oi}`).textContent=''; }
+  else{ arr.push(oi); document.getElementById(`topt-${qId}-${oi}`)?.classList.add('selected'); document.getElementById(`tchk-${qId}-${oi}`).textContent='✓'; }
+}
+
+async function submitTest(tid){
+  const test = courseData.tests.find(t=>t.id===tid); if(!test) return;
+  const qs = test.questions||[];
+  if(!qs.length){ toast('لا توجد أسئلة','warn'); return; }
+
+  let score=0;
+  qs.forEach(q=>{
+    const chosen = testAnswers[q.id]||[];
+    const correct = JSON.stringify([...chosen].sort()) === JSON.stringify([...(q.answers||[])].sort());
+    if(correct) score++;
+  });
+
+  const result = {score, total:qs.length, answers:testAnswers, date:new Date().toISOString()};
+  studentScores[tid] = result;
+  await saveScores();
+
+  // Show result immediately
+  openTest(tid);
+  toast(`✓ نتيجتك: ${score}/${qs.length}`, score/qs.length>=0.7?'success':'warn', 5000);
+}
+
+async function retakeTest(tid){
+  delete studentScores[tid];
+  testAnswers = {};
+  await saveScores();
+  openTest(tid);
+}
+
+// ═══════════════════════════════════════
+// SAVE SCORES
+// ═══════════════════════════════════════
+async function saveScores(){
+  if(currentUser.isAdmin) return;
+  try{
+    await db.collection('scores').doc(currentUser.uid+'_'+courseId).set({
+      uid: currentUser.uid, courseId, scores: studentScores, updatedAt: new Date().toISOString()
+    });
+  }catch(e){ console.log('saveScores:',e.message); }
+}
+
+// ═══════════════════════════════════════
+// ADMIN: COURSE TITLE
+// ═══════════════════════════════════════
+function editCourseTitle(){
+  openModal(`
+    <div class="field"><label>عنوان المقرر</label><input type="text" id="ct-title" value="${courseData.title}"/></div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button onclick="saveCourseTitle()" class="btn btn-primary" style="flex:1">حفظ</button>
+      <button onclick="closeModal()" class="btn btn-ghost">إلغاء</button>
+    </div>`, 'تعديل عنوان المقرر');
+}
+async function saveCourseTitle(){
+  const t = document.getElementById('ct-title').value.trim(); if(!t) return;
+  courseData.title=t;
+  await db.collection('courses').doc(courseId).update({title:t}).catch(e=>toast('خطأ: '+e.message,'error'));
+  document.getElementById('course-title-display').textContent=t;
+  document.getElementById('sb-title').textContent=t;
+  document.title=t+' — معهد التأصيل العلمي';
+  closeModal(); toast('✅ تم تعديل العنوان','success');
+}
+
+// ═══════════════════════════════════════
+// ADMIN: LESSON CRUD
+// ═══════════════════════════════════════
+function editLesson(lid){
+  const l = courseData.lessons.find(x=>x.id===lid); if(!l) return;
+  openModal(`
+    <div class="field"><label>عنوان الدرس</label><input type="text" id="el-title" value="${l.title}"/></div>
+    <div class="field"><label>رابط يوتيوب</label><input type="url" id="el-yt" value="${l.youtube||''}" placeholder="https://youtube.com/watch?v=..."/></div>
+    <div style="display:flex;gap:14px;margin-bottom:14px">
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--purple);cursor:pointer">
+        <input type="checkbox" id="el-visible" ${l.visible?'checked':''} style="width:15px;height:15px;accent-color:var(--purple)"/> ظاهر للطلاب
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--purple);cursor:pointer">
+        <input type="checkbox" id="el-locked" ${l.locked?'checked':''} style="width:15px;height:15px;accent-color:var(--purple)"/> مقفل
+      </label>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button onclick="saveLesson('${lid}')" class="btn btn-primary" style="flex:1">حفظ</button>
+      <button onclick="closeModal()" class="btn btn-ghost">إلغاء</button>
+    </div>`, 'تعديل الدرس');
+}
+
+async function saveLesson(lid){
+  const l = courseData.lessons.find(x=>x.id===lid); if(!l) return;
+  l.title   = document.getElementById('el-title').value.trim()||l.title;
+  l.youtube = toYtEmbed(document.getElementById('el-yt').value.trim());
+  l.visible = document.getElementById('el-visible').checked;
+  l.locked  = document.getElementById('el-locked').checked;
+  await saveCourse(); closeModal();
+  toast('✅ تم حفظ الدرس','success');
+  renderSidebar();
+  if(currentItem?.id===lid) openLesson(lid);
+}
+
+async function addLesson(){
+  const lessons = courseData.lessons;
+  const newId = courseId+'-l'+(lessons.length+1)+'-'+Date.now().toString(36);
+  lessons.push({id:newId, order:lessons.length+1, title:`الدرس ${lessons.length+1}`, visible:true, locked:false, youtube:'', exercises:[]});
+  await saveCourse(); renderSidebar(); toast('تم إضافة درس جديد','success');
+}
+
+async function toggleLessonProp(lid, prop){
+  const l = courseData.lessons.find(x=>x.id===lid); if(!l) return;
+  l[prop] = !l[prop];
+  await saveCourse(); renderSidebar();
+  if(currentItem?.id===lid) openLesson(lid);
+}
+
+async function deleteLesson(lid){
+  if(!confirm('حذف هذا الدرس نهائياً؟')) return;
+  courseData.lessons = courseData.lessons.filter(x=>x.id!==lid);
+  courseData.lessons.forEach((l,i)=>l.order=i+1);
+  await saveCourse(); renderSidebar(); toast('تم الحذف','success');
+  if(currentItem?.id===lid){ currentItem=null; document.getElementById('main-content').innerHTML='<div class="content-inner" style="text-align:center;padding:80px;color:var(--muted)">اختر درساً من القائمة</div>'; }
+}
+
+// ═══════════════════════════════════════
+// ADMIN: EXERCISE CRUD
+// ═══════════════════════════════════════
+function addExercise(lid){
+  openModal(`
+    <div class="field"><label>نص السؤال</label><textarea id="ex-q" rows="2" placeholder="اكتب السؤال..."></textarea></div>
+    <div class="field"><label>الخيارات (كل خيار في سطر)</label><textarea id="ex-opts" rows="4" placeholder="الخيار الأول&#10;الخيار الثاني&#10;الخيار الثالث&#10;الخيار الرابع"></textarea></div>
+    <div class="field"><label>أرقام الإجابات الصحيحة (مفصولة بفاصلة، تبدأ من 0)</label><input type="text" id="ex-ans" placeholder="مثال: 0 أو 0,2 للإجابات المتعددة"/></div>
+    <label style="display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:var(--purple);margin-bottom:14px;cursor:pointer">
+      <input type="checkbox" id="ex-multi" style="width:15px;height:15px;accent-color:var(--purple)"/> إجابات متعددة
+    </label>
+    <div style="display:flex;gap:8px">
+      <button onclick="saveNewExercise('${lid}')" class="btn btn-primary" style="flex:1">إضافة السؤال</button>
+      <button onclick="closeModal()" class="btn btn-ghost">إلغاء</button>
+    </div>`, 'إضافة تمرين');
+}
+
+async function saveNewExercise(lid){
+  const q    = document.getElementById('ex-q').value.trim(); if(!q){ toast('يرجى كتابة السؤال','warn'); return; }
+  const opts = document.getElementById('ex-opts').value.split('\n').map(x=>x.trim()).filter(Boolean);
+  if(opts.length<2){ toast('يرجى إدخال خيارَين على الأقل','warn'); return; }
+  const ansRaw = document.getElementById('ex-ans').value.split(',').map(x=>parseInt(x.trim())).filter(x=>!isNaN(x));
+  const multi  = document.getElementById('ex-multi').checked;
+
+  const lesson = courseData.lessons.find(l=>l.id===lid); if(!lesson) return;
+  if(!lesson.exercises) lesson.exercises=[];
+  lesson.exercises.push({id:'ex-'+Date.now().toString(36), q, options:opts, answers:ansRaw, multi, visible:true, locked:false});
+  await saveCourse(); closeModal(); toast('✅ تم إضافة السؤال','success');
+  openLesson(lid);
+}
+
+function editExercise(lid, exId){
+  const lesson = courseData.lessons.find(l=>l.id===lid); if(!lesson) return;
+  const ex = lesson.exercises.find(e=>e.id===exId); if(!ex) return;
+  openModal(`
+    <div class="field"><label>نص السؤال</label><textarea id="ee-q" rows="2">${ex.q}</textarea></div>
+    <div class="field"><label>الخيارات (كل خيار في سطر)</label><textarea id="ee-opts" rows="4">${(ex.options||[]).join('\n')}</textarea></div>
+    <div class="field"><label>أرقام الإجابات الصحيحة (مفصولة بفاصلة، تبدأ من 0)</label><input type="text" id="ee-ans" value="${(ex.answers||[]).join(',')}"/></div>
+    <label style="display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:var(--purple);margin-bottom:14px;cursor:pointer">
+      <input type="checkbox" id="ee-multi" ${ex.multi?'checked':''} style="width:15px;height:15px;accent-color:var(--purple)"/> إجابات متعددة
+    </label>
+    <div style="display:flex;gap:8px">
+      <button onclick="saveEditExercise('${lid}','${exId}')" class="btn btn-primary" style="flex:1">حفظ</button>
+      <button onclick="closeModal()" class="btn btn-ghost">إلغاء</button>
+    </div>`, 'تعديل التمرين');
+}
+
+async function saveEditExercise(lid, exId){
+  const lesson = courseData.lessons.find(l=>l.id===lid); if(!lesson) return;
+  const ex = lesson.exercises.find(e=>e.id===exId); if(!ex) return;
+  ex.q       = document.getElementById('ee-q').value.trim()||ex.q;
+  ex.options = document.getElementById('ee-opts').value.split('\n').map(x=>x.trim()).filter(Boolean);
+  ex.answers = document.getElementById('ee-ans').value.split(',').map(x=>parseInt(x.trim())).filter(x=>!isNaN(x));
+  ex.multi   = document.getElementById('ee-multi').checked;
+  await saveCourse(); closeModal(); toast('✅ تم التعديل','success');
+  if(currentItem?.id===lid) openLesson(lid);
+}
+
+async function toggleExProp(lid, exId, prop){
+  const lesson = courseData.lessons.find(l=>l.id===lid); if(!lesson) return;
+  const ex = lesson.exercises.find(e=>e.id===exId); if(!ex) return;
+  ex[prop] = !ex[prop];
+  await saveCourse();
+  if(currentItem?.id===lid) openLesson(lid);
+}
+
+async function deleteExercise(lid, exId){
+  if(!confirm('حذف هذا التمرين؟')) return;
+  const lesson = courseData.lessons.find(l=>l.id===lid); if(!lesson) return;
+  lesson.exercises = lesson.exercises.filter(e=>e.id!==exId);
+  await saveCourse(); toast('تم الحذف','success');
+  if(currentItem?.id===lid) openLesson(lid);
+}
+
+// ═══════════════════════════════════════
+// ADMIN: TEST CRUD
+// ═══════════════════════════════════════
+function editTest(tid){
+  const t = courseData.tests.find(x=>x.id===tid); if(!t) return;
+  openModal(`
+    <div class="field"><label>عنوان الاختبار</label><input type="text" id="et-title" value="${t.title}"/></div>
+    <div style="display:flex;gap:14px;margin-bottom:14px">
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--purple);cursor:pointer">
+        <input type="checkbox" id="et-visible" ${t.visible?'checked':''} style="width:15px;height:15px;accent-color:var(--purple)"/> ظاهر
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--purple);cursor:pointer">
+        <input type="checkbox" id="et-locked" ${t.locked?'checked':''} style="width:15px;height:15px;accent-color:var(--purple)"/> مقفل
+      </label>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button onclick="saveTestEdit('${tid}')" class="btn btn-primary" style="flex:1">حفظ</button>
+      <button onclick="closeModal()" class="btn btn-ghost">إلغاء</button>
+    </div>`, 'تعديل الاختبار');
+}
+async function saveTestEdit(tid){
+  const t = courseData.tests.find(x=>x.id===tid); if(!t) return;
+  t.title   = document.getElementById('et-title').value.trim()||t.title;
+  t.visible = document.getElementById('et-visible').checked;
+  t.locked  = document.getElementById('et-locked').checked;
+  await saveCourse(); closeModal(); toast('✅ تم الحفظ','success');
+  renderSidebar();
+  if(currentItem?.id===tid) openTest(tid);
+}
+
+async function addTest(){
+  const title = prompt('عنوان الاختبار الجديد:'); if(!title) return;
+  const newId = courseId+'-test-'+Date.now().toString(36);
+  courseData.tests.push({id:newId, type:'test', order:courseData.tests.length+21, title, visible:true, locked:false, questions:[]});
+  await saveCourse(); renderSidebar(); toast('تم إضافة اختبار جديد','success');
+}
+
+async function deleteTest(tid){
+  if(!confirm('حذف هذا الاختبار نهائياً؟')) return;
+  courseData.tests = courseData.tests.filter(x=>x.id!==tid);
+  await saveCourse(); renderSidebar(); toast('تم الحذف','success');
+  if(currentItem?.id===tid){ currentItem=null; document.getElementById('main-content').innerHTML='<div class="content-inner" style="text-align:center;padding:80px;color:var(--muted)">اختر درساً أو اختباراً</div>'; }
+}
+
+async function toggleTestProp(tid, prop){
+  const t = courseData.tests.find(x=>x.id===tid); if(!t) return;
+  t[prop] = !t[prop];
+  await saveCourse(); renderSidebar();
+  if(currentItem?.id===tid) openTest(tid);
+}
+
+function addTestQuestion(tid){
+  openModal(`
+    <div class="field"><label>نص السؤال</label><textarea id="tq-q" rows="2" placeholder="اكتب السؤال..."></textarea></div>
+    <div class="field"><label>الخيارات (كل خيار في سطر)</label><textarea id="tq-opts" rows="4" placeholder="الخيار الأول&#10;الخيار الثاني&#10;الخيار الثالث&#10;الخيار الرابع"></textarea></div>
+    <div class="field"><label>أرقام الإجابات الصحيحة (تبدأ من 0)</label><input type="text" id="tq-ans" placeholder="0 أو 0,2 للمتعددة"/></div>
+    <label style="display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:var(--purple);margin-bottom:14px;cursor:pointer">
+      <input type="checkbox" id="tq-multi" style="width:15px;height:15px;accent-color:var(--purple)"/> إجابات متعددة
+    </label>
+    <div style="display:flex;gap:8px">
+      <button onclick="saveTestQuestion('${tid}')" class="btn btn-primary" style="flex:1">إضافة</button>
+      <button onclick="closeModal()" class="btn btn-ghost">إلغاء</button>
+    </div>`, 'إضافة سؤال للاختبار');
+}
+
+async function saveTestQuestion(tid){
+  const q    = document.getElementById('tq-q').value.trim(); if(!q){ toast('يرجى كتابة السؤال','warn'); return; }
+  const opts = document.getElementById('tq-opts').value.split('\n').map(x=>x.trim()).filter(Boolean);
+  if(opts.length<2){ toast('يرجى إدخال خيارَين على الأقل','warn'); return; }
+  const ans  = document.getElementById('tq-ans').value.split(',').map(x=>parseInt(x.trim())).filter(x=>!isNaN(x));
+  const multi= document.getElementById('tq-multi').checked;
+  const test = courseData.tests.find(t=>t.id===tid); if(!test) return;
+  if(!test.questions) test.questions=[];
+  test.questions.push({id:'tq-'+Date.now().toString(36), q, options:opts, answers:ans, multi});
+  await saveCourse(); closeModal(); toast('✅ تم إضافة السؤال','success');
+  openTest(tid);
+}
+
+function editTestQuestion(tid, qid){
+  const test = courseData.tests.find(t=>t.id===tid); if(!test) return;
+  const q = test.questions.find(x=>x.id===qid); if(!q) return;
+  openModal(`
+    <div class="field"><label>نص السؤال</label><textarea id="etq-q" rows="2">${q.q}</textarea></div>
+    <div class="field"><label>الخيارات (كل خيار في سطر)</label><textarea id="etq-opts" rows="4">${(q.options||[]).join('\n')}</textarea></div>
+    <div class="field"><label>أرقام الإجابات الصحيحة</label><input type="text" id="etq-ans" value="${(q.answers||[]).join(',')}"/></div>
+    <label style="display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:var(--purple);margin-bottom:14px;cursor:pointer">
+      <input type="checkbox" id="etq-multi" ${q.multi?'checked':''} style="width:15px;height:15px;accent-color:var(--purple)"/> متعددة
+    </label>
+    <div style="display:flex;gap:8px">
+      <button onclick="saveEditTestQuestion('${tid}','${qid}')" class="btn btn-primary" style="flex:1">حفظ</button>
+      <button onclick="closeModal()" class="btn btn-ghost">إلغاء</button>
+    </div>`, 'تعديل السؤال');
+}
+async function saveEditTestQuestion(tid,qid){
+  const test=courseData.tests.find(t=>t.id===tid); if(!test) return;
+  const q=test.questions.find(x=>x.id===qid); if(!q) return;
+  q.q=document.getElementById('etq-q').value.trim()||q.q;
+  q.options=document.getElementById('etq-opts').value.split('\n').map(x=>x.trim()).filter(Boolean);
+  q.answers=document.getElementById('etq-ans').value.split(',').map(x=>parseInt(x.trim())).filter(x=>!isNaN(x));
+  q.multi=document.getElementById('etq-multi').checked;
+  await saveCourse(); closeModal(); toast('✅ تم التعديل','success');
+  openTest(tid);
+}
+async function deleteTestQuestion(tid,qid){
+  if(!confirm('حذف هذا السؤال؟')) return;
+  const test=courseData.tests.find(t=>t.id===tid); if(!test) return;
+  test.questions=test.questions.filter(x=>x.id!==qid);
+  await saveCourse(); openTest(tid);
+}
+
+// ═══════════════════════════════════════
+// DRAG & DROP (lesson reorder)
+// ═══════════════════════════════════════
+function dragStart(id){ dragSrcId=id; }
+async function dropOn(targetId){
+  if(!dragSrcId||dragSrcId===targetId) return;
+  const lessons=courseData.lessons;
+  const si=lessons.findIndex(l=>l.id===dragSrcId);
+  const ti=lessons.findIndex(l=>l.id===targetId);
+  const [moved]=lessons.splice(si,1);
+  lessons.splice(ti,0,moved);
+  lessons.forEach((l,i)=>l.order=i+1);
+  dragSrcId=null;
+  await saveCourse(); renderSidebar(); toast('✓ تم إعادة الترتيب','info');
+}
+
+// ═══════════════════════════════════════
+// SAVE TO FIRESTORE
+// ═══════════════════════════════════════
+async function saveCourse(){
+  try{ await db.collection('courses').doc(courseId).set(courseData,{merge:true}); }
+  catch(e){ toast('خطأ في الحفظ: '+e.message,'error'); console.log('saveCourse:',e.message); }
+}
+
+// ═══════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════
+function showLocked(){ toast('🔒 هذا الدرس مقفل من قِبل المشرف','warn'); }
+
+function toYtEmbed(url){
+  if(!url) return '';
+  if(url.includes('/embed/')) return url;
+  const s=url.match(/youtu\.be\/([^?&\s]+)/); if(s) return `https://www.youtube.com/embed/${s[1]}?rel=0`;
+  const w=url.match(/[?&]v=([^&\s]+)/); if(w) return `https://www.youtube.com/embed/${w[1]}?rel=0`;
+  return url;
+}
+
+function openModal(content, title){
+  let mc=document.getElementById('modal-container');
+  mc.innerHTML=`<div style="position:fixed;inset:0;background:rgba(42,18,48,.6);backdrop-filter:blur(8px);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)closeModal()">
+    <div style="background:#fff;border-radius:20px;padding:24px;max-width:520px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(59,27,64,.25);direction:rtl">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <span style="font-size:16px;font-weight:800;color:var(--purple);font-family:'Amiri',serif">${title}</span>
+        <button onclick="closeModal()" style="background:#f5f0f8;border:none;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px;color:var(--muted)">✕</button>
+      </div>
+      ${content}
+    </div></div>`;
+}
+function closeModal(){ document.getElementById('modal-container').innerHTML=''; }
+
+function toast(msg,type='info',dur=3000){
+  let c=document.getElementById('toast-container');
+  if(!c){c=document.createElement('div');c.id='toast-container';c.style.cssText='position:fixed;bottom:24px;left:24px;z-index:9999;display:flex;flex-direction:column;gap:10px;pointer-events:none';document.body.appendChild(c);}
+  const colors={info:'#3B1B40',success:'#28a745',error:'#dc3545',warn:'#856404'};
+  const bg={info:'#3B1B40',success:'#28a745',error:'#dc3545',warn:'#fff3cd'};
+  const t=document.createElement('div');
+  t.style.cssText=`background:${bg[type]||'#3B1B40'};color:${type==='warn'?'#856404':'#fff'};padding:12px 18px;border-radius:12px;font-size:13px;font-weight:700;font-family:'Zain',sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.2);animation:toastIn .3s ease;max-width:280px;direction:rtl;pointer-events:all`;
+  t.textContent=msg; c.appendChild(t);
+  setTimeout(()=>{t.style.animation='toastOut .3s ease forwards';setTimeout(()=>t.remove(),300);},dur);
+}
+
+// Mobile sidebar
+function toggleMobileSidebar(){
+  const sb=document.getElementById('main-sidebar');
+  const ov=document.getElementById('mob-sb-overlay');
+  const open=sb.classList.contains('open');
+  if(open){ sb.classList.remove('open'); ov.style.display='none'; }
+  else{ sb.classList.add('open'); ov.style.display=''; }
+}
+function closeMobileSidebar(){
+  document.getElementById('main-sidebar')?.classList.remove('open');
+  document.getElementById('mob-sb-overlay').style.display='none';
+}
+
+function logout(){ auth.signOut().then(()=>{localStorage.removeItem('ti_user');location.href='index.html';}); }
+
+// Animations
+document.head.insertAdjacentHTML('beforeend','<style>@keyframes toastIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}@keyframes toastOut{from{opacity:1;transform:none}to{opacity:0;transform:translateX(40px)}}</style>');
+</script>
+</body>
+</html>
