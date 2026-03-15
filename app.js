@@ -567,9 +567,17 @@ async function doAdminLogin(){
   }catch(e){
     err.textContent = _fbErrMsg(e.code);
     err.style.display = "";
-    // ── حفظ بيانات المشرف إذا اختار "تذكرني" ──
+    // ── حفظ بيانات المشرف دائماً في session (للاستعادة بعد redirect) ──
+    try{
+      sessionStorage.setItem("_adm_e", email);
+      // كلمة المرور لا تُحفظ في sessionStorage للأمان
+    }catch(_){}
+    // ── حفظ في localStorage إذا اختار "تذكرني" ──
     if(document.getElementById("al-remember")?.checked){
-      try{ localStorage.setItem("ti_admin_rm", btoa(JSON.stringify({e:email,p:pass,ts:Date.now()}))); }catch(_){}
+      try{ 
+        localStorage.setItem("ti_admin_rm", btoa(JSON.stringify({e:email,p:pass,ts:Date.now()})));
+        localStorage.setItem("_adm_e", email);
+      }catch(_){}
     }
   }finally{
     setBtnLoading("btn-admin-login",false,"دخول المسؤول");
@@ -972,37 +980,23 @@ function loginUser(u){
 
 
 async function doLogout(){
-  // عند تسجيل الخروج اليدوي — احذف التذكر
   localStorage.removeItem(RM_KEY);
-  APP.user=null;
+  localStorage.removeItem("ti_admin_rm");
+  APP.user = null;
   _adminSessionEmail = "";
   _adminSessionPass  = "";
   try{ await FB_AUTH.signOut(); }catch(e){}
-  document.getElementById("app-wrapper").style.display="none";
-  document.getElementById("nb-admin").style.display="none";
-  document.getElementById("nb-admin-qa").style.display="none";
-  document.getElementById("admin-badge").style.display="none";
-  // الانتقال للصفحة المطلوبة
-  const _targetPage = window._PAGE_TARGET || "landing";
-  // استدعاء showPage مباشرة بدون redirect (نحن بالفعل في الملف الصحيح)
-  const _publicPages = ["landing","about-public","login"];
-  if(_publicPages.includes(_targetPage)){
-    document.getElementById("public-wrapper").style.display = "";
-    document.getElementById("app-wrapper").style.display = "none";
-    document.querySelectorAll("#public-wrapper .page").forEach(p=>p.classList.remove("active"));
-    const _el = document.getElementById("page-" + _targetPage);
-    if(_el){ _el.classList.add("active"); }
-    if(_targetPage==="landing") renderPublicPlan();
-    if(_targetPage==="about-public") renderAboutPublic();
-    updatePubNav();
-  } else {
-    // App pages — login check happens via auth state
-    window._PENDING_NAV = _targetPage;
-  }
+  // أخفِ شريط التطبيق وأظهر الصفحة الرئيسية
+  document.getElementById("app-wrapper").style.display = "none";
+  document.getElementById("nb-admin").style.display = "none";
+  document.getElementById("nb-admin-qa").style.display = "none";
+  document.getElementById("admin-badge").style.display = "none";
+  const mobAdmin = document.getElementById("mob-nb-admin");
+  if(mobAdmin) mobAdmin.style.display = "none";
   toast("تم تسجيل الخروج بنجاح","info");
+  window.location.href = "index.html";
 }
 
-// ── Delete student account (self) ──
 async function deleteMyAccount(){
   confirm2("هل تريد حذف حسابك نهائياً؟ لا يمكن التراجع عن هذا الإجراء.",async()=>{
     try{
@@ -4035,6 +4029,21 @@ function _injectPageLinks(){
 }
 
 window.addEventListener("DOMContentLoaded", async ()=>{
+  // ── اختبار اتصال Firebase عند التشغيل ──
+  (async () => {
+    try {
+      // اختبار بسيط: قراءة وثيقة config من Firestore
+      await FB_DB.collection("config").doc("main").get();
+      console.log("✅ Firebase متصل بنجاح — tasil-3lmi");
+    } catch(e) {
+      console.warn("⚠️ Firebase:", e.code, e.message);
+      if(e.code === "permission-denied") {
+        console.info("💡 تلميح: اضبط قواعد Firestore لتسمح بالقراءة");
+      }
+    }
+  })();
+
+
   // ── استعادة الصفحة المستهدفة من sessionStorage ──
   const _storedTarget = sessionStorage.getItem("_navTarget");
   if(_storedTarget){
@@ -4097,12 +4106,75 @@ window.addEventListener("DOMContentLoaded", async ()=>{
     renderAboutPublic();
     updatePubNav();
   } else {
-    // صفحة تطبيق — الانتقال يحدث بعد التحقق من الجلسة
-    window._PENDING_NAV = _targetPage;
-    // إظهار شاشة التحميل حتى يتم التحقق من تسجيل الدخول
+    // صفحة تطبيق — أخفِ كل شيء وانتظر onAuthStateChanged
     document.getElementById("public-wrapper").style.display = "none";
     document.getElementById("app-wrapper").style.display = "none";
+    // مؤشر تحميل صغير
+    const _loadingDiv = document.createElement("div");
+    _loadingDiv.id = "_auth-loading";
+    _loadingDiv.style.cssText = "position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg,#faf8f5);z-index:9998;";
+    _loadingDiv.innerHTML = '<div style="text-align:center"><div style="width:44px;height:44px;border:3px solid rgba(59,27,64,.15);border-top-color:#3B1B40;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 12px"></div><div style="font-family:'Zain',sans-serif;font-size:14px;color:#7a6a7e">جارٍ التحقق...</div></div>';
+    document.body.appendChild(_loadingDiv);
   }
+
+  // ══════════════════════════════════════════════════════
+  // onAuthStateChanged — المحور الرئيسي لاستعادة الجلسة
+  // ══════════════════════════════════════════════════════
+  let _authResolved = false;
+  FB_AUTH.onAuthStateChanged(async (fbUser) => {
+    // تجنّب التنفيذ المزدوج
+    if(_authResolved && fbUser && APP.user) return;
+    
+    // إزالة مؤشر التحميل
+    const _ld = document.getElementById("_auth-loading");
+    if(_ld) _ld.remove();
+    const _ov = document.getElementById("redirect-overlay");
+    if(_ov) _ov.remove();
+
+    if(fbUser){
+      // ─── يوجد مستخدم مسجل ───
+      if(APP.user) return; // تم تسجيل الدخول مسبقاً في نفس الصفحة
+
+      _authResolved = true;
+
+      // تحقق هل هو مشرف
+      try{
+        const adminDoc = await FB_DB.collection("admins").doc(fbUser.uid).get();
+        if(adminDoc.exists){
+          const adm = adminDoc.data();
+          _adminSessionEmail = localStorage.getItem("_adm_e")||"";
+          _adminSessionPass  = localStorage.getItem("_adm_p")||"";
+          loginUser({
+            id: fbUser.uid,
+            name: adm.fullName || adm.username || "مشرف",
+            adminLabel: adm.username,
+            adminFullName: adm.fullName,
+            adminUsername: adm.username,
+            isAdmin: true,
+            adminRole: adm.role || "supervisor",
+            adminPermissions: adm.permissions || {},
+            completedLessons: [],
+            testResults: [],
+          });
+          return;
+        }
+      }catch(e){
+        console.warn("Admin check failed:", e.code);
+      }
+
+      // مستخدم عادي
+      await _handleStudentFirebaseLogin(fbUser);
+
+    } else {
+      // ─── لا يوجد مستخدم مسجل ───
+      _authResolved = true;
+      if(!_publicPages.includes(_targetPage)){
+        // كان يحاول فتح صفحة محمية — ارجعه للدخول
+        toast("يرجى تسجيل الدخول أولاً","info",3000);
+        setTimeout(()=>{ window.location.href = "login.html"; }, 1000);
+      }
+    }
+  });
 
   // ── تذكرني: تسجيل دخول تلقائي ──
   const savedCreds = loadRememberMe();
