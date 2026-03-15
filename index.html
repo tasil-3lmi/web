@@ -4,252 +4,346 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>معهد التأصيل العلمي</title>
-<link href="https://fonts.googleapis.com/css2?family=Zain:wght@300;400;700;800;900&family=Amiri:wght@400;700&display=swap" rel="stylesheet"/>
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-<!-- Firebase -->
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Zain:wght@400;700;800&family=Amiri:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'"/>
+<noscript><link href="https://fonts.googleapis.com/css2?family=Zain:wght@400;700;800&family=Amiri:wght@400;700&display=swap" rel="stylesheet"/></noscript>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
 <script>
-firebase.initializeApp({
-  apiKey:"AIzaSyC1sZ0cJeQMJ6QdnxwFkcfK3AGir0TRuuk",
-  authDomain:"tasil-3lmi.firebaseapp.com",
-  projectId:"tasil-3lmi",
-  storageBucket:"tasil-3lmi.firebasestorage.app",
-  messagingSenderId:"596405733121",
-  appId:"1:596405733121:web:38ebadcc9eef8d8bb77d00"
-});
-const auth = firebase.auth();
-const db   = firebase.firestore();
+firebase.initializeApp({apiKey:"AIzaSyC1sZ0cJeQMJ6QdnxwFkcfK3AGir0TRuuk",authDomain:"tasil-3lmi.firebaseapp.com",projectId:"tasil-3lmi",storageBucket:"tasil-3lmi.firebasestorage.app",messagingSenderId:"596405733121",appId:"1:596405733121:web:38ebadcc9eef8d8bb77d00"});
+const auth=firebase.auth(); const db=firebase.firestore();
 </script>
+<link rel="stylesheet" href="styles.css"/>
+<script src="shared.js" defer></script>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-:root{--purple:#3B1B40;--gold:#D4B48E;--gold-d:#b8965e;--bg:#faf8f5;--white:#fff}
-body{font-family:'Zain',sans-serif;background:var(--bg);color:#1a0a1e;direction:rtl}
-a{text-decoration:none;color:inherit}
-.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 28px;border-radius:12px;border:none;font-family:'Zain',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all .25s}
-.btn-primary{background:linear-gradient(135deg,var(--purple),#5a2d63);color:#fff;box-shadow:0 6px 24px rgba(59,27,64,.3)}
-.btn-outline{background:transparent;color:var(--white);border:2px solid rgba(255,255,255,.5)}
-.btn:hover{transform:translateY(-2px);filter:brightness(1.08)}
-
+/* Landing-specific */
+body{font-family:'Zain','Segoe UI',Tahoma,sans-serif;background:#faf8f5;color:#1a0a1e;direction:rtl;margin:0}
 /* NAV */
-nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:14px 40px;display:flex;justify-content:space-between;align-items:center;transition:all .3s}
-nav.scrolled{background:rgba(42,18,48,.94);backdrop-filter:blur(16px);border-bottom:1px solid rgba(212,180,142,.15)}
-.nav-logo{display:flex;align-items:center;gap:10px;color:#fff}
-.nav-logo img{width:40px;height:40px;border-radius:50%;object-fit:cover}
-.nav-logo span{font-size:15px;font-weight:800;font-family:'Amiri',serif}
-.nav-links{display:flex;gap:8px;align-items:center}
-.nav-links a{color:rgba(255,255,255,.85);font-size:13px;font-weight:700;padding:7px 14px;border-radius:9px;transition:.2s}
-.nav-links a:hover{background:rgba(255,255,255,.12)}
-.nav-links .cta{background:var(--gold);color:var(--purple);padding:8px 18px;border-radius:9px}
-
+#pub-nav{position:fixed;top:0;left:0;right:0;z-index:200;padding:14px 40px;display:flex;justify-content:space-between;align-items:center;transition:all .3s}
+#pub-nav.scrolled{background:rgba(42,18,48,.93);backdrop-filter:blur(16px);border-bottom:1px solid rgba(212,180,142,.15)}
+.pub-nav-logo{display:flex;align-items:center;gap:10px;color:#fff}
+.pub-nav-logo svg{width:36px;height:36px}
+.pub-nav-logo span{font-family:'Amiri',serif;font-size:15px;font-weight:700}
+.pub-nav-links{display:flex;gap:6px;align-items:center}
+.pub-nav-links a{color:rgba(255,255,255,.85);font-size:13px;font-weight:700;padding:7px 14px;border-radius:9px;transition:.2s;text-decoration:none}
+.pub-nav-links a:hover{background:rgba(255,255,255,.12)}
+.pub-cta{background:var(--gold);color:var(--purple)!important;padding:8px 18px;border-radius:10px}
+/* Mobile hamburger for public nav */
+#pub-hamburger{display:none;flex-direction:column;gap:5px;background:none;border:none;cursor:pointer;padding:6px}
+#pub-hamburger span{display:block;width:22px;height:2px;background:#fff;border-radius:2px}
+#pub-mob-menu{display:none;position:fixed;top:0;right:0;bottom:0;width:260px;background:#fff;z-index:499;padding:20px 16px;box-shadow:-8px 0 32px rgba(59,27,64,.2);transform:translateX(100%);transition:transform .3s}
+#pub-mob-overlay{display:none;position:fixed;inset:0;background:rgba(42,18,48,.5);z-index:498}
 /* HERO */
-.hero{min-height:100vh;background:linear-gradient(160deg,#2a1230 0%,#3B1B40 50%,#1a0a1e 100%);display:flex;align-items:center;justify-content:center;text-align:center;padding:100px 20px 60px;position:relative;overflow:hidden}
-.hero::before{content:'';position:absolute;top:-200px;right:-200px;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(212,180,142,.08) 0%,transparent 70%)}
-.hero::after{content:'';position:absolute;bottom:-150px;left:-150px;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(90,45,99,.3) 0%,transparent 70%)}
-.hero-content{position:relative;z-index:1;max-width:700px}
-.hero-badge{display:inline-block;background:rgba(212,180,142,.15);border:1px solid rgba(212,180,142,.3);color:var(--gold);padding:6px 16px;border-radius:20px;font-size:12px;font-weight:700;margin-bottom:20px}
-.hero h1{font-family:'Amiri',serif;font-size:clamp(32px,5vw,58px);font-weight:700;color:#fff;line-height:1.2;margin-bottom:16px}
+.hero{min-height:100vh;background:linear-gradient(160deg,#2a1230 0%,#3B1B40 55%,#1a0a1e 100%);display:flex;align-items:center;justify-content:center;text-align:center;padding:110px 20px 70px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-200px;right:-200px;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(212,180,142,.07) 0%,transparent 70%);pointer-events:none}
+.hero-content{position:relative;z-index:1;max-width:680px}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(212,180,142,.12);border:1px solid rgba(212,180,142,.25);color:var(--gold);padding:6px 16px;border-radius:20px;font-size:12px;font-weight:700;margin-bottom:22px}
+.hero h1{font-family:'Amiri',serif;font-size:clamp(30px,5vw,56px);font-weight:700;color:#fff;line-height:1.2;margin-bottom:16px}
 .hero h1 span{color:var(--gold)}
-.hero p{color:rgba(255,255,255,.7);font-size:17px;line-height:1.8;margin-bottom:36px;max-width:560px;margin-left:auto;margin-right:auto}
-.hero-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
-
+.hero p{color:rgba(255,255,255,.72);font-size:16px;line-height:1.9;margin-bottom:36px;max-width:540px;margin-left:auto;margin-right:auto}
+.hero-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.btn-hero-primary{display:inline-flex;align-items:center;gap:8px;padding:13px 30px;border-radius:12px;background:linear-gradient(135deg,#3B1B40,#5a2d63);color:#fff;font-family:'Zain',sans-serif;font-size:15px;font-weight:700;border:none;cursor:pointer;box-shadow:0 8px 28px rgba(59,27,64,.4);transition:.25s;text-decoration:none}
+.btn-hero-primary:hover{transform:translateY(-2px);filter:brightness(1.08)}
+.btn-hero-outline{display:inline-flex;align-items:center;gap:8px;padding:12px 26px;border-radius:12px;background:transparent;color:rgba(255,255,255,.85);border:1.5px solid rgba(255,255,255,.35);font-family:'Zain',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:.25s;text-decoration:none}
+.btn-hero-outline:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.6)}
 /* STATS */
-.stats{background:#fff;padding:50px 40px;display:flex;justify-content:center;gap:60px;flex-wrap:wrap;border-bottom:1px solid rgba(212,180,142,.15)}
-.stat{text-align:center}
-.stat-num{font-size:38px;font-weight:900;color:var(--purple);font-family:'Amiri',serif}
-.stat-label{font-size:13px;color:#7a6a7e;font-weight:600;margin-top:4px}
-
-/* PLAN */
-.section{padding:80px 40px;max-width:1100px;margin:0 auto}
-.section-title{text-align:center;margin-bottom:50px}
-.section-title h2{font-family:'Amiri',serif;font-size:34px;color:var(--purple);font-weight:700;margin-bottom:10px}
-.section-title p{color:#7a6a7e;font-size:15px}
-.divider{width:60px;height:3px;background:linear-gradient(90deg,var(--purple),var(--gold));border-radius:2px;margin:12px auto}
-
-.plan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
-.plan-card{background:#fff;border-radius:16px;padding:24px;border:1px solid rgba(212,180,142,.2);box-shadow:0 4px 20px rgba(59,27,64,.06);transition:.25s}
-.plan-card:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(59,27,64,.12)}
-.plan-card-header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
-.plan-card-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0}
-.plan-card h3{font-size:16px;font-weight:800;color:var(--purple)}
-.plan-card ul{list-style:none;display:flex;flex-direction:column;gap:8px}
-.plan-card ul li{font-size:13px;color:#4a3a50;display:flex;align-items:flex-start;gap:8px;line-height:1.6}
-.plan-card ul li::before{content:'📖';font-size:11px;flex-shrink:0;margin-top:2px}
-
+.stats-bar{background:#fff;padding:36px 40px;display:flex;justify-content:center;gap:60px;flex-wrap:wrap;border-bottom:1px solid rgba(212,180,142,.15)}
+.stat-item{text-align:center}
+.stat-num{font-family:'Amiri',serif;font-size:38px;font-weight:900;color:var(--purple)}
+.stat-label{font-size:12px;color:var(--muted);font-weight:700;margin-top:2px}
+/* VIDEO SECTION */
+.video-section{padding:80px 40px;background:var(--bg)}
+.video-wrap-outer{max-width:800px;margin:0 auto;border-radius:20px;overflow:hidden;box-shadow:0 20px 60px rgba(59,27,64,.2)}
+.video-placeholder{background:linear-gradient(135deg,var(--purple),var(--purple-l));aspect-ratio:16/9;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;cursor:pointer;transition:.25s}
+.video-placeholder:hover{filter:brightness(1.06)}
+.play-btn{width:64px;height:64px;background:rgba(255,255,255,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid rgba(255,255,255,.3);backdrop-filter:blur(4px)}
+/* PLAN SECTION */
+.plan-section{padding:80px 40px;max-width:1100px;margin:0 auto}
+.section-title-wrap{text-align:center;margin-bottom:48px}
+.section-title-wrap h2{font-family:'Amiri',serif;font-size:32px;color:var(--purple);font-weight:700;margin-bottom:10px}
+.divider-line{width:60px;height:3px;background:linear-gradient(90deg,var(--purple),var(--gold));border-radius:2px;margin:10px auto 12px}
+.section-title-wrap p{font-size:14px;color:var(--muted)}
+/* ABOUT SECTION */
+.about-section{background:#fff;padding:80px 40px}
+.about-inner{max-width:1000px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center}
+.about-text h2{font-family:'Amiri',serif;font-size:30px;color:var(--purple);margin-bottom:16px}
+.about-text p{font-size:15px;line-height:2;color:#4a3a50;margin-bottom:14px}
+.team-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.team-card{background:var(--bg);border-radius:14px;padding:18px;border:1px solid rgba(212,180,142,.2);text-align:center}
+.team-avatar{width:56px;height:56px;background:linear-gradient(135deg,var(--purple),var(--purple-l));border-radius:50%;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-family:'Amiri',serif;font-size:22px;font-weight:900;color:var(--gold)}
+.team-name{font-size:13px;font-weight:800;color:var(--purple)}
+.team-role{font-size:11px;color:var(--muted);margin-top:3px}
 /* CTA */
-.cta-section{background:linear-gradient(135deg,var(--purple),#5a2d63);padding:80px 40px;text-align:center}
-.cta-section h2{font-family:'Amiri',serif;font-size:34px;color:#fff;margin-bottom:14px}
-.cta-section p{color:rgba(255,255,255,.75);font-size:16px;margin-bottom:32px}
-
-/* FOOTER */
-footer{background:#1a0a1e;color:rgba(255,255,255,.5);padding:30px 40px;text-align:center;font-size:13px}
+.cta-section{background:linear-gradient(135deg,var(--purple),var(--purple-l));padding:80px 40px;text-align:center}
+.cta-section h2{font-family:'Amiri',serif;font-size:32px;color:#fff;margin-bottom:14px}
+.cta-section p{color:rgba(255,255,255,.75);font-size:15px;margin-bottom:32px}
+/* Footer */
+footer{background:#1a0a1e;color:rgba(255,255,255,.5);padding:28px 40px;text-align:center;font-size:13px}
 footer strong{color:var(--gold)}
+/* plan cards */
+.plan-level-card{margin-bottom:20px;border-radius:16px;overflow:hidden;border:1px solid rgba(212,180,142,.2);box-shadow:0 4px 16px rgba(59,27,64,.07)}
+.plan-level-head{padding:16px 20px;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
+.plan-level-title{font-family:'Amiri',serif;font-size:17px;font-weight:700;color:#fff;flex:1}
+.plan-stage-block{background:#fff;border-top:1px solid rgba(212,180,142,.15);padding:12px 20px 8px}
+.plan-stage-label{font-size:12px;font-weight:800;color:var(--purple);margin-bottom:8px;padding:4px 0;border-bottom:1px solid rgba(212,180,142,.12)}
+.plan-book-item{display:flex;align-items:flex-start;gap:8px;padding:7px 0;font-size:13px;color:#4a3a50;border-bottom:1px solid rgba(212,180,142,.06)}
+.plan-book-item:last-child{border-bottom:none}
 
 @media(max-width:768px){
-  nav{padding:12px 20px}
-  .hero{padding:80px 20px 50px}
-  .stats{gap:30px;padding:40px 20px}
-  .section{padding:60px 20px}
-  .hero-btns{flex-direction:column;align-items:center}
+  #pub-nav{padding:12px 16px}
+  #pub-hamburger{display:flex!important}
+  .pub-nav-links{display:none}
+  .stats-bar{gap:28px;padding:30px 20px}
+  .plan-section,.video-section{padding:60px 16px}
+  .about-section{padding:60px 16px}
+  .about-inner{grid-template-columns:1fr}
+  .team-grid{grid-template-columns:1fr 1fr}
+  .cta-section{padding:60px 20px}
+  footer{padding:20px}
+  .hero{padding:90px 16px 50px}
 }
 </style>
 </head>
 <body>
 
-<!-- NAV -->
-<nav id="main-nav">
-  <div class="nav-logo">
-    <div style="width:40px;height:40px;background:linear-gradient(135deg,var(--gold),var(--gold-d));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:var(--purple);font-family:'Amiri',serif">ت</div>
-    <span>معهد التأصيل العلمي</span>
+<!-- Public nav -->
+<nav id="pub-nav">
+  <div style="display:flex;align-items:center;gap:10px">
+    <button id="pub-hamburger" onclick="togglePubMenu()" aria-label="القائمة">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="pub-nav-logo">
+      <svg viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="18" fill="#3B1B40"/><text x="18" y="25" text-anchor="middle" font-size="20" font-family="serif" fill="#D4B48E" font-weight="900">ت</text></svg>
+      <span>معهد التأصيل العلمي</span>
+    </div>
   </div>
-  <div class="nav-links">
+  <div class="pub-nav-links">
+    <a href="#video">المقطع التعريفي</a>
     <a href="#plan">الخطة الدراسية</a>
-    <a href="#about">عن المعهد</a>
-    <a href="login.html" class="cta">تسجيل الدخول</a>
+    <a href="#about">من نحن</a>
+    <a href="login.html" class="pub-cta">تسجيل الدخول</a>
   </div>
 </nav>
+
+<!-- Mobile overlay + drawer -->
+<div id="pub-mob-overlay" onclick="closePubMenu()"></div>
+<div id="pub-mob-menu">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid rgba(212,180,142,.2)">
+    <span style="font-family:'Amiri',serif;font-size:15px;font-weight:700;color:var(--purple)">القائمة</span>
+    <button onclick="closePubMenu()" style="background:#f5f0f8;border:none;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:13px;color:var(--muted)">✕</button>
+  </div>
+  <a href="#video"    onclick="closePubMenu()" style="display:flex;align-items:center;gap:10px;padding:12px;border-radius:10px;margin-bottom:4px;font-size:14px;font-weight:700;color:var(--muted);text-decoration:none">🎬 المقطع التعريفي</a>
+  <a href="#plan"     onclick="closePubMenu()" style="display:flex;align-items:center;gap:10px;padding:12px;border-radius:10px;margin-bottom:4px;font-size:14px;font-weight:700;color:var(--muted);text-decoration:none">📚 الخطة الدراسية</a>
+  <a href="#about"    onclick="closePubMenu()" style="display:flex;align-items:center;gap:10px;padding:12px;border-radius:10px;margin-bottom:4px;font-size:14px;font-weight:700;color:var(--muted);text-decoration:none">ℹ️ من نحن</a>
+  <a href="login.html" style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:16px;padding:12px;border-radius:12px;background:linear-gradient(135deg,var(--purple),var(--purple-l));color:#fff;font-size:14px;font-weight:700;text-decoration:none">تسجيل الدخول</a>
+</div>
 
 <!-- HERO -->
 <section class="hero">
   <div class="hero-content">
     <div class="hero-badge">🌙 منصة تعليمية شرعية متخصصة</div>
     <h1>معهد <span>التأصيل</span> العلمي</h1>
-    <p>منهج علمي أصيل في دراسة العلوم الشرعية وفق طريقة أهل السنة والجماعة — من العقيدة والفقه إلى السيرة والمقاصد</p>
+    <p>منهج علمي أصيل في دراسة العلوم الشرعية وفق طريقة أهل السنة والجماعة — من العقيدة والتوحيد إلى الفقه والمقاصد</p>
     <div class="hero-btns">
-      <a href="login.html" class="btn btn-primary">
-        <i data-lucide="log-in" style="width:18px;height:18px"></i>
-        ابدأ رحلتك العلمية
-      </a>
-      <a href="#plan" class="btn btn-outline">
-        <i data-lucide="book-open" style="width:18px;height:18px"></i>
-        الخطة الدراسية
-      </a>
+      <a href="login.html" class="btn-hero-primary">ابدأ رحلتك العلمية ←</a>
+      <a href="#plan" class="btn-hero-outline">الخطة الدراسية</a>
     </div>
   </div>
 </section>
 
 <!-- STATS -->
-<div class="stats">
-  <div class="stat"><div class="stat-num">30</div><div class="stat-label">مقرراً دراسياً</div></div>
-  <div class="stat"><div class="stat-num">600</div><div class="stat-label">درساً علمياً</div></div>
-  <div class="stat"><div class="stat-num">60</div><div class="stat-label">اختباراً تقييمياً</div></div>
-  <div class="stat"><div class="stat-num">6</div><div class="stat-label">مراحل دراسية</div></div>
+<div class="stats-bar">
+  <div class="stat-item"><div class="stat-num">26</div><div class="stat-label">مقرراً دراسياً</div></div>
+  <div class="stat-item"><div class="stat-num">520+</div><div class="stat-label">درساً علمياً</div></div>
+  <div class="stat-item"><div class="stat-num">52</div><div class="stat-label">اختباراً تقييمياً</div></div>
+  <div class="stat-item"><div class="stat-num">مرحلتان</div><div class="stat-label">تمهيدية ومستوى أول</div></div>
 </div>
+
+<!-- VIDEO SECTION -->
+<section id="video">
+<div class="video-section">
+  <div class="section-title-wrap">
+    <h2>المقطع التعريفي</h2>
+    <div class="divider-line"></div>
+    <p>تعرّف على منهج المعهد وأهدافه</p>
+  </div>
+  <div class="video-wrap-outer">
+    <div id="video-container" class="video-placeholder">
+      <div class="play-btn">▶</div>
+      <div style="color:rgba(255,255,255,.8);font-size:14px;font-weight:700">المقطع التعريفي للمعهد</div>
+      <div style="color:rgba(255,255,255,.5);font-size:12px">يُحمَّل من الإدارة</div>
+    </div>
+  </div>
+</div>
+</section>
 
 <!-- STUDY PLAN -->
-<div id="plan">
-<div class="section">
-  <div class="section-title">
+<section id="plan">
+<div class="plan-section">
+  <div class="section-title-wrap">
     <h2>الخطة الدراسية</h2>
-    <div class="divider"></div>
-    <p>ست مراحل متدرجة تأخذك من المبتدئ إلى المتمكن</p>
+    <div class="divider-line"></div>
+    <p>مرحلة تمهيدية ومستوى أول — ستة مراحل متدرجة</p>
   </div>
-  <div class="plan-grid" id="plan-grid">
-    <!-- rendered by JS -->
-  </div>
+  <div id="plan-grid"><!-- rendered by JS --></div>
 </div>
-</div>
+</section>
 
-<!-- ABOUT -->
-<div id="about">
-<div class="section" style="background:#fff;max-width:100%;padding:80px 40px">
-  <div style="max-width:700px;margin:0 auto;text-align:center">
-    <div class="section-title">
-      <h2>عن المعهد</h2>
-      <div class="divider"></div>
+<!-- ABOUT / من نحن -->
+<section id="about">
+<div class="about-section">
+  <div class="about-inner">
+    <div class="about-text">
+      <h2>من نحن</h2>
+      <p id="about-text-1">معهد التأصيل العلمي منصة تعليمية شرعية متخصصة، تهدف إلى تقديم العلوم الشرعية الأصيلة وفق منهج أهل السنة والجماعة، بأسلوب منظّم ومتدرّج.</p>
+      <p id="about-text-2">يتميّز المعهد بخطة دراسية شاملة تبدأ من التأسيس وتصل إلى الدراسة المتخصصة في العقيدة والفقه والسيرة والمقاصد.</p>
+      <a href="login.html" style="display:inline-flex;align-items:center;gap:8px;padding:11px 24px;border-radius:11px;background:linear-gradient(135deg,var(--purple),var(--purple-l));color:#fff;font-family:'Zain',sans-serif;font-size:14px;font-weight:700;text-decoration:none;margin-top:8px">انضم إلينا الآن</a>
     </div>
-    <p style="font-size:16px;line-height:2;color:#4a3a50;margin-bottom:28px" id="about-text">
-      معهد التأصيل العلمي منصة تعليمية شرعية متخصصة، تهدف إلى تقديم العلوم الشرعية الأصيلة وفق منهج أهل السنة والجماعة، بأسلوب منظّم ومتدرّج يُعين طالب العلم على البناء الصحيح والنموّ المتواصل.
-    </p>
-    <a href="login.html" class="btn btn-primary">
-      <i data-lucide="user-plus" style="width:16px;height:16px"></i>
-      سجّل الآن مجاناً
-    </a>
+    <div>
+      <div style="font-size:13px;font-weight:800;color:var(--purple);margin-bottom:14px;display:flex;align-items:center;gap:6px">
+        <span>👨‍🏫</span> أعضاء الهيئة التدريسية
+      </div>
+      <div class="team-grid" id="team-grid">
+        <div class="team-card">
+          <div class="team-avatar">ش</div>
+          <div class="team-name" id="sheikh-name">الشيخ</div>
+          <div class="team-role" id="sheikh-role">المشرف العلمي</div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
-</div>
+</section>
 
 <!-- CTA -->
 <div class="cta-section">
   <h2>انضم إلى طلاب المعهد</h2>
-  <p>ابدأ رحلتك العلمية اليوم وتعلّم على أيدي أهل العلم</p>
-  <a href="login.html" class="btn" style="background:var(--gold);color:var(--purple);font-size:16px;padding:14px 36px">
-    <i data-lucide="arrow-left" style="width:18px;height:18px"></i>
-    إنشاء حساب مجاني
-  </a>
+  <p>ابدأ رحلتك العلمية اليوم في بيئة تعليمية متكاملة</p>
+  <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+    <a href="login.html" style="display:inline-flex;align-items:center;gap:8px;padding:13px 32px;border-radius:12px;background:var(--gold);color:var(--purple);font-family:'Zain',sans-serif;font-size:15px;font-weight:700;text-decoration:none;box-shadow:0 8px 24px rgba(212,180,142,.4)">
+      إنشاء حساب ←
+    </a>
+    <a href="login.html" style="display:inline-flex;align-items:center;gap:8px;padding:13px 32px;border-radius:12px;background:rgba(255,255,255,.12);color:#fff;border:1.5px solid rgba(255,255,255,.3);font-family:'Zain',sans-serif;font-size:14px;font-weight:700;text-decoration:none">
+      تسجيل الدخول
+    </a>
+  </div>
 </div>
 
-<!-- FOOTER -->
 <footer>
   <p>جميع الحقوق محفوظة © 2025 <strong>معهد التأصيل العلمي</strong></p>
 </footer>
 
+<script src="shared.js"></script>
 <script>
-// ── Navbar scroll effect ──
+// ── Nav scroll ──
 window.addEventListener('scroll', () => {
-  document.getElementById('main-nav').classList.toggle('scrolled', window.scrollY > 50);
+  document.getElementById('pub-nav').classList.toggle('scrolled', window.scrollY > 50);
 });
 
-// ── Study Plan Data ──
-const PLAN = [
+// ── Mobile menu ──
+function togglePubMenu(){
+  const m=document.getElementById('pub-mob-menu'), o=document.getElementById('pub-mob-overlay');
+  const open = m.style.transform==='translateX(0px)'||m.style.transform==='translateX(0)';
+  m.style.display=''; o.style.display='';
+  requestAnimationFrame(()=> m.style.transform = open?'translateX(100%)':'translateX(0)');
+  if(open) setTimeout(()=>{m.style.display='none';o.style.display='none'},300);
+}
+function closePubMenu(){
+  const m=document.getElementById('pub-mob-menu'), o=document.getElementById('pub-mob-overlay');
+  m.style.transform='translateX(100%)';
+  setTimeout(()=>{m.style.display='none';o.style.display='none'},300);
+}
+
+// ── Redirect if already logged in ──
+auth.onAuthStateChanged(u => { if(u) location.href='dashboard.html'; });
+
+// ── Render study plan ──
+const PLAN_DATA = [
   {
-    level: "المرحلة التمهيدية", color: "#b8965e",
-    books: ["كتاب المدخل إلى طلب العلم", "كتاب تذكرة السامع والمتكلم", "الجرد القرآني التطبيقي"]
+    id:"tamhidi", title:"المرحلة التمهيدية", color:"#b8965e",
+    stages:[{
+      title:"كتب المرحلة التمهيدية",
+      books:['كتاب "المدخل إلى طلب العلم"','كتاب "تذكرة السامع والمتكلم"','كتاب للجرد يختاره الشيخ (تطبيق عملي)']
+    }]
   },
   {
-    level: "المستوى الأول — العقيدة والتوحيد", color: "#3B1B40",
-    books: ["القواعد الأربع", "نواقض الإسلام", "الأصول الثلاثة وأدلتها", "كشف الشبهات"]
-  },
-  {
-    level: "المستوى الأول — علوم الآلة والسنة", color: "#1a5276",
-    books: ["متن الآجرومية (النحو)", "التذكرة في علوم الحديث", "الأرجوزة الميئية في السيرة", "الرسالة اللطيفة في أصول الفقه", "الأربعون النووية"]
-  },
-  {
-    level: "المستوى الأول — الفقه المالكي", color: "#117a65",
-    books: ["مقدمات التفقه", "متن الأخضري في العبادات", "متن العشماوية", "نظم ابن أبي كف", "نظم المرشد المعين", "منظومة القواعد الفقهية"]
-  },
-  {
-    level: "المستوى الثاني — أصول التفسير والعقيدة", color: "#6e2f0a",
-    books: ["مقدمة في أصول التفسير", "كتاب التوحيد", "القواعد السلفية في الأسماء والصفات", "العقيدة الواسطية"]
-  },
-  {
-    level: "المستوى الثالث — المقاصد والدعوة", color: "#512e5f",
-    books: ["منظومة المقاصد للعصيمي", "الآداب من الجامع لابن جزي", "السبل المرضية في السياسة الشرعية", "الأمر بالمعروف والنهي عن المنكر", "آداب البحث والمناظرة", "الحصانة الفكرية"]
+    id:"mustawa1", title:"مقررات المستوى الأول", color:"#3B1B40",
+    stages:[
+      { title:"المرحلة الأولى — العقيدة والتوحيد", books:["القواعد الأربع","نواقض الإسلام","الأصول الثلاثة وأدلتها","كشف الشبهات"] },
+      { title:"المرحلة الثانية — علوم الآلة والسنة", books:["متن الآجرومية (في النحو)","متن التذكرة في علوم الحديث لابن الملقن","الأرجوزة الميئية في السيرة النبوية","الرسالة اللطيفة في أصول الفقه للسعدي","الأربعون النووية مع زيادات ابن رجب"] },
+      { title:"المرحلة الثالثة — الفقه المالكي وأصوله وقواعده", books:["مقدمات التفقه (رسائل السفاريني وابن رجب وابن تيمية)","متن الأخضري في العبادات","متن العشماوية (قراءة سريعة)","نظم ابن أبي كف في أدلة المذهب","نظم المرشد المعين لابن عاشر (دراسة نقدية)","منظومة ابن سند في القواعد الفقهية"] },
+      { title:"المرحلة الرابعة — أصول التفسير والعقيدة", books:["مقدمة في أصول التفسير لابن تيمية","كتاب التوحيد للشيخ محمد بن عبد الوهاب","القواعد والضوابط السلفية في الأسماء والصفات","العقيدة الواسطية لابن تيمية"] },
+      { title:"المرحلة الخامسة — المقاصد والآداب والسياسة الشرعية", books:['منظومة تبصرة القاصد في علم المقاصد (للشيخ العصيمي)','كتاب الجامع من "القوانين الفقهية" لابن جزي في الآداب',"منظومة السبل المرضية في السياسة الشرعية (لحافظ الحكمي)"] },
+      { title:"المرحلة السادسة — فقه الدعوة والمناظرة والردود والحصانة", books:["رسالة الأمر بالمعروف والنهي عن المنكر لابن تيمية","متن آداب البحث والمناظرة (لطاشكبري زاده)","متن الرد على المخالف","متن الحصانة الفكرية"] },
+    ]
   }
 ];
 
-// Render plan
-const grid = document.getElementById('plan-grid');
-grid.innerHTML = PLAN.map(stage => `
-  <div class="plan-card">
-    <div class="plan-card-header">
-      <div class="plan-card-dot" style="background:${stage.color}"></div>
-      <h3>${stage.level}</h3>
-    </div>
-    <ul>
-      ${stage.books.map(b => `<li>${b}</li>`).join('')}
-    </ul>
-  </div>
-`).join('');
+function renderPlan(){
+  const grid = document.getElementById('plan-grid');
+  grid.innerHTML = PLAN_DATA.map((level,li) => `
+    <div class="plan-level-card fade-up" style="animation-delay:${li*0.1}s">
+      <div class="plan-level-head" style="background:${level.color}" onclick="toggleLevel('pl-${level.id}')">
+        <span style="font-size:18px">${li===0?'🌱':'📚'}</span>
+        <span class="plan-level-title">${level.title}</span>
+        <span id="pl-arr-${level.id}" style="color:rgba(255,255,255,.7);transition:.3s">▲</span>
+      </div>
+      <div id="pl-${level.id}">
+        ${level.stages.map(stage => `
+          <div class="plan-stage-block">
+            <div class="plan-stage-label">${stage.title}</div>
+            ${stage.books.map((b,bi) => `
+              <div class="plan-book-item">
+                <span style="font-weight:800;color:${level.color};font-size:11px;flex-shrink:0">${bi+1}.</span>
+                <span>${b}</span>
+              </div>`).join('')}
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+}
 
-lucide.createIcons();
+function toggleLevel(id){
+  const el=document.getElementById(id);
+  const arr=document.getElementById('pl-arr-'+id.replace('pl-',''));
+  const hidden=el.style.display==='none';
+  el.style.display=hidden?'':'none';
+  if(arr) arr.style.transform=hidden?'rotate(0)':'rotate(180deg)';
+}
 
-// ── Check if already logged in → redirect to dashboard ──
-auth.onAuthStateChanged(user => {
-  if (user) {
-    console.log('✅ Already logged in:', user.uid, '→ dashboard');
-    window.location.href = 'dashboard.html';
+renderPlan();
+
+// ── Load from Firestore ──
+db.collection('config').doc('main').get().then(doc => {
+  if(!doc.exists) return;
+  const d = doc.data();
+  if(d.introVideo) {
+    const url = d.introVideo.includes('/embed/') ? d.introVideo : d.introVideo.replace('watch?v=','embed/').replace('youtu.be/','www.youtube.com/embed/');
+    document.getElementById('video-container').outerHTML = `<div style="position:relative;padding-bottom:56.25%;height:0"><iframe src="${url}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none" allowfullscreen></iframe></div>`;
   }
-});
+  if(d.aboutText1) document.getElementById('about-text-1').textContent = d.aboutText1;
+  if(d.aboutText2) document.getElementById('about-text-2').textContent = d.aboutText2;
+  if(d.sheikhName) document.getElementById('sheikh-name').textContent = d.sheikhName;
+  if(d.sheikhRole) document.getElementById('sheikh-role').textContent = d.sheikhRole;
+  if(d.team && d.team.length) {
+    document.getElementById('team-grid').innerHTML = d.team.map(m => `
+      <div class="team-card">
+        <div class="team-avatar">${m.name?.[0]||'ش'}</div>
+        <div class="team-name">${m.name||''}</div>
+        <div class="team-role">${m.role||''}</div>
+      </div>`).join('');
+  }
+}).catch(()=>{});
 
-// Load about text from Firestore
-db.collection('config').doc('main').get()
-  .then(doc => {
-    if (doc.exists && doc.data().aboutText) {
-      document.getElementById('about-text').textContent = doc.data().aboutText;
-    }
-  }).catch(() => {});
+// Smooth scroll for anchor links
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    document.querySelector(a.getAttribute('href'))?.scrollIntoView({behavior:'smooth'});
+  });
+});
 </script>
 </body>
 </html>
