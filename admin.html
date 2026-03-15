@@ -295,22 +295,46 @@ async function createAdmin(){
   if(pass.length<6){showToast('كلمة المرور 6 أحرف على الأقل','warn');return;}
   var perms=getPerms();
 
+  var origUser = currentUser;
   try{
-    // Create Firebase Auth account
-    var cred=await auth.createUserWithEmailAndPassword(email,pass);
-    var uid=cred.user.uid;
-    // Save to admins collection
+    // Save current admin credentials for re-login
+    var origEmail = currentUser.email;
+    // Note: we can't re-auth without password - use a different approach
+    // Create the admin account using Firebase Auth REST API via separate call
+    // Instead: use admin SDK pattern - just create Firestore doc only if uid provided
+    // OR: create account then immediately sign back in
+    
+    var cred = await auth.createUserWithEmailAndPassword(email, pass);
+    var uid = cred.user.uid;
+    
+    // Save to admins collection  
     await db.collection('admins').doc(uid).set({
-      uid:uid,fullName:name,email:email,role:'supervisor',
-      permissions:perms,createdAt:new Date().toISOString(),createdBy:currentUser.uid
+      uid:uid, fullName:name, email:email, role:'supervisor',
+      permissions:perms, createdAt:new Date().toISOString(), createdBy:origUser.uid
     });
-    // Sign back in as original admin
+    
+    console.log('✅ Admin created:', uid);
+    
+    // Sign out new admin account - original admin session is gone now
+    // We need to sign back in as original admin
+    await auth.signOut();
+    
+    // Show message and redirect to login
     closeModal();
-    showToast('✅ تم إنشاء حساب المشرف: '+name,'success');
-    renderAdmins();loadStats();
+    showToast('✅ تم إنشاء حساب المشرف "'+name+'" بنجاح. سيتم إعادة توجيهك لتسجيل الدخول.','success', 4000);
+    localStorage.removeItem('ti_user');
+    setTimeout(function(){ location.href='login.html'; }, 3000);
+    
   }catch(e){
     console.log('createAdmin error:',e.code,e.message);
-    var msg={'auth/email-already-in-use':'البريد مستخدم مسبقاً','auth/weak-password':'كلمة المرور ضعيفة','auth/invalid-email':'صيغة البريد غير صحيحة'}[e.code]||('خطأ: '+e.message);
+    // Restore current user if auth changed
+    currentUser = origUser;
+    var msg = {
+      'auth/email-already-in-use': 'البريد مستخدم مسبقاً',
+      'auth/weak-password': 'كلمة المرور ضعيفة (6 أحرف+)',
+      'auth/invalid-email': 'صيغة البريد غير صحيحة',
+      'auth/operation-not-allowed': 'تأكد من تفعيل Email/Password في Firebase Console'
+    }[e.code] || ('خطأ: ' + e.message);
     showToast(msg,'error');
   }
 }
