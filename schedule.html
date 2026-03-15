@@ -1,159 +1,310 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>جدول الدروس — معهد التأصيل العلمي</title>
-<link href="https://fonts.googleapis.com/css2?family=Zain:wght@300;400;700;800;900&family=Amiri:wght@400;700&display=swap" rel="stylesheet"/>
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
-<script>
-firebase.initializeApp({
+// ═══════════════════════════════════════════════════════
+// shared.js — البيانات والدوال المشتركة بين كل الصفحات
+// ═══════════════════════════════════════════════════════
+
+// ── Firebase init (يُستدعى من HTML قبل هذا الملف) ──
+// auth و db معرّفان في كل صفحة HTML
+
+// ── الخطة الدراسية الكاملة ──
+const STUDY_PLAN = [
+  {
+    id: "tamhidi",
+    title: "المرحلة التمهيدية",
+    color: "#b8965e",
+    icon: "🌱",
+    stages: [
+      {
+        id: "tamhidi-1",
+        title: "كتب المرحلة التمهيدية",
+        courses: [
+          { id:"t1", title:'كتاب "المدخل إلى طلب العلم"',          short:"المدخل إلى طلب العلم" },
+          { id:"t2", title:'كتاب "تذكرة السامع والمتكلم"',         short:"تذكرة السامع والمتكلم" },
+          { id:"t3", title:"كتاب للجرد يختاره الشيخ (تطبيق عملي)", short:"الجرد القرآني التطبيقي" },
+        ]
+      }
+    ]
+  },
+  {
+    id: "mustawa1",
+    title: "مقررات المستوى الأول",
+    color: "#3B1B40",
+    icon: "📚",
+    stages: [
+      {
+        id: "m1-1",
+        title: "المرحلة الأولى — العقيدة والتوحيد",
+        courses: [
+          { id:"m1",  title:"القواعد الأربع",                   short:"القواعد الأربع" },
+          { id:"m2",  title:"نواقض الإسلام",                    short:"نواقض الإسلام" },
+          { id:"m3",  title:"الأصول الثلاثة وأدلتها",           short:"الأصول الثلاثة" },
+          { id:"m4",  title:"كشف الشبهات",                      short:"كشف الشبهات" },
+        ]
+      },
+      {
+        id: "m1-2",
+        title: "المرحلة الثانية — علوم الآلة والسنة",
+        courses: [
+          { id:"m5",  title:"متن الآجرومية في النحو",            short:"الآجرومية" },
+          { id:"m6",  title:"متن التذكرة في علوم الحديث لابن الملقن", short:"التذكرة في علوم الحديث" },
+          { id:"m7",  title:"الأرجوزة الميئية في السيرة النبوية",short:"الأرجوزة الميئية" },
+          { id:"m8",  title:"الرسالة اللطيفة في أصول الفقه للسعدي", short:"الرسالة اللطيفة" },
+          { id:"m9",  title:"الأربعون النووية مع زيادات ابن رجب",short:"الأربعون النووية" },
+        ]
+      },
+      {
+        id: "m1-3",
+        title: "المرحلة الثالثة — الفقه المالكي وأصوله وقواعده",
+        courses: [
+          { id:"m10", title:"مقدمات التفقه (رسائل السفاريني وابن رجب وابن تيمية)", short:"مقدمات التفقه" },
+          { id:"m11", title:"متن الأخضري في العبادات",           short:"الأخضري" },
+          { id:"m12", title:"متن العشماوية (قراءة سريعة)",       short:"العشماوية" },
+          { id:"m13", title:"نظم ابن أبي كف في أدلة المذهب",    short:"نظم ابن أبي كف" },
+          { id:"m14", title:"نظم المرشد المعين لابن عاشر (دراسة نقدية)", short:"المرشد المعين" },
+          { id:"m15", title:"منظومة ابن سند في القواعد الفقهية", short:"منظومة القواعد الفقهية" },
+        ]
+      },
+      {
+        id: "m1-4",
+        title: "المرحلة الرابعة — أصول التفسير والعقيدة",
+        courses: [
+          { id:"m16", title:"مقدمة في أصول التفسير لابن تيمية",  short:"أصول التفسير" },
+          { id:"m17", title:"كتاب التوحيد للشيخ محمد بن عبد الوهاب", short:"كتاب التوحيد" },
+          { id:"m18", title:"القواعد والضوابط السلفية في الأسماء والصفات", short:"القواعد السلفية" },
+          { id:"m19", title:"العقيدة الواسطية لابن تيمية",       short:"الواسطية" },
+        ]
+      },
+      {
+        id: "m1-5",
+        title: "المرحلة الخامسة — المقاصد والآداب والسياسة الشرعية",
+        courses: [
+          { id:"m20", title:"منظومة تبصرة القاصد في علم المقاصد للشيخ العصيمي", short:"تبصرة القاصد" },
+          { id:"m21", title:'كتاب الجامع من "القوانين الفقهية" لابن جزي في الآداب', short:"الجامع في الآداب" },
+          { id:"m22", title:"منظومة السبل المرضية في السياسة الشرعية لحافظ الحكمي", short:"السبل المرضية" },
+        ]
+      },
+      {
+        id: "m1-6",
+        title: "المرحلة السادسة — فقه الدعوة والمناظرة والردود والحصانة",
+        courses: [
+          { id:"m23", title:"رسالة الأمر بالمعروف والنهي عن المنكر لابن تيمية", short:"الأمر بالمعروف" },
+          { id:"m24", title:"متن آداب البحث والمناظرة لطاشكبري زاده", short:"آداب المناظرة" },
+          { id:"m25", title:"متن الرد على المخالف",              short:"الرد على المخالف" },
+          { id:"m26", title:"متن الحصانة الفكرية",               short:"الحصانة الفكرية" },
+        ]
+      }
+    ]
+  }
+];
+
+// قائمة مسطحة بكل المقررات
+function getAllCourses() {
+  const list = [];
+  STUDY_PLAN.forEach(level => {
+    level.stages.forEach(stage => {
+      stage.courses.forEach(c => {
+        list.push({ ...c, levelId: level.id, levelTitle: level.title, levelColor: level.color, stageId: stage.id, stageTitle: stage.title });
+      });
+    });
+  });
+  return list;
+}
+
+// ── Helper: generate 20 lessons for a course ──
+function makeDefaultLessons(courseId) {
+  return Array.from({length:20}, (_,i) => ({
+    id: `${courseId}-l${i+1}`,
+    order: i+1,
+    title: `الدرس ${i+1}`,
+    visible: true,
+    youtube: "",
+    audio: "",
+    book: "",
+    exercises: []
+  }));
+}
+
+// ── Helper: generate 2 tests for a course ──
+function makeDefaultTests(courseId, courseTitle) {
+  return [
+    {
+      id: `${courseId}-test1`,
+      courseId,
+      title: `اختبار الوحدة الأولى — ${courseTitle}`,
+      questions: [
+        { q: `ما موضوع مقرر ${courseTitle}؟`, options:["دراسة شرعية متخصصة","دراسة لغوية","دراسة تاريخية","دراسة فلسفية"], answer:0 },
+        { q: "ما منهج المعهد في التدريس؟", options:["منهج أهل السنة والجماعة","المنهج العقلاني","المنهج الفلسفي","منهج المتكلمين"], answer:0 },
+        { q: "ما الهدف من دراسة هذا المقرر؟", options:["التعمق في العلم الشرعي","الحصول على شهادة","التفوق فقط","بلا هدف"], answer:0 },
+        { q: "ما أول خطوة في طلب العلم؟", options:["الإخلاص لله","شراء الكتب","حضور الدروس","البحث في الإنترنت"], answer:0 },
+        { q: "كم عدد الدروس في هذا المقرر؟", options:["20 درساً","10 دروس","5 دروس","30 درساً"], answer:0 },
+      ]
+    },
+    {
+      id: `${courseId}-test2`,
+      courseId,
+      title: `الاختبار النهائي — ${courseTitle}`,
+      questions: [
+        { q: "ما الفرق بين العلم النافع وغيره؟", options:["ما أورث خشية الله","ما يُدرَّس في الجامعة","ما ينفع دنيوياً","لا فرق بينهما"], answer:0 },
+        { q: "ما حكم طلب العلم الشرعي؟", options:["فرض عين وكفاية","مستحب فقط","مباح","واجب على العلماء فقط"], answer:0 },
+        { q: "ما المنهج الصحيح في التلقي؟", options:["التلقي المباشر مع الضبط والإتقان","القراءة المنفردة","الاعتماد على الإنترنت فقط","السماع دون تدوين"], answer:0 },
+        { q: `ما أبرز مباحث مقرر ${courseTitle}؟`, options:["المباحث الشرعية الأساسية","المباحث الرياضية","المباحث الأدبية","المباحث الطبية"], answer:0 },
+        { q: "ما ثمرة العلم الشرعي؟", options:["خشية الله والعمل بما تعلمت","الشهرة والمال","الجدل والمناظرة","النجاح الدراسي فقط"], answer:0 },
+      ]
+    }
+  ];
+}
+
+// ── Firebase config & helpers ──
+const FB_CONFIG = {
   apiKey:"AIzaSyC1sZ0cJeQMJ6QdnxwFkcfK3AGir0TRuuk",
   authDomain:"tasil-3lmi.firebaseapp.com",
   projectId:"tasil-3lmi",
   storageBucket:"tasil-3lmi.firebasestorage.app",
   messagingSenderId:"596405733121",
   appId:"1:596405733121:web:38ebadcc9eef8d8bb77d00"
-});
-const auth = firebase.auth();
-const db   = firebase.firestore();
-</script>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-:root{--purple:#3B1B40;--purple-l:#5a2d63;--gold:#D4B48E;--gold-d:#b8965e;--bg:#faf8f5;--white:#fff;--muted:#7a6a7e}
-body{font-family:'Zain',sans-serif;background:var(--bg);color:#1a0a1e;direction:rtl}
-nav{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.96);backdrop-filter:blur(18px);border-bottom:1px solid rgba(212,180,142,.2);padding:10px 24px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 16px rgba(59,27,64,.06)}
-.nav-logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;color:var(--purple);font-family:'Amiri',serif}
-.nav-logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--purple),var(--purple-l));border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--gold);font-family:'Amiri',serif;font-size:16px;font-weight:900}
-.nav-links{display:flex;gap:4px;align-items:center}
-.nav-btn{display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:10px;border:none;cursor:pointer;font-family:'Zain',sans-serif;font-size:12px;font-weight:700;transition:.2s;background:transparent;color:var(--muted);text-decoration:none}
-.nav-btn:hover,.nav-btn.active{background:linear-gradient(135deg,var(--purple),var(--purple-l));color:#fff}
-.nav-btn i{width:14px;height:14px}
-.btn-logout{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:10px;border:none;cursor:pointer;font-family:'Zain',sans-serif;font-size:12px;font-weight:700;background:rgba(220,53,69,.1);color:#dc3545;transition:.2s}
-.btn-logout:hover{background:#dc3545;color:#fff}
-main{max-width:1100px;margin:0 auto;padding:28px 24px}
-.card{background:var(--white);border-radius:16px;padding:22px;border:1px solid rgba(212,180,142,.2);box-shadow:0 4px 20px rgba(59,27,64,.06);margin-bottom:16px}
-.card h2{font-size:18px;font-weight:800;color:var(--purple);margin-bottom:16px;display:flex;align-items:center;gap:8px;padding-bottom:12px;border-bottom:1px solid rgba(212,180,142,.15)}
-.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border-radius:11px;border:none;font-family:'Zain',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:.22s}
-.btn:hover{filter:brightness(1.06);transform:translateY(-1px)}
-.btn-primary{background:linear-gradient(135deg,var(--purple),var(--purple-l));color:#fff}
-.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold-d));color:var(--purple)}
-.btn-danger{background:linear-gradient(135deg,#dc3545,#c82333);color:#fff}
-.btn-sm{padding:6px 13px;font-size:12px}
-.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700}
-.badge-green{background:rgba(40,167,69,.12);color:#28a745}
-.badge-yellow{background:rgba(255,193,7,.15);color:#856404}
-.badge-red{background:rgba(220,53,69,.1);color:#dc3545}
-table{width:100%;border-collapse:collapse}
-th{background:var(--purple);color:#fff;padding:10px 14px;font-size:12px;font-weight:700;text-align:right}
-td{padding:10px 14px;font-size:13px;border-bottom:1px solid rgba(212,180,142,.12)}
-tr:hover td{background:rgba(212,180,142,.05)}
-.field{margin-bottom:12px}
-.field label{display:block;font-size:13px;font-weight:700;color:var(--purple);margin-bottom:4px}
-.field input,.field select,.field textarea{width:100%;padding:10px 13px;border-radius:10px;border:1.5px solid rgba(212,180,142,.4);font-size:13px;font-family:'Zain',sans-serif;background:var(--bg);outline:none;transition:.2s}
-.field input:focus,.field select:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(212,180,142,.2)}
-#spinner{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:16px}
-@keyframes spin{to{transform:rotate(360deg)}}
-.spin-ring{width:44px;height:44px;border:4px solid rgba(59,27,64,.12);border-top-color:var(--purple);border-radius:50%;animation:spin .7s linear infinite}
-@media(max-width:768px){nav{padding:10px 16px}.nav-links .nav-btn span{display:none}main{padding:18px 14px}}
-</style>
-</head>
-<body>
-<div id="spinner"><div class="spin-ring"></div><div style="font-size:14px;color:var(--muted);font-weight:600">جارٍ التحميل...</div></div>
-<div id="app" style="display:none">
+};
 
-<nav>
-  <div class="nav-logo">
-    <div class="nav-logo-icon">ت</div>
-    <span>معهد التأصيل</span>
-  </div>
-  <div class="nav-links">
-    <a href="dashboard.html" class="nav-btn"><i data-lucide="home"></i><span>الرئيسية</span></a>
-    <a href="courses.html"   class="nav-btn" id="nb-courses"><i data-lucide="book-open"></i><span>المقررات</span></a>
-    <a href="tests.html"     class="nav-btn" id="nb-tests"><i data-lucide="clipboard-check"></i><span>الاختبارات</span></a>
-    <a href="schedule.html"  class="nav-btn" id="nb-schedule" class="nav-btn active"><i data-lucide="calendar"></i><span>الجدول</span></a>
-    <a href="qa.html"        class="nav-btn" id="nb-qa"><i data-lucide="message-circle"></i><span>الأسئلة</span></a>
-    <a href="profile.html"   class="nav-btn" id="nb-profile"><i data-lucide="user"></i><span>ملفي</span></a>
-    <a href="admin.html"     class="nav-btn" id="nav-admin" style="display:none"><i data-lucide="settings"></i><span>الإدارة</span></a>
-    <button class="btn-logout" onclick="logout()"><i data-lucide="log-out" style="width:14px;height:14px"></i>خروج</button>
-  </div>
-</nav>
+// ── localStorage helpers ──
+const lsGet  = k => { try{ return JSON.parse(localStorage.getItem(k)||'null'); }catch(e){ return null; }};
+const lsSet  = (k,v) => { try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){}};
+const lsDel  = k => { try{ localStorage.removeItem(k); }catch(e){}};
 
-<main>
-<div class="card">
-  <h2><i data-lucide="calendar" style="width:20px;height:20px;color:var(--gold-d)"></i> جدول الدروس الأسبوعي</h2>
-  <div id="schedule-content">جارٍ التحميل...</div>
-</div>
-</main>
-</div>
-<script>
-
-let currentUser = null;
-
-auth.onAuthStateChanged(async user => {
-  if(!user){ window.location.href = 'login.html'; return; }
-
-  // Check admin
-  const adminSnap = await db.collection('admins').doc(user.uid).get().catch(()=>null);
-  if(adminSnap?.exists){
-    currentUser = { uid:user.uid, ...adminSnap.data(), isAdmin:true };
-  } else {
-    const userSnap = await db.collection('users').doc(user.uid).get().catch(()=>null);
-    if(!userSnap?.exists){ await auth.signOut(); window.location.href='login.html'; return; }
-    currentUser = { uid:user.uid, ...userSnap.data(), isAdmin:false };
-  }
-
-  if(currentUser.isAdmin) document.getElementById('nav-admin').style.display='';
-
-  document.getElementById('spinner').style.display='none';
-  document.getElementById('app').style.display='';
-
-  if(typeof initPage === 'function') initPage();
-  lucide.createIcons();
-});
-
-async function logout(){
-  localStorage.removeItem('ti_rm');
-  await auth.signOut();
-  window.location.href='index.html';
+// ── Current user (cached) ──
+function getCachedUser() {
+  try{ return JSON.parse(localStorage.getItem('ti_user')||'null'); }catch(e){ return null; }
+}
+function setCachedUser(u) {
+  localStorage.setItem('ti_user', JSON.stringify(u));
+  localStorage.setItem('ti_user_ts', String(Date.now()));
+}
+function clearCachedUser() {
+  localStorage.removeItem('ti_user');
+  localStorage.removeItem('ti_user_ts');
+}
+function isCacheStale() {
+  const ts = parseInt(localStorage.getItem('ti_user_ts')||'0');
+  return Date.now() - ts > 5 * 60 * 1000;
 }
 
+// ── Firebase read/write shortcuts ──
+async function dbGet(col, id)  { try{ const s=await db.collection(col).doc(id).get(); return s.exists?s.data():null; }catch(e){ return null; }}
+async function dbSet(col, id, data) { try{ await db.collection(col).doc(id).set(data,{merge:true}); return true; }catch(e){ console.log('dbSet error:',e.message); return false; }}
+async function dbDel(col, id)  { try{ await db.collection(col).doc(id).delete(); return true; }catch(e){ return false; }}
+async function dbAll(col)      { try{ const s=await db.collection(col).get(); return s.docs.map(d=>({_id:d.id,...d.data()})); }catch(e){ return []; }}
 
-async function initPage(){
-  const snap = await db.collection('schedule').doc('main').get().catch(()=>null);
-  const sch = snap?.exists ? snap.data() : {};
-  const schedule = sch.schedule || {};
-  const periods = sch.periods || ['الفجر','الضحى','العصر','المغرب','العشاء'];
-  const days = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس'];
+// ── Auth guard: call in every protected page ──
+// Returns the current user or redirects to login
+async function requireAuth(needAdmin=false) {
+  return new Promise(resolve => {
+    const cached = getCachedUser();
 
-  if(!Object.keys(schedule).length){
-    document.getElementById('schedule-content').innerHTML = '<p style="color:var(--muted);text-align:center;padding:40px">لم يتم إعداد الجدول بعد</p>';
-    return;
+    // Show immediately from cache
+    if(cached) {
+      if(needAdmin && !cached.isAdmin) { location.href='dashboard.html'; return; }
+      resolve(cached);
+      // Then verify in background
+    }
+
+    auth.onAuthStateChanged(async user => {
+      if(!user) {
+        clearCachedUser();
+        location.href = 'login.html';
+        return;
+      }
+
+      // Refresh if stale
+      if(!cached || isCacheStale()) {
+        const adminData = await dbGet('admins', user.uid);
+        let profile;
+        if(adminData) {
+          profile = { uid:user.uid, ...adminData, isAdmin:true };
+        } else {
+          const userData = await dbGet('users', user.uid);
+          if(!userData) { await auth.signOut(); location.href='login.html'; return; }
+          profile = { uid:user.uid, ...userData, isAdmin:false };
+        }
+        setCachedUser(profile);
+        if(!cached) {
+          if(needAdmin && !profile.isAdmin) { location.href='dashboard.html'; return; }
+          resolve(profile);
+        }
+      }
+    });
+  });
+}
+
+// ── Toast notification ──
+function showToast(msg, type='info', dur=3500) {
+  let c = document.getElementById('toast-container');
+  if(!c){ c=document.createElement('div'); c.id='toast-container'; c.style.cssText='position:fixed;bottom:24px;left:24px;z-index:9999;display:flex;flex-direction:column;gap:10px;pointer-events:none'; document.body.appendChild(c); }
+  const t = document.createElement('div');
+  const colors = {info:'#3B1B40',success:'#28a745',error:'#dc3545',warn:'#856404'};
+  t.style.cssText = `background:${colors[type]||'#3B1B40'};color:#fff;padding:13px 20px;border-radius:14px;font-size:13px;font-weight:600;font-family:'Zain',sans-serif;box-shadow:0 8px 28px rgba(0,0,0,.25);border-right:4px solid rgba(255,255,255,.3);animation:toastIn .3s ease;max-width:300px;pointer-events:all;direction:rtl`;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => { t.style.animation='toastOut .3s ease forwards'; setTimeout(()=>t.remove(), 300); }, dur);
+}
+
+// ── Modal ──
+function openModal(content, title='') {
+  let mc = document.getElementById('modal-container');
+  if(!mc){ mc=document.createElement('div'); mc.id='modal-container'; document.body.appendChild(mc); }
+  mc.innerHTML = `
+    <div id="modal-overlay" style="position:fixed;inset:0;background:rgba(42,18,48,.6);backdrop-filter:blur(8px);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)closeModal()">
+      <div style="background:#fff;border-radius:20px;padding:26px;max-width:540px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(59,27,64,.25);direction:rtl">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+          <span style="font-size:16px;font-weight:800;color:#3B1B40;font-family:'Amiri',serif">${title}</span>
+          <button onclick="closeModal()" style="background:#f5f0f8;border:none;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:14px;color:#7a6a7e">✕</button>
+        </div>
+        ${content}
+      </div>
+    </div>`;
+}
+function closeModal() { const mc=document.getElementById('modal-container'); if(mc) mc.innerHTML=''; }
+
+// ── Notifications (Firestore-based) ──
+async function getNotifications(uid) {
+  try {
+    const snap = await db.collection('notifications').where('userId','==',uid).orderBy('createdAt','desc').limit(20).get();
+    return snap.docs.map(d=>({id:d.id,...d.data()}));
+  } catch(e) { return lsGet('ti_notifs_'+uid)||[]; }
+}
+async function markNotifsRead(uid) {
+  try {
+    const snap = await db.collection('notifications').where('userId','==',uid).where('read','==',false).get();
+    const batch = db.batch();
+    snap.docs.forEach(d => batch.update(d.ref,{read:true}));
+    await batch.commit();
+  } catch(e) {}
+}
+async function addNotification(uid, msg, type='info') {
+  const n = { userId:uid, msg, type, read:false, createdAt:new Date().toISOString() };
+  try { await db.collection('notifications').add(n); } catch(e) { 
+    const list = lsGet('ti_notifs_'+uid)||[];
+    list.unshift({...n, id:Date.now().toString()});
+    lsSet('ti_notifs_'+uid, list.slice(0,30));
   }
+}
 
-  document.getElementById('schedule-content').innerHTML = `
-    <div style="overflow-x:auto">
-      <table>
-        <thead><tr>
-          <th>الوقت</th>
-          ${days.map(d=>`<th>${d}</th>`).join('')}
-        </tr></thead>
-        <tbody>
-          ${periods.map(p=>`
-            <tr>
-              <td style="font-weight:700;color:var(--purple)">${p}</td>
-              ${days.map(d=>`<td style="text-align:center">${(schedule[d]||{})[p] || '<span style="color:var(--muted)">—</span>'}</td>`).join('')}
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    </div>
+// ── Logout ──
+async function logout() {
+  clearCachedUser();
+  lsDel('ti_rm');
+  lsDel('ti_admin_rm');
+  try{ await auth.signOut(); }catch(e){}
+  location.href = 'index.html';
+}
+
+// ── CSS animations (injected once) ──
+if(!document.getElementById('shared-css')) {
+  const s = document.createElement('style');
+  s.id = 'shared-css';
+  s.textContent = `
+    @keyframes toastIn  { from{opacity:0;transform:translateX(40px)} to{opacity:1;transform:none} }
+    @keyframes toastOut { from{opacity:1;transform:none} to{opacity:0;transform:translateX(40px)} }
+    @keyframes fadeUp   { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:none} }
+    @keyframes spin     { to{transform:rotate(360deg)} }
+    @keyframes shimmer  { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+    .skeleton { background:linear-gradient(90deg,#f0e8f5 25%,#e4d8ec 50%,#f0e8f5 75%); background-size:200% 100%; animation:shimmer 1.4s infinite; border-radius:8px; }
   `;
+  document.head.appendChild(s);
 }
-
-</script>
-</body>
-</html>
