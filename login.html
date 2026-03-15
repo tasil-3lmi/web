@@ -4,488 +4,330 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>تسجيل الدخول — معهد التأصيل العلمي</title>
-<link href="https://fonts.googleapis.com/css2?family=Zain:wght@300;400;700;800;900&family=Amiri:wght@400;700&display=swap" rel="stylesheet"/>
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-<!-- Firebase -->
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Zain:wght@400;700;800&family=Amiri:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'"/>
+<noscript><link href="https://fonts.googleapis.com/css2?family=Zain:wght@400;700;800&family=Amiri:wght@400;700&display=swap" rel="stylesheet"/></noscript>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
 <script>
-firebase.initializeApp({
-  apiKey:"AIzaSyC1sZ0cJeQMJ6QdnxwFkcfK3AGir0TRuuk",
-  authDomain:"tasil-3lmi.firebaseapp.com",
-  projectId:"tasil-3lmi",
-  storageBucket:"tasil-3lmi.firebasestorage.app",
-  messagingSenderId:"596405733121",
-  appId:"1:596405733121:web:38ebadcc9eef8d8bb77d00"
-});
-const auth = firebase.auth();
-const db   = firebase.firestore();
+firebase.initializeApp({apiKey:"AIzaSyC1sZ0cJeQMJ6QdnxwFkcfK3AGir0TRuuk",authDomain:"tasil-3lmi.firebaseapp.com",projectId:"tasil-3lmi",storageBucket:"tasil-3lmi.firebasestorage.app",messagingSenderId:"596405733121",appId:"1:596405733121:web:38ebadcc9eef8d8bb77d00"});
+const auth=firebase.auth(); const db=firebase.firestore();
 </script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--purple:#3B1B40;--purple-l:#5a2d63;--gold:#D4B48E;--gold-d:#b8965e;--bg:#faf8f5;--muted:#7a6a7e}
-body{font-family:'Zain',sans-serif;background:var(--bg);color:#1a0a1e;direction:rtl;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-.card{background:#fff;border-radius:24px;padding:36px 40px;max-width:480px;width:100%;box-shadow:0 24px 80px rgba(59,27,64,.12);border:1px solid rgba(212,180,142,.2)}
-.logo{text-align:center;margin-bottom:24px}
-.logo-icon{width:56px;height:56px;background:linear-gradient(135deg,var(--purple),var(--purple-l));border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Amiri',serif;font-size:24px;font-weight:900;color:var(--gold);margin:0 auto 10px}
-.logo h1{font-family:'Amiri',serif;font-size:20px;color:var(--purple);font-weight:700}
+body{font-family:'Zain','Segoe UI',Tahoma,sans-serif;background:var(--bg);color:#1a0a1e;direction:rtl;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background-image:radial-gradient(circle at 80% 20%,rgba(59,27,64,.06) 0%,transparent 60%),radial-gradient(circle at 20% 80%,rgba(212,180,142,.08) 0%,transparent 60%)}
+.card{background:#fff;border-radius:24px;padding:32px 36px;max-width:460px;width:100%;box-shadow:0 24px 80px rgba(59,27,64,.12);border:1px solid rgba(212,180,142,.2)}
+.logo{text-align:center;margin-bottom:22px}
+.logo-icon{width:52px;height:52px;margin:0 auto 10px;display:block}
+.logo h1{font-family:'Amiri',serif;font-size:19px;color:var(--purple);font-weight:700;margin-bottom:3px}
 .logo p{font-size:12px;color:var(--muted)}
-
-/* Mode toggle */
-.mode-switch{display:flex;gap:6px;background:#f5f0f8;border-radius:12px;padding:5px;margin-bottom:22px}
-.mode-btn{flex:1;padding:9px;border-radius:9px;border:none;cursor:pointer;font-family:'Zain',sans-serif;font-size:12px;font-weight:700;transition:.25s;background:transparent;color:var(--muted)}
+.mode-switch{display:flex;gap:5px;background:#f5f0f8;border-radius:11px;padding:4px;margin-bottom:20px}
+.mode-btn{flex:1;padding:8px;border-radius:8px;border:none;cursor:pointer;font-family:inherit;font-size:12px;font-weight:700;transition:.22s;background:transparent;color:var(--muted)}
 .mode-btn.active{background:linear-gradient(135deg,var(--purple),var(--purple-l));color:#fff;box-shadow:0 3px 10px rgba(59,27,64,.2)}
-
-/* Tabs */
-.tabs{display:flex;gap:6px;margin-bottom:20px}
-.tab-btn{flex:1;padding:10px;border-radius:10px;border:none;cursor:pointer;font-family:'Zain',sans-serif;font-size:13px;font-weight:700;transition:.25s;background:transparent;color:var(--muted)}
-.tab-btn.active{background:linear-gradient(135deg,var(--purple),var(--purple-l));color:#fff;box-shadow:0 4px 14px rgba(59,27,64,.22)}
-
-/* Form */
-.field{margin-bottom:14px}
-.field label{display:block;font-size:13px;font-weight:700;color:var(--purple);margin-bottom:5px}
-.field input,.field select,.field textarea{width:100%;padding:11px 14px;border-radius:11px;border:1.5px solid rgba(212,180,142,.4);font-size:14px;color:#1a0a1e;background:var(--bg);font-family:'Zain',sans-serif;outline:none;transition:.2s}
-.field input:focus,.field select:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(212,180,142,.2)}
+.tabs{display:flex;gap:5px;margin-bottom:18px}
+.tab-btn{flex:1;padding:9px;border-radius:9px;border:none;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700;transition:.22s;background:transparent;color:var(--muted)}
+.tab-btn.active{background:linear-gradient(135deg,var(--purple),var(--purple-l));color:#fff}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:12px;font-weight:700;color:var(--purple);margin-bottom:4px}
+.field input,.field select{width:100%;padding:10px 13px;border-radius:10px;border:1.5px solid rgba(212,180,142,.4);font-size:13px;font-family:inherit;background:var(--bg);color:#1a0a1e;outline:none;transition:.2s}
+.field input:focus,.field select:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(212,180,142,.18)}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;border-radius:12px;border:none;font-family:'Zain',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:.25s;margin-bottom:10px}
-.btn:hover{filter:brightness(1.06);transform:translateY(-1px)}
+.btn{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;padding:12px;border-radius:11px;border:none;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:.22s;margin-bottom:8px}
+.btn:hover:not(:disabled){filter:brightness(1.06);transform:translateY(-1px)}
+.btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
 .btn-primary{background:linear-gradient(135deg,var(--purple),var(--purple-l));color:#fff;box-shadow:0 6px 20px rgba(59,27,64,.25)}
 .btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold-d));color:var(--purple)}
-.btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
-
-.remember{display:flex;align-items:center;gap:8px;margin-bottom:14px;font-size:13px;color:var(--muted);cursor:pointer}
-.remember input[type=checkbox]{width:16px;height:16px;accent-color:var(--purple);cursor:pointer}
-
-.msg{display:none;font-size:13px;padding:11px 14px;border-radius:10px;margin-bottom:14px;line-height:1.8}
-.msg.error{color:#dc3545;background:#fff5f5;border:1px solid #ffcccc}
+.btn-social{background:#fff;color:#1a0a1e;border:1.5px solid rgba(212,180,142,.35);box-shadow:0 2px 8px rgba(59,27,64,.06)}
+.btn-apple-btn{background:#000;color:#fff}
+.remember{display:flex;align-items:center;gap:7px;margin-bottom:12px;font-size:12px;color:var(--muted);cursor:pointer}
+.remember input{width:15px;height:15px;accent-color:var(--purple);cursor:pointer}
+.msg{display:none;font-size:12.5px;padding:10px 13px;border-radius:9px;margin-bottom:12px;line-height:1.7}
+.msg.error  {color:#dc3545;background:#fff5f5;border:1px solid #ffcccc}
 .msg.success{color:#155724;background:#d4edda;border:1px solid #c3e6cb;text-align:center}
 .msg.warning{color:#856404;background:#fff3cd;border:1px solid #ffc107}
-
-.divider{display:flex;align-items:center;gap:10px;margin:14px 0;color:var(--muted);font-size:12px}
+.divider{display:flex;align-items:center;gap:8px;margin:12px 0;color:var(--muted);font-size:11px}
 .divider::before,.divider::after{content:'';flex:1;height:1px;background:rgba(212,180,142,.3)}
-
-.back-link{text-align:center;margin-top:16px;font-size:13px;color:var(--muted)}
-.back-link a{color:var(--purple);font-weight:700;text-decoration:none}
+.back{text-align:center;margin-top:14px;font-size:12px;color:var(--muted)}
+.back a{color:var(--purple);font-weight:700;text-decoration:none}
+@media(max-width:480px){.card{padding:24px 20px}.field-row{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-
 <div class="card">
   <!-- Logo -->
   <div class="logo">
-    <div class="logo-icon">ت</div>
+    <svg class="logo-icon" viewBox="0 0 52 52"><circle cx="26" cy="26" r="26" fill="#3B1B40"/><text x="26" y="35" text-anchor="middle" font-size="26" font-family="serif" fill="#D4B48E" font-weight="900">ت</text></svg>
     <h1>معهد التأصيل العلمي</h1>
     <p>منصة تعليمية شرعية متخصصة</p>
   </div>
 
-  <!-- Mode: Student / Admin -->
+  <!-- Mode switch -->
   <div class="mode-switch">
-    <button class="mode-btn active" id="mode-student" onclick="setMode('student')">
-      <i data-lucide="user" style="width:13px;height:13px;vertical-align:-2px"></i> طالب
-    </button>
-    <button class="mode-btn" id="mode-admin" onclick="setMode('admin')">
-      <i data-lucide="shield" style="width:13px;height:13px;vertical-align:-2px"></i> مشرف
-    </button>
+    <button class="mode-btn active" id="mode-student" onclick="setMode('student')">👤 طالب</button>
+    <button class="mode-btn" id="mode-admin" onclick="setMode('admin')">🛡️ مشرف</button>
   </div>
 
-  <!-- ════════════ STUDENT SECTION ════════════ -->
+  <!-- ═══ STUDENT ═══ -->
   <div id="student-section">
-    <!-- Login / Register tabs -->
     <div class="tabs">
       <button class="tab-btn active" id="tab-login" onclick="setTab('login')">تسجيل الدخول</button>
       <button class="tab-btn" id="tab-reg" onclick="setTab('reg')">حساب جديد</button>
     </div>
 
-    <!-- LOGIN FORM -->
+    <!-- Login -->
     <div id="login-form">
-      <div class="msg error" id="login-err"></div>
-      <div class="field">
-        <label>البريد الإلكتروني</label>
-        <input type="email" id="l-email" placeholder="example@email.com" autocomplete="email"/>
-      </div>
-      <div class="field">
-        <label>كلمة المرور</label>
-        <input type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password"
-               onkeydown="if(event.key==='Enter') doLogin()"/>
-      </div>
-      <label class="remember">
-        <input type="checkbox" id="l-remember"/> تذكرني
-      </label>
-      <button class="btn btn-primary" id="btn-login" onclick="doLogin()">
-        <i data-lucide="log-in" style="width:16px;height:16px"></i> دخول
+      <div class="msg" id="login-msg"></div>
+      <div class="field"><label>البريد الإلكتروني</label><input type="email" id="l-email" placeholder="example@email.com" autocomplete="email"/></div>
+      <div class="field"><label>كلمة المرور</label><input type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+      <label class="remember"><input type="checkbox" id="l-rem"/> تذكرني</label>
+      <button class="btn btn-primary" id="btn-login" onclick="doLogin()">تسجيل الدخول</button>
+      <div class="divider">أو</div>
+      <!-- Google -->
+      <button class="btn btn-social" onclick="doGoogle()">
+        <svg width="16" height="16" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2a10.34 10.34 0 0 0-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92a8.78 8.78 0 0 0 2.68-6.62z"/><path fill="#34A853" d="M9 18a8.59 8.59 0 0 0 5.96-2.18l-2.92-2.26A5.43 5.43 0 0 1 9 14.7a5.41 5.41 0 0 1-5.09-3.74H.9v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.91 10.96A5.44 5.44 0 0 1 3.63 9c0-.68.12-1.33.28-1.96V4.71H.9A9 9 0 0 0 0 9a9 9 0 0 0 .9 4.29l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58a4.86 4.86 0 0 1 3.44 1.35l2.58-2.58A8.64 8.64 0 0 0 9 0 9 9 0 0 0 .9 4.71l3.01 2.33A5.36 5.36 0 0 1 9 3.58z"/></svg>
+        الدخول بـ Google
+      </button>
+      <!-- Apple -->
+      <button class="btn btn-apple-btn" onclick="doApple()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701z"/></svg>
+        الدخول بـ Apple
       </button>
     </div>
 
-    <!-- REGISTER FORM -->
+    <!-- Register -->
     <div id="reg-form" style="display:none">
-      <div class="msg error" id="reg-err"></div>
-      <div class="field">
-        <label>الاسم الثلاثي <span style="color:#dc3545">*</span></label>
-        <input type="text" id="r-name" placeholder="أدخل اسمك الثلاثي"/>
-      </div>
+      <div class="msg" id="reg-msg"></div>
+      <div class="field"><label>الاسم الثلاثي <span style="color:#dc3545">*</span></label><input type="text" id="r-name" placeholder="أدخل اسمك الثلاثي"/></div>
       <div class="field-row">
-        <div class="field">
-          <label>العمر</label>
-          <input type="number" id="r-age" placeholder="عمرك" min="10" max="80"/>
-        </div>
-        <div class="field">
-          <label>رقم الهاتف</label>
-          <input type="text" id="r-phone" placeholder="+966..."/>
-        </div>
+        <div class="field"><label>العمر</label><input type="number" id="r-age" placeholder="عمرك" min="10" max="80"/></div>
+        <div class="field"><label>رقم الهاتف</label><input type="text" id="r-phone" placeholder="+966..."/></div>
       </div>
-      <div class="field">
-        <label>معرف تيليجرام</label>
-        <input type="text" id="r-tg" placeholder="@username"/>
-      </div>
+      <div class="field"><label>معرف تيليجرام</label><input type="text" id="r-tg" placeholder="@username"/></div>
       <div class="field">
         <label>المستوى الدراسي</label>
         <select id="r-level">
-          <option value="">اختر المستوى</option>
+          <option value="">اختر</option>
           <option>ابتدائي</option><option>متوسط</option><option>ثانوي</option>
           <option>دبلوم</option><option>بكالوريوس</option><option>ماجستير</option>
           <option>دكتوراه</option><option>موظف</option>
         </select>
       </div>
-      <div class="field">
-        <label>البريد الإلكتروني <span style="color:#dc3545">*</span></label>
-        <input type="email" id="r-email" placeholder="example@email.com" autocomplete="email"/>
-      </div>
-      <div class="field">
-        <label>كلمة المرور <span style="color:#dc3545">*</span></label>
-        <input type="password" id="r-pass" placeholder="6 أحرف على الأقل" autocomplete="new-password"/>
-      </div>
-      <div class="field">
-        <label>تأكيد كلمة المرور <span style="color:#dc3545">*</span></label>
-        <input type="password" id="r-pass2" placeholder="أعد كتابة كلمة المرور" autocomplete="new-password"/>
-      </div>
-      <button class="btn btn-gold" id="btn-reg" onclick="doRegister()">
-        <i data-lucide="user-plus" style="width:16px;height:16px"></i> إنشاء الحساب
+      <div class="field"><label>البريد الإلكتروني <span style="color:#dc3545">*</span></label><input type="email" id="r-email" placeholder="example@email.com" autocomplete="email"/></div>
+      <div class="field"><label>كلمة المرور <span style="color:#dc3545">*</span></label><input type="password" id="r-pass" placeholder="6 أحرف على الأقل" autocomplete="new-password"/></div>
+      <div class="field"><label>تأكيد كلمة المرور <span style="color:#dc3545">*</span></label><input type="password" id="r-pass2" placeholder="أعد كتابة كلمة المرور" autocomplete="new-password"/></div>
+      <button class="btn btn-gold" id="btn-reg" onclick="doRegister()">إنشاء الحساب</button>
+      <div class="divider">أو</div>
+      <button class="btn btn-social" onclick="doGoogle()">
+        <svg width="16" height="16" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2a10.34 10.34 0 0 0-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92a8.78 8.78 0 0 0 2.68-6.62z"/><path fill="#34A853" d="M9 18a8.59 8.59 0 0 0 5.96-2.18l-2.92-2.26A5.43 5.43 0 0 1 9 14.7a5.41 5.41 0 0 1-5.09-3.74H.9v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.91 10.96A5.44 5.44 0 0 1 3.63 9c0-.68.12-1.33.28-1.96V4.71H.9A9 9 0 0 0 0 9a9 9 0 0 0 .9 4.29l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58a4.86 4.86 0 0 1 3.44 1.35l2.58-2.58A8.64 8.64 0 0 0 9 0 9 9 0 0 0 .9 4.71l3.01 2.33A5.36 5.36 0 0 1 9 3.58z"/></svg>
+        التسجيل بـ Google
       </button>
     </div>
   </div>
 
-  <!-- ════════════ ADMIN SECTION ════════════ -->
+  <!-- ═══ ADMIN ═══ -->
   <div id="admin-section" style="display:none">
-    <div class="msg error" id="admin-err"></div>
-    <div class="field">
-      <label>البريد الإلكتروني</label>
-      <input type="email" id="a-email" placeholder="admin@example.com" autocomplete="email"/>
-    </div>
-    <div class="field">
-      <label>كلمة المرور</label>
-      <input type="password" id="a-pass" placeholder="••••••••" autocomplete="current-password"
-             onkeydown="if(event.key==='Enter') doAdminLogin()"/>
-    </div>
-    <label class="remember">
-      <input type="checkbox" id="a-remember"/> تذكرني (30 يوماً)
-    </label>
-    <button class="btn btn-primary" id="btn-admin" onclick="doAdminLogin()">
-      <i data-lucide="shield-check" style="width:16px;height:16px"></i> دخول المشرف
-    </button>
+    <div class="msg" id="admin-msg"></div>
+    <div class="field"><label>البريد الإلكتروني</label><input type="email" id="a-email" placeholder="admin@example.com" autocomplete="email"/></div>
+    <div class="field"><label>كلمة المرور</label><input type="password" id="a-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doAdminLogin()"/></div>
+    <label class="remember"><input type="checkbox" id="a-rem"/> تذكرني (30 يوماً)</label>
+    <button class="btn btn-primary" id="btn-admin" onclick="doAdminLogin()">دخول المشرف</button>
   </div>
 
-  <div class="back-link">
-    <a href="index.html">← العودة للصفحة الرئيسية</a>
-  </div>
+  <div class="back"><a href="index.html">← الصفحة الرئيسية</a></div>
 </div>
 
 <script>
-// ══════════════════════════════════════════════
-// UI helpers
-// ══════════════════════════════════════════════
-function showMsg(id, text, type='error'){
-  const el = document.getElementById(id);
-  el.textContent = text;
-  el.className = `msg ${type}`;
-  el.style.display = 'block';
+// ── UI ──
+function setMode(m){
+  const isA=m==='admin';
+  document.getElementById('student-section').style.display=isA?'none':'';
+  document.getElementById('admin-section').style.display=isA?'':'none';
+  document.getElementById('mode-student').className='mode-btn'+(isA?'':' active');
+  document.getElementById('mode-admin').className='mode-btn'+(isA?' active':'');
 }
-function showMsgHtml(id, html, type='success'){
-  const el = document.getElementById(id);
-  el.innerHTML = html;
-  el.className = `msg ${type}`;
-  el.style.display = 'block';
-}
-function hideMsg(id){ document.getElementById(id).style.display='none'; }
-
-function setBusy(id, busy, label){
-  const btn = document.getElementById(id);
-  btn.disabled = busy;
-  if(busy){ btn._orig = btn.innerHTML; btn.innerHTML = `<span style="opacity:.7">${label}</span>`; }
-  else if(btn._orig){ btn.innerHTML = btn._orig; }
-}
-
-function setMode(mode){
-  const isAdmin = mode === 'admin';
-  document.getElementById('student-section').style.display = isAdmin ? 'none' : '';
-  document.getElementById('admin-section').style.display = isAdmin ? '' : 'none';
-  document.getElementById('mode-student').className = `mode-btn${isAdmin?'':' active'}`;
-  document.getElementById('mode-admin').className = `mode-btn${isAdmin?' active':''}`;
-}
-
 function setTab(t){
-  document.getElementById('login-form').style.display = t==='login' ? '' : 'none';
-  document.getElementById('reg-form').style.display = t==='reg' ? '' : 'none';
-  document.getElementById('tab-login').className = `tab-btn${t==='login'?' active':''}`;
-  document.getElementById('tab-reg').className = `tab-btn${t==='reg'?' active':''}`;
+  document.getElementById('login-form').style.display=t==='login'?'':'none';
+  document.getElementById('reg-form').style.display=t==='reg'?'':'none';
+  document.getElementById('tab-login').className='tab-btn'+(t==='login'?' active':'');
+  document.getElementById('tab-reg').className='tab-btn'+(t==='reg'?' active':'');
 }
-
-// ══════════════════════════════════════════════
-// Firebase error messages (Arabic)
-// ══════════════════════════════════════════════
+function showMsg(id,txt,type='error'){
+  const el=document.getElementById(id);
+  el.textContent=txt; el.className='msg '+type; el.style.display='block';
+}
+function showMsgHtml(id,html,type='success'){
+  const el=document.getElementById(id);
+  el.innerHTML=html; el.className='msg '+type; el.style.display='block';
+}
+function busy(id,on,txt){
+  const b=document.getElementById(id); if(!b) return;
+  b.disabled=on; if(on){b._t=b.innerHTML;b.innerHTML=txt||'...';}else if(b._t)b.innerHTML=b._t;
+}
 function fbMsg(code){
-  return {
-    'auth/user-not-found':      'البريد غير مسجّل',
-    'auth/wrong-password':      'كلمة المرور غير صحيحة',
-    'auth/invalid-credential':  'البريد أو كلمة المرور غير صحيحة',
-    'auth/email-already-in-use':'البريد مسجّل مسبقاً — سجّل دخولك',
-    'auth/invalid-email':       'صيغة البريد غير صحيحة',
-    'auth/weak-password':       'كلمة المرور ضعيفة (6 أحرف كحد أدنى)',
-    'auth/too-many-requests':   'محاولات كثيرة، انتظر قليلاً',
-    'auth/network-request-failed': 'تعذّر الاتصال — تحقق من الإنترنت',
-    'auth/user-disabled':       'هذا الحساب موقوف',
-    'auth/operation-not-allowed': 'Email/Password غير مفعّل في Firebase Console',
-    'auth/unauthorized-domain': 'النطاق غير مُصرَّح به في Firebase Console',
-  }[code] || `خطأ: ${code || 'غير معروف'}`;
+  return({'auth/user-not-found':'البريد غير مسجّل','auth/wrong-password':'كلمة المرور غير صحيحة','auth/invalid-credential':'البريد أو كلمة المرور غير صحيحة','auth/email-already-in-use':'البريد مسجّل مسبقاً','auth/invalid-email':'صيغة البريد غير صحيحة','auth/weak-password':'كلمة المرور ضعيفة (6 أحرف+)','auth/too-many-requests':'محاولات كثيرة — انتظر قليلاً','auth/network-request-failed':'تعذّر الاتصال — تحقق من الإنترنت','auth/user-disabled':'هذا الحساب موقوف','auth/operation-not-allowed':'Email/Password غير مفعّل في Firebase Console','auth/unauthorized-domain':'النطاق غير مُصرَّح به — أضفه في Firebase Console'})[code]||`خطأ: ${code||'غير معروف'}`;
 }
 
-// ══════════════════════════════════════════════
-// تسجيل الدخول — طالب
-// ══════════════════════════════════════════════
+// ── Save user to localStorage ──
+function saveUser(u){ localStorage.setItem('ti_user',JSON.stringify(u)); localStorage.setItem('ti_user_ts',String(Date.now())); }
+
+// ── Student Login ──
 async function doLogin(){
-  const email = document.getElementById('l-email').value.trim();
-  const pass  = document.getElementById('l-pass').value;
-  hideMsg('login-err');
-
-  if(!email || !pass){ showMsg('login-err','يرجى إدخال البريد وكلمة المرور'); return; }
-  setBusy('btn-login', true, 'جارٍ الدخول...');
-
+  const email=document.getElementById('l-email').value.trim();
+  const pass=document.getElementById('l-pass').value;
+  document.getElementById('login-msg').style.display='none';
+  if(!email||!pass){ showMsg('login-msg','يرجى إدخال البريد وكلمة المرور'); return; }
+  busy('btn-login',true,'جارٍ الدخول...');
   try{
-    // Firebase Auth
-    const cred = await auth.signInWithEmailAndPassword(email, pass);
-    console.log('✅ doLogin success, uid:', cred.user.uid);
-
-    // Firestore — get user profile
-    const snap = await db.collection('users').doc(cred.user.uid).get();
-
-    if(!snap.exists){
-      await auth.signOut();
-      showMsg('login-err','لم يُعثر على ملفك الشخصي — تواصل مع المسؤول');
-      return;
-    }
-
-    const profile = snap.data();
-    console.log('Profile status:', profile.status);
-
-    if(profile.status === 'pending'){
-      await auth.signOut();
-      showMsg('login-err','⏳ حسابك في انتظار موافقة المسؤول', 'warning');
-      return;
-    }
-    if(profile.status === 'rejected'){
-      await auth.signOut();
-      showMsg('login-err','❌ تم رفض طلبك — تواصل مع المسؤول');
-      return;
-    }
-
-    // Save remember me
-    if(document.getElementById('l-remember').checked){
-      try{ localStorage.setItem('ti_rm', btoa(JSON.stringify({e:email,p:pass}))); }catch(_){}
-    } else {
-      localStorage.removeItem('ti_rm');
-    }
-
-    // Save profile to localStorage for dashboard
-    localStorage.setItem('ti_user', JSON.stringify({
-      uid: cred.user.uid, ...profile, isAdmin: false
-    }));
-
-    window.location.href = 'dashboard.html';
-
+    const cred=await auth.signInWithEmailAndPassword(email,pass);
+    console.log('✅ doLogin uid:',cred.user.uid);
+    await handleStudentLogin(cred.user, email, pass);
   }catch(e){
-    console.log('❌ doLogin error:', e.code, e.message);
-    showMsg('login-err', fbMsg(e.code));
-  }finally{
-    setBusy('btn-login', false);
-  }
+    console.log('❌ doLogin error:',e.code,e.message);
+    showMsg('login-msg',fbMsg(e.code));
+  }finally{ busy('btn-login',false); }
 }
 
-// ══════════════════════════════════════════════
-// إنشاء حساب جديد — طالب
-// ══════════════════════════════════════════════
+async function handleStudentLogin(user, email, pass){
+  const snap=await db.collection('users').doc(user.uid).get();
+  if(!snap.exists){ await auth.signOut(); showMsg('login-msg','لم يُعثر على ملفك الشخصي — تواصل مع المسؤول'); return; }
+  const p=snap.data();
+  if(p.status==='pending'){ await auth.signOut(); showMsg('login-msg','⏳ حسابك في انتظار موافقة المسؤول','warning'); return; }
+  if(p.status==='rejected'){ await auth.signOut(); showMsg('login-msg','❌ تم رفض طلبك — تواصل مع المسؤول'); return; }
+  if(document.getElementById('l-rem')?.checked && email && pass)
+    try{localStorage.setItem('ti_rm',btoa(JSON.stringify({e:email,p:pass})));}catch(_){}
+  saveUser({uid:user.uid,...p,isAdmin:false});
+  location.href='dashboard.html';
+}
+
+// ── Register ──
 async function doRegister(){
-  const name  = document.getElementById('r-name').value.trim();
-  const email = document.getElementById('r-email').value.trim();
-  const pass  = document.getElementById('r-pass').value;
-  const pass2 = document.getElementById('r-pass2').value;
-  hideMsg('reg-err');
-
-  // Validation
-  if(!name)         { showMsg('reg-err','⚠️ يرجى إدخال الاسم الثلاثي'); return; }
-  if(!email)        { showMsg('reg-err','⚠️ يرجى إدخال البريد الإلكتروني'); return; }
-  if(!pass)         { showMsg('reg-err','⚠️ يرجى إدخال كلمة المرور'); return; }
-  if(pass.length<6) { showMsg('reg-err','⚠️ كلمة المرور 6 أحرف على الأقل'); return; }
-  if(pass !== pass2){ showMsg('reg-err','⚠️ كلمتا المرور غير متطابقتَين'); return; }
-
-  setBusy('btn-reg', true, 'جارٍ إنشاء الحساب...');
-
+  const name=document.getElementById('r-name').value.trim();
+  const email=document.getElementById('r-email').value.trim();
+  const pass=document.getElementById('r-pass').value;
+  const pass2=document.getElementById('r-pass2').value;
+  document.getElementById('reg-msg').style.display='none';
+  if(!name){ showMsg('reg-msg','⚠️ يرجى إدخال الاسم الثلاثي'); return; }
+  if(!email){ showMsg('reg-msg','⚠️ يرجى إدخال البريد الإلكتروني'); return; }
+  if(!pass||pass.length<6){ showMsg('reg-msg','⚠️ كلمة المرور 6 أحرف على الأقل'); return; }
+  if(pass!==pass2){ showMsg('reg-msg','⚠️ كلمتا المرور غير متطابقتَين'); return; }
+  busy('btn-reg',true,'جارٍ إنشاء الحساب...');
   try{
-    // 1. Create Firebase Auth account
-    const cred = await auth.createUserWithEmailAndPassword(email, pass);
-    console.log('✅ doRegister: account created, uid:', cred.user.uid);
-
-    // 2. Save profile to Firestore
-    const profile = {
-      uid:      cred.user.uid,
-      name,     email,
-      phone:    document.getElementById('r-phone').value.trim() || '',
-      age:      document.getElementById('r-age').value || '',
-      telegram: document.getElementById('r-tg').value.trim() || '',
-      level:    document.getElementById('r-level').value || '',
-      status:   'pending',
-      completedLessons: [],
-      testResults: [],
-      createdAt: new Date().toISOString(),
-      provider: 'email'
-    };
-
-    try{
-      await db.collection('users').doc(cred.user.uid).set(profile);
-      console.log('✅ doRegister: profile saved to Firestore');
-    }catch(fe){
-      console.log('❌ Firestore write error:', fe.code, fe.message);
-      // Not fatal — account still created
-    }
-
-    // 3. Sign out (wait for admin approval)
+    const cred=await auth.createUserWithEmailAndPassword(email,pass);
+    console.log('✅ doRegister uid:',cred.user.uid);
+    const profile={uid:cred.user.uid,name,email,phone:document.getElementById('r-phone').value.trim()||'',age:document.getElementById('r-age').value||'',telegram:document.getElementById('r-tg').value.trim()||'',level:document.getElementById('r-level').value||'',status:'pending',completedLessons:[],testResults:[],createdAt:new Date().toISOString(),provider:'email'};
+    try{ await db.collection('users').doc(cred.user.uid).set(profile); console.log('✅ Profile saved to Firestore'); }
+    catch(fe){ console.log('❌ Firestore write error:',fe.code,fe.message); }
     await auth.signOut();
-
-    // 4. Clear form
-    ['r-name','r-email','r-pass','r-pass2','r-phone','r-age','r-tg'].forEach(id=>{
-      document.getElementById(id).value = '';
-    });
-    document.getElementById('r-level').value = '';
-
-    // 5. Show success
-    showMsgHtml('reg-err',
-      '🎉 <strong>تم التسجيل بنجاح!</strong><br>حسابك في انتظار موافقة المسؤول.<br><small style="color:#6c757d">يمكنك تسجيل الدخول بعد الموافقة.</small>',
-      'success'
-    );
-
-    // 6. Switch to login tab after 3s
-    setTimeout(() => setTab('login'), 3000);
-
+    ['r-name','r-email','r-pass','r-pass2','r-phone','r-age','r-tg'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+    document.getElementById('r-level').value='';
+    showMsgHtml('reg-msg','🎉 <strong>تم التسجيل بنجاح!</strong><br>حسابك في انتظار موافقة المسؤول.','success');
+    setTimeout(()=>setTab('login'),3000);
   }catch(e){
-    console.log('❌ doRegister error:', e.code, e.message);
-    showMsg('reg-err', fbMsg(e.code));
-  }finally{
-    setBusy('btn-reg', false);
-  }
+    console.log('❌ doRegister error:',e.code,e.message);
+    showMsg('reg-msg',fbMsg(e.code));
+  }finally{ busy('btn-reg',false); }
 }
 
-// ══════════════════════════════════════════════
-// تسجيل دخول المشرف
-// ══════════════════════════════════════════════
+// ── Admin Login ──
 async function doAdminLogin(){
-  const email = document.getElementById('a-email').value.trim();
-  const pass  = document.getElementById('a-pass').value;
-  hideMsg('admin-err');
-
-  if(!email || !pass){ showMsg('admin-err','يرجى إدخال البريد وكلمة المرور'); return; }
-  setBusy('btn-admin', true, 'جارٍ التحقق...');
-
+  const email=document.getElementById('a-email').value.trim();
+  const pass=document.getElementById('a-pass').value;
+  document.getElementById('admin-msg').style.display='none';
+  if(!email||!pass){ showMsg('admin-msg','يرجى إدخال البريد وكلمة المرور'); return; }
+  busy('btn-admin',true,'جارٍ التحقق...');
   try{
-    // Firebase Auth
-    const cred = await auth.signInWithEmailAndPassword(email, pass);
-    console.log('✅ doAdminLogin: auth success, uid:', cred.user.uid);
-
-    // Check admins collection in Firestore
-    const adminSnap = await db.collection('admins').doc(cred.user.uid).get();
-
-    if(!adminSnap.exists){
-      await auth.signOut();
-      showMsg('admin-err','هذا الحساب غير مسجّل كمشرف');
-      console.log('❌ uid not in admins collection');
-      return;
-    }
-
-    const adminData = adminSnap.data();
-    console.log('✅ Admin verified:', adminData.username);
-
-    // Remember admin
-    if(document.getElementById('a-remember').checked){
-      try{
-        localStorage.setItem('ti_admin_rm', btoa(JSON.stringify({
-          e:email, p:pass, ts:Date.now()
-        })));
-      }catch(_){}
-    }
-
-    // Save admin profile to localStorage
-    localStorage.setItem('ti_user', JSON.stringify({
-      uid: cred.user.uid, ...adminData, isAdmin: true
-    }));
-
-    window.location.href = 'dashboard.html';
-
+    const cred=await auth.signInWithEmailAndPassword(email,pass);
+    console.log('✅ doAdminLogin uid:',cred.user.uid);
+    const adminSnap=await db.collection('admins').doc(cred.user.uid).get();
+    if(!adminSnap.exists){ await auth.signOut(); showMsg('admin-msg','هذا الحساب غير مسجّل كمشرف'); return; }
+    const adminData=adminSnap.data();
+    if(document.getElementById('a-rem')?.checked)
+      try{localStorage.setItem('ti_admin_rm',btoa(JSON.stringify({e:email,p:pass,ts:Date.now()})));}catch(_){}
+    saveUser({uid:cred.user.uid,...adminData,isAdmin:true});
+    location.href='dashboard.html';
   }catch(e){
-    console.log('❌ doAdminLogin error:', e.code, e.message);
-    showMsg('admin-err', fbMsg(e.code));
-  }finally{
-    setBusy('btn-admin', false);
+    console.log('❌ doAdminLogin error:',e.code,e.message);
+    showMsg('admin-msg',fbMsg(e.code));
+  }finally{ busy('btn-admin',false); }
+}
+
+// ── Google Sign-in ──
+async function doGoogle(){
+  try{
+    const provider=new firebase.auth.GoogleAuthProvider();
+    provider.setCustomParameters({prompt:'select_account'});
+    const result=await auth.signInWithPopup(provider);
+    const user=result.user;
+    console.log('✅ Google login:',user.uid);
+    // Check if admin
+    const adminSnap=await db.collection('admins').doc(user.uid).get();
+    if(adminSnap.exists){ saveUser({uid:user.uid,...adminSnap.data(),isAdmin:true}); location.href='dashboard.html'; return; }
+    // Check student
+    const userSnap=await db.collection('users').doc(user.uid).get();
+    if(userSnap.exists){
+      const p=userSnap.data();
+      if(p.status==='pending'){ await auth.signOut(); showMsg('login-msg','⏳ حسابك في انتظار موافقة المسؤول','warning'); return; }
+      if(p.status==='rejected'){ await auth.signOut(); showMsg('login-msg','❌ تم رفض طلبك'); return; }
+      saveUser({uid:user.uid,...p,isAdmin:false}); location.href='dashboard.html'; return;
+    }
+    // New Google user — create profile
+    const profile={uid:user.uid,name:user.displayName||user.email?.split('@')[0]||'طالب',email:user.email||'',phone:'',age:'',telegram:'',level:'',status:'pending',completedLessons:[],testResults:[],createdAt:new Date().toISOString(),provider:'google'};
+    try{ await db.collection('users').doc(user.uid).set(profile); }catch(fe){ console.log('Firestore error:',fe.message); }
+    await auth.signOut();
+    showMsg('login-msg','✅ تم ربط حساب Google! في انتظار موافقة المسؤول.','warning');
+  }catch(e){
+    console.log('❌ Google error:',e.code,e.message);
+    if(e.code!=='auth/popup-closed-by-user') showMsg('login-msg',fbMsg(e.code));
   }
 }
 
-// ══════════════════════════════════════════════
-// Auto-login check
-// ══════════════════════════════════════════════
+// ── Apple Sign-in ──
+async function doApple(){
+  try{
+    const provider=new firebase.auth.OAuthProvider('apple.com');
+    provider.addScope('email'); provider.addScope('name');
+    const result=await auth.signInWithPopup(provider);
+    const user=result.user;
+    // Same flow as Google
+    const userSnap=await db.collection('users').doc(user.uid).get();
+    if(userSnap.exists){
+      const p=userSnap.data();
+      if(p.status==='pending'){ await auth.signOut(); showMsg('login-msg','⏳ حسابك في انتظار موافقة المسؤول','warning'); return; }
+      if(p.status==='rejected'){ await auth.signOut(); showMsg('login-msg','❌ تم رفض طلبك'); return; }
+      saveUser({uid:user.uid,...p,isAdmin:false}); location.href='dashboard.html'; return;
+    }
+    const profile={uid:user.uid,name:user.displayName||user.email?.split('@')[0]||'طالب',email:user.email||'',phone:'',age:'',telegram:'',level:'',status:'pending',completedLessons:[],testResults:[],createdAt:new Date().toISOString(),provider:'apple'};
+    try{ await db.collection('users').doc(user.uid).set(profile); }catch(fe){}
+    await auth.signOut();
+    showMsg('login-msg','✅ تم ربط حساب Apple! في انتظار موافقة المسؤول.','warning');
+  }catch(e){
+    console.log('❌ Apple error:',e.code,e.message);
+    if(e.code!=='auth/popup-closed-by-user') showMsg('login-msg',fbMsg(e.code));
+  }
+}
+
+// ── Auto-login check ──
 auth.onAuthStateChanged(async user => {
   if(!user) return;
-  // Already authenticated — check if admin or student and redirect
-  console.log('onAuthStateChanged: user logged in:', user.uid);
-
-  const adminSnap = await db.collection('admins').doc(user.uid).get().catch(()=>null);
-  if(adminSnap?.exists){
-    localStorage.setItem('ti_user', JSON.stringify({
-      uid: user.uid, ...adminSnap.data(), isAdmin: true
-    }));
-    window.location.href = 'dashboard.html';
-    return;
-  }
-
-  const userSnap = await db.collection('users').doc(user.uid).get().catch(()=>null);
-  if(userSnap?.exists && userSnap.data().status === 'approved'){
-    localStorage.setItem('ti_user', JSON.stringify({
-      uid: user.uid, ...userSnap.data(), isAdmin: false
-    }));
-    window.location.href = 'dashboard.html';
-  }
+  const adminSnap=await db.collection('admins').doc(user.uid).get().catch(()=>null);
+  if(adminSnap?.exists){ saveUser({uid:user.uid,...adminSnap.data(),isAdmin:true}); location.href='dashboard.html'; return; }
+  const userSnap=await db.collection('users').doc(user.uid).get().catch(()=>null);
+  if(userSnap?.exists && userSnap.data().status==='approved'){ saveUser({uid:user.uid,...userSnap.data(),isAdmin:false}); location.href='dashboard.html'; }
 });
 
-// Auto-fill remember me
+// ── Auto-fill remember me ──
 (function(){
-  try{
-    const rm = JSON.parse(atob(localStorage.getItem('ti_rm')||''));
-    if(rm?.e){ document.getElementById('l-email').value=rm.e; document.getElementById('l-pass').value=rm.p; document.getElementById('l-remember').checked=true; }
-  }catch(_){}
-  try{
-    const arm = JSON.parse(atob(localStorage.getItem('ti_admin_rm')||''));
-    if(arm?.e && Date.now()-arm.ts < 30*24*60*60*1000){
-      document.getElementById('a-email').value=arm.e;
-      document.getElementById('a-pass').value=arm.p;
-      document.getElementById('a-remember').checked=true;
-    }
-  }catch(_){}
+  try{ const r=JSON.parse(atob(localStorage.getItem('ti_rm')||'')); if(r?.e){document.getElementById('l-email').value=r.e;document.getElementById('l-pass').value=r.p;document.getElementById('l-rem').checked=true;} }catch(_){}
+  try{ const a=JSON.parse(atob(localStorage.getItem('ti_admin_rm')||'')); if(a?.e&&Date.now()-a.ts<30*864e5){document.getElementById('a-email').value=a.e;document.getElementById('a-pass').value=a.p;document.getElementById('a-rem').checked=true;} }catch(_){}
+  const msg=sessionStorage.getItem('_loginMsg');
+  if(msg){ sessionStorage.removeItem('_loginMsg');
+    if(msg==='pending') showMsg('login-msg','⏳ حسابك في انتظار موافقة المسؤول','warning');
+    if(msg==='rejected') showMsg('login-msg','❌ تم رفض طلبك — تواصل مع المسؤول');
+  }
 })();
-
-// Show login message from redirect
-const msg = sessionStorage.getItem('_loginMsg');
-if(msg){ sessionStorage.removeItem('_loginMsg');
-  if(msg==='pending')  showMsg('login-err','⏳ حسابك في انتظار موافقة المسؤول','warning');
-  if(msg==='rejected') showMsg('login-err','❌ تم رفض طلبك — تواصل مع المسؤول');
-}
-
-lucide.createIcons();
 </script>
 </body>
 </html>
