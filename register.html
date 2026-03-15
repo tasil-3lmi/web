@@ -319,53 +319,57 @@
   <div id="footerPlaceholder"></div>
 
   <script type="module">
-    import { renderHeader, renderFooter, LOGO_SRC } from './components.js';
+    import { renderHeader, renderFooter, initSharedBehavior, LOGO_SRC } from './components.js';
     import {
       auth, db,
       createUserWithEmailAndPassword,
       signInWithEmailAndPassword,
-      doc, setDoc, getDoc, collection, getDocs
+      onAuthStateChanged,
+      doc, setDoc, getDoc, collection, getDocs, query, where
     } from './firebase.js';
-    import { browserLocalPersistence, browserSessionPersistence, setPersistence } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import { browserLocalPersistence, browserSessionPersistence, setPersistence }
+      from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 
-    document.getElementById('headerPlaceholder').innerHTML = renderHeader('register.html');
+    // ── إذا كان مسجّلاً مسبقاً → حوّله فوراً ──
+    onAuthStateChanged(auth, user => {
+      if (user) window.location.href = 'dashboard.html';
+    });
+
+    // ── رسم الهيدر فوراً بدون انتظار ──
+    document.getElementById('headerPlaceholder').innerHTML = renderHeader('register.html', null);
     document.getElementById('footerPlaceholder').innerHTML = renderFooter();
     document.getElementById('registerLogo').src = LOGO_SRC;
+    initSharedBehavior();
 
-    const header = document.getElementById('siteHeader');
-    const hamburger = document.getElementById('hamburger');
-    const mobileMenu = document.getElementById('mobileMenu');
-    window.addEventListener('scroll', () => header.classList.toggle('scrolled', window.scrollY > 40));
-    hamburger && hamburger.addEventListener('click', () => mobileMenu.classList.toggle('open'));
+    // ── cache اسم المستخدم → بريد (يُبنى مرة واحدة عند الحاجة) ──
+    let usernameCache = null;
+    async function emailFromIdentifier(identifier) {
+      if (identifier.includes('@')) return identifier;
+      // بناء الـ cache في المرة الأولى فقط
+      if (!usernameCache) {
+        usernameCache = {};
+        const snap = await getDocs(collection(db, 'users'));
+        snap.forEach(d => { if (d.data().username) usernameCache[d.data().username] = d.data().email; });
+      }
+      return usernameCache[identifier] || identifier;
+    }
 
     // ============ ROLE SWITCH ============
     window.switchRole = function(role) {
-      const student = document.getElementById('studentSection');
-      const supervisor = document.getElementById('supervisorSection');
-      const btnStudent = document.getElementById('roleStudent');
-      const btnSup = document.getElementById('roleSupervisor');
-      if (role === 'student') {
-        student.style.display = ''; supervisor.style.display = 'none';
-        btnStudent.classList.add('active'); btnSup.classList.remove('active');
-      } else {
-        student.style.display = 'none'; supervisor.style.display = '';
-        btnSup.classList.add('active'); btnStudent.classList.remove('active');
-      }
+      const isStudent = role === 'student';
+      document.getElementById('studentSection').style.display    = isStudent ? '' : 'none';
+      document.getElementById('supervisorSection').style.display = isStudent ? 'none' : '';
+      document.getElementById('roleStudent').classList.toggle('active', isStudent);
+      document.getElementById('roleSupervisor').classList.toggle('active', !isStudent);
     };
 
     // ============ STUDENT TABS ============
     window.switchStudentTab = function(tab) {
-      const newAccount = document.getElementById('formNewAccount');
-      const login = document.getElementById('formLogin');
-      const tabNew = document.getElementById('tabNewAccount');
-      const tabLog = document.getElementById('tabLogin');
-      if (tab === 'new') {
-        newAccount.style.display = ''; login.style.display = 'none';
-        tabNew.classList.add('active'); tabLog.classList.remove('active');
-      } else {
-        newAccount.style.display = 'none'; login.style.display = '';
-        tabLog.classList.add('active'); tabNew.classList.remove('active');
-      }
+      const isNew = tab === 'new';
+      document.getElementById('formNewAccount').style.display = isNew ? '' : 'none';
+      document.getElementById('formLogin').style.display      = isNew ? 'none' : '';
+      document.getElementById('tabNewAccount').classList.toggle('active', isNew);
+      document.getElementById('tabLogin').classList.toggle('active', !isNew);
     };
 
     // ============ REGISTER NEW STUDENT ============
@@ -375,34 +379,35 @@
       const btnText = document.getElementById('registerBtnText');
       const errEl = document.getElementById('reg_error');
       errEl.classList.remove('show');
-
-      const fullName = document.getElementById('reg_fullName').value.trim();
-      const email = document.getElementById('reg_email').value.trim();
-      const username = document.getElementById('reg_username').value.trim();
-      const password = document.getElementById('reg_password').value;
-      const phone = document.getElementById('reg_phone').value.trim();
-      const telegram = document.getElementById('reg_telegram').value.trim();
-      const level = document.getElementById('reg_level').value;
-      const gender = document.querySelector('input[name="gender"]:checked')?.value || 'male';
-
       btn.disabled = true;
       btnText.innerHTML = '<span class="spinner"></span> جارٍ التسجيل...';
 
+      const fullName = document.getElementById('reg_fullName').value.trim();
+      const email    = document.getElementById('reg_email').value.trim();
+      const username = document.getElementById('reg_username').value.trim();
+      const password = document.getElementById('reg_password').value;
+      const phone    = document.getElementById('reg_phone').value.trim();
+      const telegram = document.getElementById('reg_telegram').value.trim();
+      const level    = document.getElementById('reg_level').value;
+      const gender   = document.querySelector('input[name="gender"]:checked')?.value || 'male';
+
       try {
         const userCred = await createUserWithEmailAndPassword(auth, email, password);
-        await setDoc(doc(db, 'users', userCred.user.uid), {
+        // حفظ البيانات في Firestore — لا ينتظره لأن Firebase Auth نجح
+        setDoc(doc(db, 'users', userCred.user.uid), {
           fullName, email, username, phone, telegram,
           level, gender, role: 'student',
           progress: {}, createdAt: new Date().toISOString()
-        });
-        document.getElementById('registerForm').style.display = 'none';
-        document.getElementById('successRegister').classList.add('show');
-        setTimeout(() => window.location.href = 'dashboard.html', 2000);
-      } catch (error) {
-        let msg = 'حدث خطأ. حاول مرة أخرى.';
-        if (error.code === 'auth/email-already-in-use') msg = 'البريد الإلكتروني مستخدم مسبقاً.';
-        if (error.code === 'auth/weak-password') msg = 'كلمة المرور ضعيفة جداً (٦ أحرف على الأقل).';
-        errEl.textContent = msg;
+        }); // بدون await — يعمل في الخلفية
+        // التحويل فوري
+        window.location.href = 'dashboard.html';
+      } catch (err) {
+        const msgs = {
+          'auth/email-already-in-use': 'البريد الإلكتروني مستخدم مسبقاً.',
+          'auth/weak-password':        'كلمة المرور ضعيفة جداً (٦ أحرف على الأقل).',
+          'auth/invalid-email':        'صيغة البريد الإلكتروني غير صحيحة.',
+        };
+        errEl.textContent = msgs[err.code] || 'حدث خطأ. حاول مرة أخرى.';
         errEl.classList.add('show');
         btn.disabled = false;
         btnText.textContent = 'إنشاء الحساب';
@@ -412,33 +417,25 @@
     // ============ STUDENT LOGIN ============
     window.handleLogin = async function(e) {
       e.preventDefault();
-      const btn = document.getElementById('loginBtn');
+      const btn     = document.getElementById('loginBtn');
       const btnText = document.getElementById('loginBtnText');
-      const errEl = document.getElementById('login_error');
+      const errEl   = document.getElementById('login_error');
       errEl.classList.remove('show');
-      const identifier = document.getElementById('login_identifier').value.trim();
-      const password = document.getElementById('login_password').value;
-      const remember = document.getElementById('login_remember').checked;
-
       btn.disabled = true;
       btnText.innerHTML = '<span class="spinner"></span> جارٍ الدخول...';
 
+      const identifier = document.getElementById('login_identifier').value.trim();
+      const password   = document.getElementById('login_password').value;
+      const remember   = document.getElementById('login_remember').checked;
+
       try {
-        // Try to find by username first
-        let email = identifier;
-        if (!identifier.includes('@')) {
-          const usersSnap = await getDocs(collection(db, 'users'));
-          usersSnap.forEach(d => { if (d.data().username === identifier) email = d.data().email; });
-        }
+        const email = await emailFromIdentifier(identifier);
         if (remember) await setPersistence(auth, browserLocalPersistence);
-        else await setPersistence(auth, browserSessionPersistence);
         await signInWithEmailAndPassword(auth, email, password);
-        document.getElementById('loginForm').style.display = 'none';
-        document.getElementById('successLogin').classList.add('show');
-        setTimeout(() => window.location.href = 'dashboard.html', 2000);
-      } catch (error) {
-        let msg = 'بيانات غير صحيحة. تحقق من البريد وكلمة المرور.';
-        errEl.textContent = msg;
+        // onAuthStateChanged في dashboard.html سيأخذ الزمام — التحويل فوري
+        window.location.href = 'dashboard.html';
+      } catch (err) {
+        errEl.textContent = 'بيانات غير صحيحة. تحقق من البريد وكلمة المرور.';
         errEl.classList.add('show');
         btn.disabled = false;
         btnText.textContent = 'تسجيل الدخول';
@@ -448,38 +445,31 @@
     // ============ SUPERVISOR LOGIN ============
     window.handleSupervisorLogin = async function(e) {
       e.preventDefault();
-      const btn = document.getElementById('supBtn');
+      const btn     = document.getElementById('supBtn');
       const btnText = document.getElementById('supBtnText');
-      const errEl = document.getElementById('sup_error');
+      const errEl   = document.getElementById('sup_error');
       errEl.classList.remove('show');
-      const identifier = document.getElementById('sup_identifier').value.trim();
-      const password = document.getElementById('sup_password').value;
-      const remember = document.getElementById('sup_remember').checked;
-
       btn.disabled = true;
       btnText.innerHTML = '<span class="spinner"></span> جارٍ الدخول...';
 
+      const identifier = document.getElementById('sup_identifier').value.trim();
+      const password   = document.getElementById('sup_password').value;
+      const remember   = document.getElementById('sup_remember').checked;
+
       try {
-        let email = identifier;
-        if (!identifier.includes('@')) {
-          const usersSnap = await getDocs(collection(db, 'users'));
-          usersSnap.forEach(d => { if (d.data().username === identifier) email = d.data().email; });
-        }
+        const email = await emailFromIdentifier(identifier);
         if (remember) await setPersistence(auth, browserLocalPersistence);
-        else await setPersistence(auth, browserSessionPersistence);
-        const userCred = await signInWithEmailAndPassword(auth, email, password);
-        const userDoc = await getDoc(doc(db, 'users', userCred.user.uid));
-        if (userDoc.exists() && (userDoc.data().role === 'superAdmin' || userDoc.data().role === 'supervisor')) {
-          document.getElementById('supervisorForm').style.display = 'none';
-          document.getElementById('successSupervisor').classList.add('show');
-          setTimeout(() => window.location.href = 'dashboard.html', 2000);
+        const cred = await signInWithEmailAndPassword(auth, email, password);
+        // جلب دور المستخدم للتحقق
+        const userDoc = await getDoc(doc(db, 'users', cred.user.uid));
+        if (userDoc.exists() && ['superAdmin','supervisor'].includes(userDoc.data().role)) {
+          window.location.href = 'dashboard.html';
         } else {
           await auth.signOut();
           throw new Error('not_supervisor');
         }
-      } catch (error) {
-        let msg = 'بيانات غير صحيحة أو ليس لديك صلاحية مشرف.';
-        errEl.textContent = msg;
+      } catch (err) {
+        errEl.textContent = 'بيانات غير صحيحة أو ليس لديك صلاحية مشرف.';
         errEl.classList.add('show');
         btn.disabled = false;
         btnText.textContent = 'دخول المشرف';
