@@ -13,667 +13,207 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
 <script>
 firebase.initializeApp({apiKey:"AIzaSyC1sZ0cJeQMJ6QdnxwFkcfK3AGir0TRuuk",authDomain:"tasil-3lmi.firebaseapp.com",projectId:"tasil-3lmi",storageBucket:"tasil-3lmi.firebasestorage.app",messagingSenderId:"596405733121",appId:"1:596405733121:web:38ebadcc9eef8d8bb77d00"});
-const auth=firebase.auth(); const db=firebase.firestore();
+const auth=firebase.auth(),db=firebase.firestore();
 </script>
 <link rel="stylesheet" href="styles.css"/>
 <script src="shared.js"></script>
 <script src="nav.js"></script>
 <style>
-main{padding:0}
-/* Views */
-#view-list{padding:24px}
-#view-course{display:none}
-/* Level accordion */
-.level-wrap{margin-bottom:20px;border-radius:16px;overflow:hidden;border:1px solid rgba(212,180,142,.2);box-shadow:0 4px 16px rgba(59,27,64,.07)}
-.level-head{padding:16px 20px;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
-.level-head-title{font-family:'Amiri',serif;font-size:17px;font-weight:700;color:#fff;flex:1}
-.level-body{display:none}
-.stage-wrap{background:#fff;border-top:1px solid rgba(212,180,142,.15);padding:14px 20px 10px}
-.stage-title{font-size:12px;font-weight:800;color:var(--purple);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(212,180,142,.12)}
-.course-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-bottom:8px}
-.course-card{background:var(--bg);border-radius:13px;padding:16px;border:1px solid rgba(212,180,142,.2);cursor:pointer;transition:.22s;position:relative}
-.course-card:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(59,27,64,.1)}
-.course-color-strip{height:3px;border-radius:2px;margin-bottom:10px}
-.course-card-title{font-size:13px;font-weight:800;color:var(--purple);margin-bottom:5px;line-height:1.4}
-.course-card-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-/* Course detail layout */
-.course-layout{display:grid;grid-template-columns:260px 1fr;height:calc(100vh - 56px);overflow:hidden}
-.lesson-sidebar{background:#fff;border-left:1px solid rgba(212,180,142,.18);overflow-y:auto;display:flex;flex-direction:column}
-.sidebar-head{padding:14px;border-bottom:1px solid rgba(212,180,142,.15);flex-shrink:0}
-.sidebar-lessons{flex:1;overflow-y:auto;padding:8px}
-.lesson-row{display:flex;align-items:center;gap:6px;padding:9px 10px;border-radius:10px;margin-bottom:4px;cursor:pointer;border:1.5px solid transparent;transition:.18s;background:var(--bg)}
-.lesson-row:hover{border-color:rgba(59,27,64,.2);background:rgba(59,27,64,.04)}
-.lesson-row.active{border-color:var(--purple);background:rgba(59,27,64,.07)}
-.lesson-row.done{border-color:rgba(40,167,69,.25);background:rgba(40,167,69,.04)}
-.lesson-row.hidden-lesson{opacity:.45}
-.lesson-num{width:20px;height:20px;border-radius:50%;background:rgba(212,180,142,.2);color:var(--gold-d);font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.lesson-info{flex:1;min-width:0}
-.lesson-title-sm{font-size:12px;font-weight:700;color:var(--purple);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.drag-handle{cursor:grab;color:var(--muted);opacity:.4;flex-shrink:0;font-size:12px}
-.drag-handle:hover{opacity:1}
-.lesson-row.drag-over{border-color:var(--gold);background:rgba(212,180,142,.12)}
-/* Main content area */
-.content-area{overflow-y:auto;padding:24px}
-.breadcrumb{font-size:12px;color:var(--muted);margin-bottom:16px}
-.breadcrumb a{color:var(--purple-l);text-decoration:none;font-weight:700}
-.lesson-title-main{font-family:'Amiri',serif;font-size:22px;color:var(--purple);font-weight:700;margin-bottom:4px}
-.lesson-meta-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
-.resource-tabs{display:flex;gap:5px;margin-bottom:16px;flex-wrap:wrap}
-.res-tab{padding:7px 14px;border-radius:9px;border:1.5px solid rgba(212,180,142,.3);font-size:12px;font-weight:700;cursor:pointer;transition:.2s;background:var(--bg);color:var(--muted)}
-.res-tab.active,.res-tab:hover{background:var(--purple);color:#fff;border-color:var(--purple)}
-.resource-panel{display:none}
-.resource-panel.active{display:block}
-.empty-resource{padding:28px;text-align:center;color:var(--muted);font-size:13px;background:var(--bg);border-radius:12px}
-/* Exercise */
-.exercise-item{background:var(--bg);border-radius:12px;padding:16px;margin-bottom:10px;border:1px solid rgba(212,180,142,.18)}
-.exercise-q{font-size:14px;font-weight:700;color:var(--purple);margin-bottom:12px}
-.ex-option{padding:9px 14px;border-radius:9px;border:1.5px solid rgba(212,180,142,.25);margin-bottom:6px;cursor:pointer;font-size:13px;transition:.18s}
-.ex-option:hover{border-color:var(--purple);background:rgba(59,27,64,.04)}
-.ex-option.correct{border-color:#28a745;background:rgba(40,167,69,.08);color:#28a745}
-.ex-option.wrong{border-color:#dc3545;background:rgba(220,53,69,.08);color:#dc3545}
-.ex-option.selected{border-color:var(--purple);background:rgba(59,27,64,.07)}
-/* Tests section */
-.test-card{background:var(--bg);border-radius:13px;padding:18px;border:1px solid rgba(212,180,142,.2);margin-bottom:12px}
-.test-card h4{font-size:14px;font-weight:800;color:var(--purple);margin-bottom:8px}
-@media(max-width:900px){.course-layout{grid-template-columns:1fr;grid-template-rows:auto 1fr}.lesson-sidebar{max-height:220px}}
+main{max-width:1100px;margin:0 auto;padding:22px 16px}
+.level-block{margin-bottom:18px;border-radius:16px;overflow:hidden;border:1px solid rgba(212,180,142,.2);box-shadow:0 4px 14px rgba(59,27,64,.06)}
+.level-head{display:flex;align-items:center;gap:10px;padding:14px 18px;cursor:pointer;user-select:none}
+.level-title{font-family:'Amiri',serif;font-size:17px;font-weight:700;color:#fff;flex:1}
+.level-arr{color:rgba(255,255,255,.75);font-size:13px;transition:transform .25s}
+.level-body{background:#fff}
+.stage-block{padding:13px 18px 10px;border-top:1px solid rgba(212,180,142,.1)}
+.stage-label{font-size:12px;font-weight:800;color:var(--purple);margin-bottom:9px;padding-bottom:5px;border-bottom:1px solid rgba(212,180,142,.1)}
+.course-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:9px;margin-bottom:4px}
+.c-card{background:var(--bg);border-radius:12px;padding:13px;border:1.5px solid rgba(212,180,142,.18);display:block;text-decoration:none;transition:transform .2s,box-shadow .2s,border-color .2s}
+.c-card:hover{transform:translateY(-3px);box-shadow:0 10px 26px rgba(59,27,64,.1);border-color:rgba(59,27,64,.2)}
+.c-bar{height:3px;border-radius:2px;margin-bottom:9px}
+.c-title{font-size:13px;font-weight:800;color:var(--purple);line-height:1.4;margin-bottom:5px}
+.c-foot{display:flex;align-items:center;justify-content:space-between;margin-top:6px}
+.c-lessons{font-size:11px;color:var(--muted)}
+.c-pct{font-size:11px;font-weight:700}
+.c-prog{height:3px;border-radius:2px;background:rgba(212,180,142,.2);margin-top:5px;overflow:hidden}
+.c-prog-fill{height:100%;border-radius:2px;transition:width .5s}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@media(max-width:600px){.course-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:380px){.course-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-
-<div id="spinner" class="spinner-overlay">
-  <div class="spin-ring"></div>
-  <div style="font-size:13px;color:var(--muted);font-weight:600">جارٍ التحميل...</div>
-</div>
-
+<div id="spinner" class="spinner-overlay"><div class="spin-ring"></div></div>
 <div id="app" style="display:none">
-  <div id="nav-placeholder"></div>
+  <div id="nav-ph"></div>
   <main>
-    <!-- ═══ LIST VIEW ═══ -->
-    <div id="view-list">
-      <div class="section-head" style="margin-bottom:20px">
-        <div class="section-title">
-          <span style="font-size:20px">📚</span>
-          <span style="font-family:'Amiri',serif">المقررات الدراسية</span>
-        </div>
-        <button id="btn-add-course" class="btn btn-primary btn-sm" style="display:none" onclick="openCourseForm()">
-          + مقرر جديد
-        </button>
-      </div>
-      <div id="plan-courses-container"><!-- rendered by JS --></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+      <h1 style="font-family:'Amiri',serif;font-size:21px;color:var(--purple);font-weight:700">📚 المقررات الدراسية</h1>
+      <input id="search" type="search" placeholder="🔍 ابحث..." oninput="filterPlan(this.value)"
+        style="padding:8px 12px;border-radius:10px;border:1.5px solid rgba(212,180,142,.3);font-family:'Zain',sans-serif;font-size:13px;background:var(--bg);outline:none;width:180px"/>
     </div>
-
-    <!-- ═══ COURSE DETAIL VIEW ═══ -->
-    <div id="view-course">
-      <div class="course-layout">
-        <!-- Sidebar -->
-        <div class="lesson-sidebar">
-          <div class="sidebar-head">
-            <button onclick="backToList()" style="display:flex;align-items:center;gap:5px;background:none;border:none;cursor:pointer;font-family:inherit;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:10px">
-              ← العودة للمقررات
-            </button>
-            <div id="sidebar-course-title" style="font-family:'Amiri',serif;font-size:15px;font-weight:700;color:var(--purple);margin-bottom:8px"></div>
-            <div id="sidebar-progress" style="background:rgba(212,180,142,.2);border-radius:10px;height:6px;margin-bottom:6px">
-              <div id="sidebar-progress-bar" style="height:100%;border-radius:10px;background:linear-gradient(90deg,var(--purple),var(--gold));transition:width .4s"></div>
-            </div>
-            <div id="sidebar-progress-text" style="font-size:11px;color:var(--muted)"></div>
-          </div>
-          <div class="sidebar-lessons" id="lesson-list"><!-- rendered by JS --></div>
-        </div>
-        <!-- Content -->
-        <div class="content-area" id="lesson-content">
-          <div style="text-align:center;padding:60px;color:var(--muted)">اختر درساً من القائمة</div>
-        </div>
-      </div>
-    </div>
+    <div id="plan-wrap"></div>
   </main>
 </div>
-<div id="modal-container"></div>
-<div id="toast-container"></div>
 
 <script>
-let currentUser=null, allCourseData={}, currentCourseId=null, currentLessonId=null;
-let dragSrc=null;
+const PAGE_ID='courses';
+let currentUser=null, completedLessons=[], progMap={};
 
-// ── Study plan structure ──
-const PLAN_STRUCTURE = [
-  {id:"tamhidi",title:"المرحلة التمهيدية",color:"#b8965e",icon:"🌱",stages:[
-    {id:"tamhidi-1",title:"كتب المرحلة التمهيدية",courses:["t1","t2","t3"]}
-  ]},
-  {id:"mustawa1",title:"مقررات المستوى الأول",color:"#3B1B40",icon:"📚",stages:[
-    {id:"m1-1",title:"المرحلة الأولى — العقيدة والتوحيد",courses:["m1","m2","m3","m4"]},
-    {id:"m1-2",title:"المرحلة الثانية — علوم الآلة والسنة",courses:["m5","m6","m7","m8","m9"]},
-    {id:"m1-3",title:"المرحلة الثالثة — الفقه المالكي",courses:["m10","m11","m12","m13","m14","m15"]},
-    {id:"m1-4",title:"المرحلة الرابعة — أصول التفسير والعقيدة",courses:["m16","m17","m18","m19"]},
-    {id:"m1-5",title:"المرحلة الخامسة — المقاصد والآداب",courses:["m20","m21","m22"]},
-    {id:"m1-6",title:"المرحلة السادسة — الدعوة والمناظرة",courses:["m23","m24","m25","m26"]},
-  ]}
-];
-
-const DEFAULT_COURSES = {
-  t1:{id:"t1",title:'كتاب "المدخل إلى طلب العلم"',color:"#b8965e",stage:"المرحلة التمهيدية"},
-  t2:{id:"t2",title:'كتاب "تذكرة السامع والمتكلم"',color:"#a07840",stage:"المرحلة التمهيدية"},
-  t3:{id:"t3",title:"الجرد القرآني التطبيقي",color:"#8B6914",stage:"المرحلة التمهيدية"},
-  m1:{id:"m1",title:"القواعد الأربع",color:"#3B1B40",stage:"المستوى الأول"},
-  m2:{id:"m2",title:"نواقض الإسلام",color:"#4a2250",stage:"المستوى الأول"},
-  m3:{id:"m3",title:"الأصول الثلاثة وأدلتها",color:"#5a2d63",stage:"المستوى الأول"},
-  m4:{id:"m4",title:"كشف الشبهات",color:"#3B1B40",stage:"المستوى الأول"},
-  m5:{id:"m5",title:"متن الآجرومية في النحو",color:"#1a5276",stage:"المستوى الأول"},
-  m6:{id:"m6",title:"التذكرة في علوم الحديث",color:"#1b4f72",stage:"المستوى الأول"},
-  m7:{id:"m7",title:"الأرجوزة الميئية في السيرة",color:"#154360",stage:"المستوى الأول"},
-  m8:{id:"m8",title:"الرسالة اللطيفة في أصول الفقه",color:"#0e3251",stage:"المستوى الأول"},
-  m9:{id:"m9",title:"الأربعون النووية مع زيادات ابن رجب",color:"#1a5276",stage:"المستوى الأول"},
-  m10:{id:"m10",title:"مقدمات التفقه",color:"#117a65",stage:"المستوى الأول"},
-  m11:{id:"m11",title:"متن الأخضري في العبادات",color:"#0e6655",stage:"المستوى الأول"},
-  m12:{id:"m12",title:"متن العشماوية (قراءة سريعة)",color:"#117a65",stage:"المستوى الأول"},
-  m13:{id:"m13",title:"نظم ابن أبي كف",color:"#0d5e4a",stage:"المستوى الأول"},
-  m14:{id:"m14",title:"نظم المرشد المعين لابن عاشر",color:"#117a65",stage:"المستوى الأول"},
-  m15:{id:"m15",title:"منظومة القواعد الفقهية",color:"#0a4d3a",stage:"المستوى الأول"},
-  m16:{id:"m16",title:"مقدمة في أصول التفسير",color:"#6e2f0a",stage:"المستوى الأول"},
-  m17:{id:"m17",title:"كتاب التوحيد",color:"#7d3410",stage:"المستوى الأول"},
-  m18:{id:"m18",title:"القواعد والضوابط السلفية في الأسماء والصفات",color:"#6e2f0a",stage:"المستوى الأول"},
-  m19:{id:"m19",title:"العقيدة الواسطية",color:"#8b3c11",stage:"المستوى الأول"},
-  m20:{id:"m20",title:"منظومة تبصرة القاصد في علم المقاصد",color:"#512e5f",stage:"المستوى الأول"},
-  m21:{id:"m21",title:'كتاب الجامع من "القوانين الفقهية" في الآداب',color:"#5b3068",stage:"المستوى الأول"},
-  m22:{id:"m22",title:"السبل المرضية في السياسة الشرعية",color:"#6c3483",stage:"المستوى الأول"},
-  m23:{id:"m23",title:"الأمر بالمعروف والنهي عن المنكر",color:"#922b21",stage:"المستوى الأول"},
-  m24:{id:"m24",title:"آداب البحث والمناظرة",color:"#a93226",stage:"المستوى الأول"},
-  m25:{id:"m25",title:"متن الرد على المخالف",color:"#922b21",stage:"المستوى الأول"},
-  m26:{id:"m26",title:"متن الحصانة الفكرية",color:"#b03a2e",stage:"المستوى الأول"},
-};
-
-function makeDefaultLessons(courseId){
-  return Array.from({length:20},(_,i)=>({id:`${courseId}-l${i+1}`,order:i+1,title:`الدرس ${i+1}`,visible:true,youtube:'',audio:'',book:'',exercises:[]}));
-}
-function makeDefaultTests(courseId,courseTitle){
-  return [
-    {id:`${courseId}-t1`,courseId,title:`اختبار الوحدة الأولى — ${courseTitle}`,questions:[{q:`ما موضوع مقرر ${courseTitle}؟`,options:["دراسة شرعية متخصصة","دراسة لغوية","دراسة تاريخية","دراسة فلسفية"],answer:0},{q:"ما الهدف من دراسة هذا المقرر؟",options:["التعمق في العلم الشرعي","الحصول على شهادة","التفوق","بلا هدف"],answer:0},{q:"ما منهج المعهد؟",options:["منهج أهل السنة والجماعة","المنهج العقلاني","المنهج الفلسفي","غير محدد"],answer:0},{q:"كم عدد دروس المقرر؟",options:["20 درساً","10 دروس","5 دروس","30 درساً"],answer:0},{q:"ما أول خطوة في طلب العلم؟",options:["الإخلاص لله","شراء الكتب","حضور الدروس","البحث في الإنترنت"],answer:0}]},
-    {id:`${courseId}-t2`,courseId,title:`الاختبار النهائي — ${courseTitle}`,questions:[{q:"ما الفرق بين العلم النافع وغيره؟",options:["ما أورث خشية الله","ما يُدرَّس في الجامعة","ما ينفع دنيوياً","لا فرق"],answer:0},{q:"ما حكم طلب العلم؟",options:["فرض عين وكفاية","مستحب","مباح","واجب على العلماء فقط"],answer:0},{q:"ما المنهج الصحيح في التلقي؟",options:["التلقي المباشر مع الضبط","القراءة المنفردة","الإنترنت فقط","السماع دون تدوين"],answer:0},{q:`ما أبرز مباحث ${courseTitle}؟`,options:["المباحث الشرعية","المباحث الرياضية","المباحث الأدبية","المباحث الطبية"],answer:0},{q:"ما ثمرة العلم الشرعي؟",options:["خشية الله والعمل","الشهرة","الجدل","النجاح الدراسي"],answer:0}]}
-  ];
-}
-
-// ── Auth ──
+// ── Instant from cache ──
 (function(){
-  const cached=localStorage.getItem('ti_user');
-  if(cached){ try{ currentUser=JSON.parse(cached); init(); }catch(e){} }
+  const c=localStorage.getItem('ti_user');
+  if(c){try{currentUser=JSON.parse(c);completedLessons=currentUser.completedLessons||[];showApp();}catch(e){}}
 })();
 
-auth.onAuthStateChanged(async user=>{
-  if(!user){ localStorage.removeItem('ti_user'); location.href='login.html'; return; }
+auth.onAuthStateChanged(async function(user){
+  if(!user){localStorage.removeItem('ti_user');location.href='login.html';return;}
   if(!currentUser){
-    const aSnap=await db.collection('admins').doc(user.uid).get().catch(()=>null);
-    if(aSnap?.exists){ currentUser={uid:user.uid,...aSnap.data(),isAdmin:true}; }
+    const a=await db.collection('admins').doc(user.uid).get().catch(function(){return null;});
+    if(a&&a.exists){currentUser={uid:user.uid,...a.data(),isAdmin:true};}
     else{
-      const uSnap=await db.collection('users').doc(user.uid).get().catch(()=>null);
-      if(!uSnap?.exists){ await auth.signOut(); location.href='login.html'; return; }
-      currentUser={uid:user.uid,...uSnap.data(),isAdmin:false};
+      const u=await db.collection('users').doc(user.uid).get().catch(function(){return null;});
+      if(!u||!u.exists){await auth.signOut();location.href='login.html';return;}
+      currentUser={uid:user.uid,...u.data(),isAdmin:false};
     }
     localStorage.setItem('ti_user',JSON.stringify(currentUser));
-    init();
+    completedLessons=currentUser.completedLessons||[];
+    showApp();
   }
 });
 
-function init(){
+function showApp(){
   document.getElementById('spinner').style.display='none';
   document.getElementById('app').style.display='';
-  // Build nav
-  document.getElementById('nav-placeholder').outerHTML=buildNav('courses',currentUser);
-  if(typeof setNavUser==='function') setNavUser(currentUser);
-  setTimeout(()=>{ if(window.lucide) lucide.createIcons(); },100);
-  if(currentUser.isAdmin) document.getElementById('btn-add-course').style.display='';
-  loadCourses();
-  // Check URL param
-  const params=new URLSearchParams(location.search);
-  if(params.get('id')) openCourse(params.get('id'));
+  document.getElementById('nav-ph').outerHTML=buildNav(PAGE_ID,currentUser);
+  if(typeof setNavUser==='function')setNavUser(currentUser);
+  setTimeout(function(){if(window.lucide)lucide.createIcons();},80);
+  buildProgMap();
+  renderPlan(null);
+  // refresh progress from Firestore in bg
+  db.collection('courses').get().then(function(snap){
+    if(!snap)return;
+    snap.docs.forEach(function(d){
+      var data=d.data(), cid=data.id;
+      var total=(data.lessons||[]).length||20;
+      var done=completedLessons.filter(function(l){return l.startsWith(cid+'-');}).length;
+      progMap[cid]={done:done,total:total};
+    });
+    renderPlan(document.getElementById('search').value.trim()||null);
+  }).catch(function(){});
 }
 
-async function loadCourses(){
-  // Load from Firestore or use defaults
-  const snap=await db.collection('courses').get().catch(()=>null);
-  if(snap && !snap.empty){
-    snap.docs.forEach(d=>{ const data=d.data(); allCourseData[data.id]=data; });
-  }
-  // Merge defaults for missing courses
-  Object.entries(DEFAULT_COURSES).forEach(([id,c])=>{
-    if(!allCourseData[id]){
-      allCourseData[id]={...c,lessons:makeDefaultLessons(id),tests:makeDefaultTests(id,c.title)};
-    }
+function buildProgMap(){
+  completedLessons.forEach(function(lid){
+    var parts=lid.split('-l');
+    if(parts.length<2)return;
+    var cid=parts[0];
+    if(!progMap[cid])progMap[cid]={done:0,total:20};
+    progMap[cid].done++;
   });
-  renderPlanCourses();
 }
 
-function renderPlanCourses(){
-  const container=document.getElementById('plan-courses-container');
-  container.innerHTML=PLAN_STRUCTURE.map((level,li)=>`
-    <div class="level-wrap" style="animation:fadeUp .4s ease ${li*0.1}s both">
-      <div class="level-head" style="background:${level.color}" onclick="toggleLevel('lv-${level.id}')">
-        <span style="font-size:18px">${level.icon}</span>
-        <span class="level-head-title">${level.title}</span>
-        <span id="arr-${level.id}" style="color:rgba(255,255,255,.7);transition:.3s;font-size:13px">▲</span>
-      </div>
-      <div id="lv-${level.id}" class="level-body" style="display:block">
-        ${level.stages.map(stage=>`
-          <div class="stage-wrap">
-            <div class="stage-title">${stage.title}</div>
-            <div class="course-cards">
-              ${stage.courses.map(cid=>{
-                const c=allCourseData[cid]||DEFAULT_COURSES[cid]||{id:cid,title:cid,color:'#3B1B40'};
-                const lessons=c.lessons||[];
-                const done=(currentUser?.completedLessons||[]).filter(l=>lessons.some(x=>x.id===l)).length;
-                const pct=lessons.length?Math.round(done/lessons.length*100):0;
-                return `<div class="course-card" onclick="openCourse('${cid}')">
-                  <div class="course-color-strip" style="background:${c.color}"></div>
-                  <div class="course-card-title">${c.title}</div>
-                  <div style="font-size:11px;color:var(--muted);margin-top:4px">${lessons.length} درساً</div>
-                  ${pct>0?`<div style="background:rgba(212,180,142,.2);border-radius:6px;height:4px;margin-top:8px"><div style="height:100%;border-radius:6px;background:linear-gradient(90deg,${c.color},var(--gold));width:${pct}%"></div></div>`:''}
-                  <div class="course-card-meta">
-                    <span class="badge badge-gold">${pct}% مكتمل</span>
-                    ${currentUser?.isAdmin?`<span class="badge badge-purple">✎ تعديل</span>`:''}
-                  </div>
-                </div>`;
-              }).join('')}
-            </div>
-          </div>`).join('')}
-      </div>
-    </div>`).join('');
-  if(window.lucide) lucide.createIcons();
+// ── Plan data ──
+var PLAN=[
+  {id:'tamhidi',title:'المرحلة التمهيدية',color:'#b8965e',icon:'🌱',stages:[
+    {title:'كتب المرحلة التمهيدية',courses:[
+      {id:'t1',title:'كتاب "المدخل إلى طلب العلم"',color:'#b8965e'},
+      {id:'t2',title:'كتاب "تذكرة السامع والمتكلم"',color:'#a07840'},
+      {id:'t3',title:'الجرد القرآني التطبيقي',color:'#8B6914'}
+    ]}
+  ]},
+  {id:'mustawa1',title:'مقررات المستوى الأول',color:'#3B1B40',icon:'📚',stages:[
+    {title:'المرحلة الأولى — العقيدة والتوحيد',courses:[
+      {id:'m1',title:'القواعد الأربع',color:'#3B1B40'},
+      {id:'m2',title:'نواقض الإسلام',color:'#4a2250'},
+      {id:'m3',title:'الأصول الثلاثة وأدلتها',color:'#5a2d63'},
+      {id:'m4',title:'كشف الشبهات',color:'#3B1B40'}
+    ]},
+    {title:'المرحلة الثانية — علوم الآلة والسنة',courses:[
+      {id:'m5',title:'متن الآجرومية في النحو',color:'#1a5276'},
+      {id:'m6',title:'التذكرة في علوم الحديث لابن الملقن',color:'#1b4f72'},
+      {id:'m7',title:'الأرجوزة الميئية في السيرة النبوية',color:'#154360'},
+      {id:'m8',title:'الرسالة اللطيفة في أصول الفقه للسعدي',color:'#0e3251'},
+      {id:'m9',title:'الأربعون النووية مع زيادات ابن رجب',color:'#1a5276'}
+    ]},
+    {title:'المرحلة الثالثة — الفقه المالكي وأصوله وقواعده',courses:[
+      {id:'m10',title:'مقدمات التفقه',color:'#117a65'},
+      {id:'m11',title:'متن الأخضري في العبادات',color:'#0e6655'},
+      {id:'m12',title:'متن العشماوية (قراءة سريعة)',color:'#117a65'},
+      {id:'m13',title:'نظم ابن أبي كف في أدلة المذهب',color:'#0d5e4a'},
+      {id:'m14',title:'نظم المرشد المعين لابن عاشر',color:'#117a65'},
+      {id:'m15',title:'منظومة القواعد الفقهية',color:'#0a4d3a'}
+    ]},
+    {title:'المرحلة الرابعة — أصول التفسير والعقيدة',courses:[
+      {id:'m16',title:'مقدمة في أصول التفسير لابن تيمية',color:'#6e2f0a'},
+      {id:'m17',title:'كتاب التوحيد للشيخ محمد بن عبد الوهاب',color:'#7d3410'},
+      {id:'m18',title:'القواعد والضوابط السلفية في الأسماء والصفات',color:'#6e2f0a'},
+      {id:'m19',title:'العقيدة الواسطية لابن تيمية',color:'#8b3c11'}
+    ]},
+    {title:'المرحلة الخامسة — المقاصد والآداب والسياسة الشرعية',courses:[
+      {id:'m20',title:'منظومة تبصرة القاصد في علم المقاصد',color:'#512e5f'},
+      {id:'m21',title:'كتاب الجامع من "القوانين الفقهية" في الآداب',color:'#5b3068'},
+      {id:'m22',title:'منظومة السبل المرضية في السياسة الشرعية',color:'#6c3483'}
+    ]},
+    {title:'المرحلة السادسة — فقه الدعوة والمناظرة والردود والحصانة',courses:[
+      {id:'m23',title:'الأمر بالمعروف والنهي عن المنكر لابن تيمية',color:'#922b21'},
+      {id:'m24',title:'آداب البحث والمناظرة لطاشكبري زاده',color:'#a93226'},
+      {id:'m25',title:'متن الرد على المخالف',color:'#922b21'},
+      {id:'m26',title:'متن الحصانة الفكرية',color:'#b03a2e'}
+    ]}
+  ]}
+];
+
+function renderPlan(filter){
+  var out='';
+  PLAN.forEach(function(level,li){
+    var allC=level.stages.reduce(function(a,s){return a.concat(s.courses);},[]);
+    var match=!filter||allC.some(function(c){return c.title.indexOf(filter)>=0;});
+    if(!match)return;
+    out+='<div class="level-block" style="animation:fadeUp .3s ease '+(li*0.07)+'s both">';
+    out+='<div class="level-head" style="background:'+level.color+'" onclick="toggleLv(\'lv-'+level.id+'\')">';
+    out+='<span style="font-size:18px">'+level.icon+'</span>';
+    out+='<span class="level-title">'+level.title+'</span>';
+    out+='<span class="level-arr" id="arr-'+level.id+'">▲</span>';
+    out+='</div>';
+    out+='<div class="level-body" id="lv-'+level.id+'">';
+    level.stages.forEach(function(stage){
+      var cs=filter?stage.courses.filter(function(c){return c.title.indexOf(filter)>=0;}):stage.courses;
+      if(!cs.length)return;
+      out+='<div class="stage-block">';
+      out+='<div class="stage-label">'+stage.title+'</div>';
+      out+='<div class="course-grid">';
+      cs.forEach(function(c){
+        var p=progMap[c.id]||{done:0,total:20};
+        var pct=p.total?Math.round(p.done/p.total*100):0;
+        out+='<a href="course.html?id='+c.id+'" class="c-card">';
+        out+='<div class="c-bar" style="background:'+c.color+'"></div>';
+        out+='<div class="c-title">'+c.title+'</div>';
+        out+='<div class="c-foot">';
+        out+='<span class="c-lessons">20 درساً</span>';
+        if(pct>0)out+='<span class="c-pct" style="color:'+c.color+'">'+pct+'%</span>';
+        out+='</div>';
+        if(pct>0)out+='<div class="c-prog"><div class="c-prog-fill" style="width:'+pct+'%;background:'+c.color+'"></div></div>';
+        out+='</a>';
+      });
+      out+='</div></div>';
+    });
+    out+='</div></div>';
+  });
+  document.getElementById('plan-wrap').innerHTML=out||'<div style="text-align:center;padding:50px;color:var(--muted)">لا نتائج</div>';
 }
 
-function toggleLevel(id){
-  const el=document.getElementById(id);
-  const arr=document.getElementById('arr-'+id.replace('lv-',''));
-  const open=el.style.display!=='none';
-  el.style.display=open?'none':'block';
-  if(arr) arr.style.transform=open?'rotate(180deg)':'rotate(0)';
+function toggleLv(id){
+  var el=document.getElementById(id);
+  var arr=document.getElementById('arr-'+id.replace('lv-',''));
+  var open=el.style.display!=='none';
+  el.style.display=open?'none':'';
+  if(arr)arr.style.transform=open?'rotate(180deg)':'rotate(0)';
 }
 
-// ── Open course ──
-function openCourse(courseId){
-  // Navigate to dedicated course page
-  location.href = 'course.html?id=' + courseId;
-}
+function filterPlan(v){renderPlan(v.trim()||null);}
 
-function backToList(){
-  document.getElementById('view-list').style.display='';
-  document.getElementById('view-course').style.display='none';
-  currentCourseId=null; currentLessonId=null;
-  history.replaceState(null,'','courses.html');
-}
-
-// ── Sidebar ──
-function renderSidebar(courseId){
-  const c=allCourseData[courseId]; if(!c) return;
-  const lessons=c.lessons||[];
-  const done=(currentUser?.completedLessons||[]);
-  const completedCount=lessons.filter(l=>done.includes(l.id)).length;
-  const pct=lessons.length?Math.round(completedCount/lessons.length*100):0;
-  document.getElementById('sidebar-progress-bar').style.width=pct+'%';
-  document.getElementById('sidebar-progress-text').textContent=`${completedCount} / ${lessons.length} درس مكتمل`;
-
-  // Tests section in sidebar
-  const tests=c.tests||[];
-
-  const isAdm=currentUser?.isAdmin;
-  document.getElementById('lesson-list').innerHTML=
-    lessons.filter(l=>isAdm||l.visible).map((l,i)=>{
-      const isDone=done.includes(l.id);
-      return `<div class="lesson-row${currentLessonId===l.id?' active':''}${isDone?' done':''}${!l.visible?' hidden-lesson':''}"
-        id="lr-${l.id}"
-        onclick="openLesson('${courseId}','${l.id}')"
-        draggable="${isAdm?'true':'false'}"
-        ondragstart="dragStart(event,'${l.id}')"
-        ondragover="dragOver(event)"
-        ondrop="dragDrop(event,'${l.id}','${courseId}')"
-        ondragleave="this.classList.remove('drag-over')">
-        ${isAdm?'<span class="drag-handle" title="اسحب لإعادة الترتيب">⋮⋮</span>':''}
-        <div class="lesson-num">${l.order||i+1}</div>
-        <div class="lesson-info">
-          <div class="lesson-title-sm">${l.title}</div>
-          ${!l.visible?'<div style="font-size:10px;color:#dc3545">مخفي</div>':''}
-        </div>
-        ${isDone?'<span style="color:#28a745;font-size:11px">✓</span>':''}
-        ${isAdm?`<div style="display:flex;gap:2px" onclick="event.stopPropagation()">
-          <button onclick="editLesson('${courseId}','${l.id}')" class="btn btn-xs btn-icon" title="تعديل">✎</button>
-          <button onclick="toggleLessonVisibility('${courseId}','${l.id}')" class="btn btn-xs btn-icon" title="${l.visible?'إخفاء':'إظهار'}">${l.visible?'👁':'🚫'}</button>
-          <button onclick="deleteLesson('${courseId}','${l.id}')" class="btn btn-xs" style="background:rgba(220,53,69,.1);color:#dc3545" title="حذف">✕</button>
-        </div>`:''}
-      </div>`;
-    }).join('')
-    + (isAdm?`<div style="padding:8px">
-      <button onclick="addLesson('${courseId}')" class="btn btn-primary" style="width:100%;font-size:12px;padding:8px">+ إضافة درس</button>
-      ${tests.length?`<button onclick="openTests('${courseId}')" class="btn btn-gold" style="width:100%;font-size:12px;padding:8px;margin-top:6px">📝 الاختبارات (${tests.length})</button>`:`<button onclick="openTests('${courseId}')" class="btn btn-ghost" style="width:100%;font-size:12px;padding:8px;margin-top:6px">+ إنشاء اختبار</button>`}
-    </div>`:`<div style="padding:8px">
-      ${tests.length?`<button onclick="openTests('${courseId}')" class="btn btn-gold" style="width:100%;font-size:12px;padding:8px">📝 الاختبارات</button>`:''}
-    </div>`);
-}
-
-// ── Open lesson ──
-function openLesson(courseId,lessonId){
-  const c=allCourseData[courseId]; if(!c) return;
-  const lesson=c.lessons?.find(l=>l.id===lessonId); if(!lesson) return;
-  currentLessonId=lessonId;
-  // Update sidebar active
-  document.querySelectorAll('.lesson-row').forEach(r=>r.classList.remove('active'));
-  const row=document.getElementById('lr-'+lessonId);
-  if(row) row.classList.add('active');
-  renderLessonContent(c,lesson);
-}
-
-function renderLessonContent(course,lesson){
-  const isAdm=currentUser?.isAdmin;
-  const done=(currentUser?.completedLessons||[]).includes(lesson.id);
-  const exercises=lesson.exercises||[];
-
-  document.getElementById('lesson-content').innerHTML=`
-    <div class="breadcrumb"><a href="courses.html">المقررات</a> ← <span>${course.title}</span></div>
-    <div class="lesson-title-main">${lesson.title}</div>
-    <div class="lesson-meta-bar">
-      <span class="badge badge-gold">الدرس ${lesson.order}</span>
-      ${done?'<span class="badge badge-green">✓ مكتمل</span>':''}
-      ${!lesson.visible?'<span class="badge badge-red">مخفي</span>':''}
-      ${isAdm?`<button onclick="editLesson('${course.id}','${lesson.id}')" class="btn btn-gold btn-sm">✎ تعديل</button>`:''}
-      ${!done?`<button onclick="markDone('${course.id}','${lesson.id}')" class="btn btn-primary btn-sm">✓ تم الإتمام</button>`:''}
-    </div>
-
-    <div class="resource-tabs">
-      ${lesson.youtube?'<button class="res-tab active" onclick="showTab(this,\'vid\')">🎬 الفيديو</button>':''}
-      ${lesson.audio?'<button class="res-tab'+(lesson.youtube?'':' active')+'" onclick="showTab(this,\'audio\')">🎵 الصوتي</button>':''}
-      ${lesson.book?'<button class="res-tab'+(lesson.youtube||lesson.audio?'':' active')+'" onclick="showTab(this,\'book\')">📖 الكتاب</button>':''}
-      ${exercises.length?'<button class="res-tab" onclick="showTab(this,\'ex\')">📝 تمارين ('+exercises.length+')</button>':''}
-    </div>
-
-    ${lesson.youtube?`<div class="resource-panel active" id="panel-vid">
-      <div style="position:relative;padding-bottom:56.25%;height:0;border-radius:14px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.2)">
-        <iframe src="${lesson.youtube}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none" allowfullscreen></iframe>
-      </div>
-    </div>`:''}
-
-    ${lesson.audio?`<div class="resource-panel${lesson.youtube?'':' active'}" id="panel-audio">
-      <div style="background:var(--bg);border-radius:12px;padding:20px;border:1px solid rgba(212,180,142,.2)">
-        <div style="margin-bottom:10px;font-weight:700;color:var(--purple)">🎵 المقطع الصوتي</div>
-        <audio controls style="width:100%;border-radius:10px"><source src="${lesson.audio}"/></audio>
-      </div>
-    </div>`:''}
-
-    ${lesson.book?`<div class="resource-panel${lesson.youtube||lesson.audio?'':' active'}" id="panel-book">
-      <div style="background:var(--bg);border-radius:12px;padding:20px;border:1px solid rgba(212,180,142,.2)">
-        <div style="margin-bottom:10px;font-weight:700;color:var(--purple)">📖 الكتاب</div>
-        <a href="${lesson.book}" target="_blank" class="btn btn-primary btn-sm">تحميل الكتاب ↗</a>
-      </div>
-    </div>`:''}
-
-    ${exercises.length?`<div class="resource-panel" id="panel-ex">
-      <div id="exercises-container">
-        ${exercises.map((ex,ei)=>`
-          <div class="exercise-item">
-            <div class="exercise-q">${ei+1}. ${ex.q}</div>
-            ${(ex.options||[]).map((opt,oi)=>`
-              <div class="ex-option" onclick="answerEx(this,'${ei}','${oi}','${ex.answer||0}',${JSON.stringify(ex.options)})">${opt}</div>
-            `).join('')}
-          </div>`).join('')}
-      </div>
-    </div>`:''}
-
-    ${!lesson.youtube && !lesson.audio && !lesson.book && !exercises.length?`
-      <div class="empty-resource">
-        <div style="font-size:40px;margin-bottom:12px">📂</div>
-        <div>لم تُضَف محتويات لهذا الدرس بعد</div>
-        ${isAdm?`<button onclick="editLesson('${course.id}','${lesson.id}')" class="btn btn-primary btn-sm" style="margin-top:12px">إضافة محتوى</button>`:''}
-      </div>`:''}
-  `;
-  if(window.lucide) lucide.createIcons();
-}
-
-function showTab(btn,panelId){
-  document.querySelectorAll('.res-tab').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('.resource-panel').forEach(p=>p.classList.remove('active'));
-  btn.classList.add('active');
-  const panel=document.getElementById('panel-'+panelId);
-  if(panel) panel.classList.add('active');
-}
-
-// ── Exercises ──
-function answerEx(el,ei,oi,correctAns,opts){
-  const container=el.parentElement;
-  container.querySelectorAll('.ex-option').forEach(o=>o.classList.remove('selected','correct','wrong'));
-  el.classList.add('selected');
-  setTimeout(()=>{
-    el.classList.remove('selected');
-    if(parseInt(oi)===parseInt(correctAns)){ el.classList.add('correct'); }
-    else{ el.classList.add('wrong'); container.children[correctAns]?.classList.add('correct'); }
-  },400);
-}
-
-// ── Mark done ──
-async function markDone(courseId,lessonId){
-  if(!currentUser) return;
-  const list=[...(currentUser.completedLessons||[])];
-  if(!list.includes(lessonId)) list.push(lessonId);
-  currentUser.completedLessons=list;
-  localStorage.setItem('ti_user',JSON.stringify(currentUser));
-  try{ await db.collection('users').doc(currentUser.uid).update({completedLessons:list}); }catch(e){}
-  showToast('✓ تم تسجيل الإتمام','success');
-  renderSidebar(courseId);
-  openLesson(courseId,lessonId);
-}
-
-// ── Drag & Drop (sidebar reorder) ──
-function dragStart(e,lessonId){ dragSrc=lessonId; e.dataTransfer.effectAllowed='move'; }
-function dragOver(e){ e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
-function dragDrop(e,targetId,courseId){
-  e.preventDefault(); e.currentTarget.classList.remove('drag-over');
-  if(!dragSrc||dragSrc===targetId) return;
-  const c=allCourseData[courseId]; if(!c) return;
-  const lessons=[...c.lessons];
-  const srcIdx=lessons.findIndex(l=>l.id===dragSrc);
-  const tgtIdx=lessons.findIndex(l=>l.id===targetId);
-  const [moved]=lessons.splice(srcIdx,1);
-  lessons.splice(tgtIdx,0,moved);
-  lessons.forEach((l,i)=>l.order=i+1);
-  c.lessons=lessons;
-  allCourseData[courseId]=c;
-  db.collection('courses').doc(courseId).update({lessons}).catch(e=>console.log('Reorder error:',e.message));
-  renderSidebar(courseId);
-  dragSrc=null;
-  showToast('تم إعادة ترتيب الدروس','info');
-}
-
-// ── Edit lesson (admin) ──
-function editLesson(courseId,lessonId){
-  const c=allCourseData[courseId]; if(!c) return;
-  const l=c.lessons?.find(x=>x.id===lessonId);
-  openModal(`
-    <div class="field"><label>عنوان الدرس</label><input type="text" id="el-title" value="${l?.title||''}"/></div>
-    <div class="field"><label>رابط يوتيوب</label><input type="url" id="el-yt" value="${l?.youtube||''}" placeholder="https://youtube.com/watch?v=..."/></div>
-    <div class="field"><label>رابط المقطع الصوتي</label><input type="url" id="el-audio" value="${l?.audio||''}" placeholder="https://..."/></div>
-    <div class="field"><label>رابط الكتاب (PDF)</label><input type="url" id="el-book" value="${l?.book||''}" placeholder="https://..."/></div>
-    <div style="margin-bottom:12px">
-      <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--purple)">
-        <input type="checkbox" id="el-visible" ${l?.visible?'checked':''}/> ظاهر للطلاب
-      </label>
-    </div>
-    <div style="display:flex;gap:8px">
-      <button class="btn btn-primary" style="flex:1" onclick="saveLesson('${courseId}','${lessonId}')">حفظ</button>
-      <button class="btn btn-ghost" onclick="closeModal()">إلغاء</button>
-    </div>`, 'تعديل الدرس');
-}
-
-async function saveLesson(courseId,lessonId){
-  const c=allCourseData[courseId]; if(!c) return;
-  const l=c.lessons?.find(x=>x.id===lessonId); if(!l) return;
-  l.title=document.getElementById('el-title').value.trim()||l.title;
-  l.youtube=toYtEmbed(document.getElementById('el-yt').value.trim());
-  l.audio=document.getElementById('el-audio').value.trim();
-  l.book=document.getElementById('el-book').value.trim();
-  l.visible=document.getElementById('el-visible').checked;
-  allCourseData[courseId]=c;
-  closeModal();
-  try{ await db.collection('courses').doc(courseId).update({lessons:c.lessons}); showToast('✅ تم حفظ الدرس','success'); }
-  catch(e){ showToast('❌ خطأ: '+e.message,'error'); }
-  renderSidebar(courseId);
-  openLesson(courseId,lessonId);
-}
-
-function addLesson(courseId){
-  const c=allCourseData[courseId]; if(!c) return;
-  const newId=courseId+'-l'+(c.lessons.length+1)+'-'+Date.now();
-  c.lessons.push({id:newId,order:c.lessons.length+1,title:`الدرس ${c.lessons.length+1}`,visible:true,youtube:'',audio:'',book:'',exercises:[]});
-  db.collection('courses').doc(courseId).update({lessons:c.lessons}).catch(e=>console.log('Add lesson:',e.message));
-  renderSidebar(courseId);
-  showToast('تم إضافة درس جديد','success');
-}
-
-async function toggleLessonVisibility(courseId,lessonId){
-  const c=allCourseData[courseId]; if(!c) return;
-  const l=c.lessons?.find(x=>x.id===lessonId); if(!l) return;
-  l.visible=!l.visible;
-  try{ await db.collection('courses').doc(courseId).update({lessons:c.lessons}); }catch(e){}
-  renderSidebar(courseId);
-  if(currentLessonId===lessonId) openLesson(courseId,lessonId);
-}
-
-async function deleteLesson(courseId,lessonId){
-  if(!confirm('حذف هذا الدرس نهائياً؟')) return;
-  const c=allCourseData[courseId]; if(!c) return;
-  c.lessons=c.lessons.filter(l=>l.id!==lessonId);
-  c.lessons.forEach((l,i)=>l.order=i+1);
-  try{ await db.collection('courses').doc(courseId).update({lessons:c.lessons}); showToast('تم الحذف','success'); }
-  catch(e){ showToast('❌ خطأ: '+e.message,'error'); }
-  renderSidebar(courseId);
-  if(currentLessonId===lessonId){ currentLessonId=null; document.getElementById('lesson-content').innerHTML='<div style="text-align:center;padding:60px;color:var(--muted)">اختر درساً من القائمة</div>'; }
-}
-
-// ── Tests ──
-function openTests(courseId){
-  const c=allCourseData[courseId]; if(!c) return;
-  const tests=c.tests||makeDefaultTests(courseId,c.title);
-  const isAdm=currentUser?.isAdmin;
-  openModal(`
-    <div id="tests-modal-content">
-      ${tests.map((t,ti)=>`
-        <div style="background:var(--bg);border-radius:12px;padding:14px;margin-bottom:10px;border:1px solid rgba(212,180,142,.2)">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <div style="font-weight:800;font-size:14px;color:var(--purple)">${t.title}</div>
-            <div style="display:flex;gap:5px">
-              <button onclick="startTest('${courseId}',${ti})" class="btn btn-gold btn-sm">ابدأ</button>
-              ${isAdm?`<button onclick="deleteTest('${courseId}',${ti})" class="btn btn-danger btn-sm">حذف</button>`:''}
-            </div>
-          </div>
-          <div style="font-size:12px;color:var(--muted)">${t.questions?.length||0} سؤال</div>
-        </div>`).join('')}
-      ${isAdm?`<button onclick="addTest('${courseId}')" class="btn btn-primary" style="width:100%;margin-top:8px">+ إضافة اختبار</button>`:''}
-    </div>`, 'اختبارات المقرر');
-}
-
-function startTest(courseId,testIdx){
-  const c=allCourseData[courseId]; if(!c) return;
-  const test=(c.tests||[])[testIdx]; if(!test) return;
-  let current=0, score=0, answers=[];
-  function renderQ(){
-    if(current>=test.questions.length){ showResult(); return; }
-    const q=test.questions[current];
-    document.getElementById('modal-container').querySelector('div:last-child').innerHTML=`
-      <div style="font-size:12px;color:var(--muted);margin-bottom:14px">السؤال ${current+1} من ${test.questions.length}</div>
-      <div style="font-size:15px;font-weight:700;color:var(--purple);margin-bottom:16px">${q.q}</div>
-      ${q.options.map((opt,oi)=>`<div class="ex-option" onclick="pickAns(this,${oi},${q.answer})">${opt}</div>`).join('')}
-    `;
-  }
-  window.pickAns=function(el,chosen,correct){
-    document.querySelectorAll('.ex-option').forEach(o=>o.style.pointerEvents='none');
-    if(chosen===correct){ el.classList.add('correct'); score++; }
-    else{ el.classList.add('wrong'); document.querySelectorAll('.ex-option')[correct]?.classList.add('correct'); }
-    answers.push(chosen); current++;
-    setTimeout(()=>{ current<test.questions.length?renderQ():showResult(); },800);
-  };
-  function showResult(){
-    const pct=Math.round(score/test.questions.length*100);
-    openModal(`
-      <div style="text-align:center;padding:10px 0">
-        <div style="font-size:50px;margin-bottom:12px">${pct>=70?'🎉':'📚'}</div>
-        <div style="font-family:'Amiri',serif;font-size:24px;font-weight:700;color:var(--purple);margin-bottom:8px">${score} / ${test.questions.length}</div>
-        <div style="font-size:14px;color:var(--muted);margin-bottom:20px">${pct}% — ${pct>=70?'أحسنت!':'راجع الدرس وحاول مجدداً'}</div>
-        <button onclick="openTests('${courseId}')" class="btn btn-primary">العودة للاختبارات</button>
-      </div>`, 'نتيجة الاختبار');
-  }
-  openModal('','');
-  setTimeout(renderQ,50);
-}
-
-async function addTest(courseId){
-  const c=allCourseData[courseId]; if(!c) return;
-  const title=prompt('عنوان الاختبار:','اختبار جديد'); if(!title) return;
-  if(!c.tests) c.tests=[];
-  c.tests.push({id:courseId+'-t'+Date.now(),courseId,title,questions:[]});
-  try{ await db.collection('courses').doc(courseId).update({tests:c.tests}); }catch(e){}
-  openTests(courseId);
-}
-
-async function deleteTest(courseId,testIdx){
-  if(!confirm('حذف هذا الاختبار؟')) return;
-  const c=allCourseData[courseId]; if(!c||!c.tests) return;
-  c.tests.splice(testIdx,1);
-  try{ await db.collection('courses').doc(courseId).update({tests:c.tests}); }catch(e){}
-  openTests(courseId);
-}
-
-// ── Add/Edit course (admin) ──
-function openCourseForm(courseId){
-  const c=courseId?allCourseData[courseId]:null;
-  openModal(`
-    <div class="field"><label>معرّف المقرر (id)</label><input type="text" id="cf-id" value="${c?.id||''}" ${c?'readonly':''} placeholder="مثال: m1-custom"/></div>
-    <div class="field"><label>عنوان المقرر</label><input type="text" id="cf-title" value="${c?.title||''}"/></div>
-    <div class="field"><label>اللون</label><input type="color" id="cf-color" value="${c?.color||'#3B1B40'}" style="height:38px;padding:3px"/></div>
-    <div style="display:flex;gap:8px">
-      <button class="btn btn-primary" style="flex:1" onclick="saveCourseForm('${courseId||''}')">حفظ</button>
-      <button class="btn btn-ghost" onclick="closeModal()">إلغاء</button>
-    </div>`,c?'تعديل المقرر':'مقرر جديد');
-}
-
-async function saveCourseForm(courseId){
-  const id=document.getElementById('cf-id').value.trim();
-  const title=document.getElementById('cf-title').value.trim();
-  const color=document.getElementById('cf-color').value;
-  if(!id||!title){ alert('يرجى إدخال المعرّف والعنوان'); return; }
-  const courseData=allCourseData[id]||{id,title,color,lessons:makeDefaultLessons(id),tests:makeDefaultTests(id,title)};
-  courseData.title=title; courseData.color=color;
-  allCourseData[id]=courseData;
-  try{ await db.collection('courses').doc(id).set(courseData); showToast('✅ تم الحفظ','success'); }
-  catch(e){ showToast('❌ خطأ: '+e.message,'error'); }
-  closeModal(); renderPlanCourses();
-}
-
-// ── YouTube URL helper ──
-function toYtEmbed(url){
-  if(!url) return '';
-  if(url.includes('/embed/')) return url;
-  const m=url.match(/youtu\.be\/([^?&\s]+)/); if(m) return `https://www.youtube.com/embed/${m[1]}`;
-  const n=url.match(/[?&]v=([^&\s]+)/); if(n) return `https://www.youtube.com/embed/${n[1]}`;
-  return url;
-}
-
-// ── Modal + Toast ──
-function openModal(content,title){
-  let mc=document.getElementById('modal-container');
-  mc.innerHTML=`<div id="modal-ov" style="position:fixed;inset:0;background:rgba(42,18,48,.6);backdrop-filter:blur(8px);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)closeModal()">
-    <div style="background:#fff;border-radius:20px;padding:24px;max-width:520px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(59,27,64,.25);direction:rtl">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-        <span style="font-size:15px;font-weight:800;color:var(--purple);font-family:'Amiri',serif">${title}</span>
-        <button onclick="closeModal()" style="background:#f5f0f8;border:none;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:13px;color:var(--muted)">✕</button>
-      </div>
-      ${content}
-    </div></div>`;
-}
-function closeModal(){ document.getElementById('modal-container').innerHTML=''; }
-function showToast(msg,type='info'){
-  let c=document.getElementById('toast-container');
-  const colors={info:'#3B1B40',success:'#28a745',error:'#dc3545'};
-  const t=document.createElement('div');
-  t.style.cssText=`background:${colors[type]||'#3B1B40'};color:#fff;padding:12px 18px;border-radius:12px;font-size:13px;font-weight:700;font-family:'Zain',sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.2);animation:toastIn .3s ease;max-width:280px;direction:rtl`;
-  t.textContent=msg; c.appendChild(t);
-  setTimeout(()=>{ t.style.animation='toastOut .3s ease forwards'; setTimeout(()=>t.remove(),300); },3000);
-}
-
-// ── CSS animations ──
-document.head.insertAdjacentHTML('beforeend','<style>@keyframes toastIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}@keyframes toastOut{from{opacity:1;transform:none}to{opacity:0;transform:translateX(40px)}}@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}</style>');
+function logout(){auth.signOut().then(function(){localStorage.removeItem('ti_user');location.href='index.html';});}
 </script>
 </body>
 </html>
