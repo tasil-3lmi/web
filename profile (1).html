@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ملفي الشخصي — معهد التأصيل العلمي</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body { background: #f7f5fa; }
+    .profile-hero {
+      background: linear-gradient(135deg, var(--purple), var(--purple-light));
+      padding: 110px 0 80px;
+      position: relative; overflow: hidden;
+    }
+    .profile-hero::before {
+      content: ''; position: absolute; top:-80px; left:-80px;
+      width:400px; height:400px;
+      background: radial-gradient(circle,rgba(255,255,255,0.05),transparent 70%);
+      border-radius:50%;
+    }
+    .profile-hero-inner {
+      display: flex; align-items: center; gap: 28px;
+      flex-wrap: wrap; position: relative;
+    }
+    .profile-hero-avatar {
+      width: 88px; height: 88px; border-radius: 50%;
+      background: linear-gradient(135deg,rgba(212,180,142,0.3),rgba(255,255,255,0.1));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.2rem; font-weight: bold; color: white;
+      border: 3px solid rgba(212,180,142,0.4);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      flex-shrink: 0;
+    }
+    .profile-hero-info h1 { font-size: 1.6rem; color: white; margin-bottom: 6px; }
+    .profile-hero-info p { font-size: 0.88rem; color: rgba(255,255,255,0.65); }
+    .profile-hero-badges { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    .profile-hero-badge {
+      padding: 4px 14px; border-radius: 100px;
+      font-size: 0.75rem; font-weight: bold;
+      background: rgba(212,180,142,0.15);
+      border: 1px solid rgba(212,180,142,0.3);
+      color: var(--gold);
+    }
+    .section-toggle { font-size: 0.8rem; color: var(--text-soft); }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .info-item { }
+    .info-item .lbl { font-size: 0.75rem; color: var(--text-soft); margin-bottom: 4px; }
+    .info-item .val { font-size: 0.92rem; font-weight: bold; color: var(--purple); }
+    .progress-ring-wrap { text-align: center; padding: 8px 0 16px; }
+    .progress-ring-num { font-size: 2.8rem; font-weight: bold; color: var(--purple); line-height: 1; }
+    .progress-ring-lbl { font-size: 0.8rem; color: var(--text-soft); margin-top: 4px; }
+    @media (max-width: 600px) {
+      .info-grid { grid-template-columns: 1fr; }
+      .profile-hero-inner { flex-direction: column; text-align: center; }
+      .profile-hero-badges { justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+  <div id="headerPlaceholder"></div>
+
+  <div class="page-content">
+    <!-- Hero -->
+    <div class="profile-hero">
+      <div class="container">
+        <div class="breadcrumb" style="justify-content:flex-start;margin-bottom:20px;">
+          <a href="dashboard.html" style="color:var(--gold);">الرئيسية</a>
+          <span style="color:rgba(255,255,255,0.3);">/</span>
+          <span style="color:rgba(255,255,255,0.6);">ملفي الشخصي</span>
+        </div>
+        <div class="profile-hero-inner">
+          <div class="profile-hero-avatar" id="heroAvatar">؟</div>
+          <div class="profile-hero-info">
+            <h1 id="heroName">جارٍ التحميل...</h1>
+            <p id="heroEmail"></p>
+            <div class="profile-hero-badges">
+              <span class="profile-hero-badge" id="heroBadgeRole">—</span>
+              <span class="profile-hero-badge" id="heroBadgeJoin">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section" style="padding-top:40px;">
+      <div class="container">
+        <div id="loadingProfile" style="text-align:center;padding:60px;color:var(--text-soft);">
+          <span class="spinner" style="width:32px;height:32px;border-width:3px;border-color:rgba(59,27,64,0.2);border-top-color:var(--purple);"></span>
+          <p style="margin-top:12px;">جارٍ تحميل البيانات...</p>
+        </div>
+
+        <div id="profileContent" style="display:none;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;" id="profileGrid">
+
+            <!-- LEFT COLUMN -->
+            <div style="display:flex;flex-direction:column;gap:20px;">
+
+              <!-- Basic Info -->
+              <div class="profile-section reveal">
+                <div class="profile-section-header">
+                  <h3>📋 المعلومات الأساسية</h3>
+                </div>
+                <div class="profile-section-body">
+                  <div class="info-grid" id="basicInfoGrid"></div>
+                </div>
+              </div>
+
+              <!-- Progress (student only) -->
+              <div class="profile-section reveal" id="progressSection" style="display:none;">
+                <div class="profile-section-header">
+                  <h3>📊 إحصائيات الإنجاز</h3>
+                </div>
+                <div class="profile-section-body">
+                  <div class="progress-ring-wrap">
+                    <div class="progress-ring-num" id="progressPct">٠٪</div>
+                    <div class="progress-ring-lbl">نسبة الإنجاز الكلية</div>
+                  </div>
+                  <div class="progress-bar-bg" style="height:10px;margin-bottom:16px;">
+                    <div class="progress-bar-fill" id="progressBar" style="width:0%;"></div>
+                  </div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div style="text-align:center;padding:16px;background:rgba(59,27,64,0.04);border-radius:var(--radius-sm);border:1px solid var(--border);">
+                      <div style="font-size:1.6rem;font-weight:bold;color:var(--purple);" id="doneCount">٠</div>
+                      <div style="font-size:0.75rem;color:var(--text-soft);">متن مكتمل</div>
+                    </div>
+                    <div style="text-align:center;padding:16px;background:rgba(59,27,64,0.04);border-radius:var(--radius-sm);border:1px solid var(--border);">
+                      <div style="font-size:1.6rem;font-weight:bold;color:var(--gold-dark);" id="remainCount">٢٠+</div>
+                      <div style="font-size:0.75rem;color:var(--text-soft);">متبقٍ</div>
+                    </div>
+                  </div>
+                  <div style="margin-top:16px;">
+                    <a href="dashboard.html" class="btn btn-outline" style="width:100%;justify-content:center;font-size:0.88rem;">
+                      عرض خطة الدراسة كاملة
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- RIGHT COLUMN -->
+            <div style="display:flex;flex-direction:column;gap:20px;">
+
+              <!-- Edit Profile -->
+              <div class="profile-section reveal">
+                <div class="profile-section-header">
+                  <h3>✏️ تعديل البيانات</h3>
+                </div>
+                <div class="profile-section-body">
+                  <div class="form-group">
+                    <label class="form-label">رقم الهاتف</label>
+                    <input type="tel" class="form-control" id="edit_phone" placeholder="+968 XXXX XXXX">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">معرف التليجرام</label>
+                    <input type="text" class="form-control" id="edit_telegram" placeholder="@username">
+                  </div>
+                  <div class="form-group" id="edit_level_group">
+                    <label class="form-label">المرحلة الدراسية</label>
+                    <select class="form-control" id="edit_level">
+                      <option value="">اختر المرحلة</option>
+                      <option value="primary">ابتدائي</option>
+                      <option value="middle">متوسط</option>
+                      <option value="high">ثانوي</option>
+                      <option value="bachelor">بكالوريوس</option>
+                      <option value="master">ماجستير</option>
+                      <option value="phd">دكتوراه</option>
+                      <option value="work">وظيفة</option>
+                    </select>
+                  </div>
+                  <button class="btn btn-primary" onclick="saveProfile()" style="width:100%;">
+                    💾 حفظ التعديلات
+                  </button>
+                </div>
+              </div>
+
+              <!-- Change Password -->
+              <div class="profile-section reveal">
+                <div class="profile-section-header">
+                  <h3>🔒 تغيير كلمة المرور</h3>
+                </div>
+                <div class="profile-section-body">
+                  <div class="form-group">
+                    <label class="form-label">كلمة المرور الجديدة</label>
+                    <input type="password" class="form-control" id="new_password" placeholder="••••••••" minlength="6">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">تأكيد كلمة المرور</label>
+                    <input type="password" class="form-control" id="confirm_password" placeholder="••••••••">
+                  </div>
+                  <div class="form-error" id="pw_error"></div>
+                  <button class="btn btn-outline" onclick="changePassword()" style="width:100%;">
+                    تحديث كلمة المرور
+                  </button>
+                </div>
+              </div>
+
+              <!-- Private Channel -->
+              <div class="channel-warning-card reveal" id="channelSection" style="display:none;">
+                <h3 style="font-size:1rem;font-weight:bold;color:var(--gold);margin-bottom:16px;">
+                  📢 القناة الخاصة بطلاب المعهد
+                </h3>
+                <div class="warn-box">
+                  <strong>⚠️ تنبيه مهم — يُرجى القراءة قبل المتابعة</strong>
+                  هذه القناة خاصة بطلاب معهد التأصيل العلمي المسجلين فقط.<br>
+                  <strong style="color:#ffcc80;">لا يُسمح بنشر الرابط أو مشاركته مع أي شخص غير مسجّل.</strong><br>
+                  من يخالف ذلك يتحمل المسؤولية كاملةً.
+                </div>
+                <button class="channel-btn" id="channelBtn" onclick="openPrivateChannel()">
+                  ✈️ الانتقال إلى القناة
+                </button>
+              </div>
+
+              <!-- Logout -->
+              <div class="profile-section reveal">
+                <div class="profile-section-body" style="padding:20px 24px;">
+                  <button class="logout-btn" style="width:100%;padding:14px;border-radius:var(--radius-sm);" onclick="handleHeaderLogout()">
+                    🚪 تسجيل الخروج
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="footerPlaceholder"></div>
+
+  <script type="module">
+    import { renderHeader, renderFooter, initSharedBehavior, showToast } from './components.js';
+    import { auth, db, onAuthStateChanged, doc, getDoc, updateDoc, collection, getDocs } from './firebase.js';
+    import { updatePassword, reauthenticateWithCredential, EmailAuthProvider }
+      from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+
+    const TOTAL_ITEMS = 23;
+    const levelMap = { primary:'ابتدائي', middle:'متوسط', high:'ثانوي', bachelor:'بكالوريوس', master:'ماجستير', phd:'دكتوراه', work:'وظيفة' };
+    const roleMap   = { student:'طالب', supervisor:'مشرف', superAdmin:'مشرف عام' };
+
+    let currentUser = null;
+    let userData = null;
+    let privateChannelUrl = '';
+
+    onAuthStateChanged(auth, async user => {
+      if (!user) { window.location.href = 'index.html'; return; }
+      currentUser = user;
+
+      // Load user data
+      const snap = await getDoc(doc(db, 'users', user.uid));
+      if (!snap.exists()) { window.location.href = 'index.html'; return; }
+      userData = snap.data();
+
+      // Load contact info
+      let contactData = null;
+      try {
+        const cs = await getDoc(doc(db, 'contactInfo', 'main'));
+        if (cs.exists()) {
+          contactData = cs.data();
+          privateChannelUrl = contactData.privateChannelUrl || '';
+          const ch = await getDocs(collection(db,'contactInfo','main','channels'));
+          const channels = []; ch.forEach(d => channels.push(d.data()));
+          contactData.channels = channels.sort((a,b)=>(a.order||0)-(b.order||0));
+        }
+      } catch(e) {}
+
+      // Render header & footer
+      document.getElementById('headerPlaceholder').innerHTML = renderHeader('profile.html', userData);
+      document.getElementById('footerPlaceholder').innerHTML = renderFooter(contactData);
+      initSharedBehavior();
+
+      renderProfile();
+    });
+
+    function renderProfile() {
+      const isStudent = userData.role === 'student';
+      const isAdmin   = userData.role === 'superAdmin' || userData.role === 'supervisor';
+
+      // Hero
+      const initials = (userData.fullName || '؟').charAt(0);
+      document.getElementById('heroAvatar').textContent = initials;
+      document.getElementById('heroName').textContent   = userData.fullName || '—';
+      document.getElementById('heroEmail').textContent  = userData.email || '';
+      document.getElementById('heroBadgeRole').textContent  = roleMap[userData.role] || userData.role;
+      document.getElementById('heroBadgeJoin').textContent  = userData.createdAt
+        ? 'انضم: ' + new Date(userData.createdAt).toLocaleDateString('ar-SA', {year:'numeric', month:'short'})
+        : '';
+
+      // Basic info
+      const infoItems = [
+        { lbl: 'الاسم الثلاثي',   val: userData.fullName   || '—' },
+        { lbl: 'اسم المستخدم',    val: userData.username   || '—' },
+        { lbl: 'البريد الإلكتروني', val: userData.email    || '—' },
+        { lbl: 'رقم الهاتف',      val: userData.phone      || '—' },
+        { lbl: 'معرف التليجرام',  val: userData.telegram   || '—' },
+        { lbl: 'الجنس',           val: userData.gender === 'female' ? 'أنثى' : 'ذكر' },
+        { lbl: 'المرحلة الدراسية', val: levelMap[userData.level] || '—' },
+        { lbl: 'الدور',           val: roleMap[userData.role] || '—' },
+      ];
+      document.getElementById('basicInfoGrid').innerHTML = infoItems.map(i => `
+        <div class="info-item">
+          <div class="lbl">${i.lbl}</div>
+          <div class="val">${i.val}</div>
+        </div>`).join('');
+
+      // Fill edit fields
+      document.getElementById('edit_phone').value    = userData.phone    || '';
+      document.getElementById('edit_telegram').value = userData.telegram || '';
+      document.getElementById('edit_level').value    = userData.level    || '';
+      if (isAdmin) document.getElementById('edit_level_group').style.display = 'none';
+
+      // Progress (student only)
+      if (isStudent) {
+        document.getElementById('progressSection').style.display = '';
+        const done = Object.values(userData.progress || {}).filter(Boolean).length;
+        const pct  = Math.round((done / TOTAL_ITEMS) * 100);
+        document.getElementById('progressPct').textContent  = pct + '٪';
+        document.getElementById('doneCount').textContent    = done;
+        document.getElementById('remainCount').textContent  = TOTAL_ITEMS - done;
+        setTimeout(() => {
+          document.getElementById('progressBar').style.width = pct + '%';
+        }, 300);
+      }
+
+      // Private channel
+      if (privateChannelUrl) {
+        document.getElementById('channelSection').style.display = '';
+      }
+
+      document.getElementById('loadingProfile').style.display  = 'none';
+      document.getElementById('profileContent').style.display  = '';
+
+      // Scroll reveal
+      const obs = new IntersectionObserver(entries => {
+        entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+      }, { threshold: 0.08 });
+      document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+    }
+
+    // Save profile edits
+    window.saveProfile = async function() {
+      const phone    = document.getElementById('edit_phone').value.trim();
+      const telegram = document.getElementById('edit_telegram').value.trim();
+      const level    = document.getElementById('edit_level').value;
+      try {
+        await updateDoc(doc(db, 'users', currentUser.uid), { phone, telegram, level });
+        userData.phone    = phone;
+        userData.telegram = telegram;
+        userData.level    = level;
+        showToast('تم حفظ التعديلات ✅', 'success');
+        renderProfile();
+      } catch(e) { showToast('حدث خطأ: ' + e.message, 'error'); }
+    };
+
+    // Change password
+    window.changePassword = async function() {
+      const newPw  = document.getElementById('new_password').value;
+      const confPw = document.getElementById('confirm_password').value;
+      const errEl  = document.getElementById('pw_error');
+      errEl.classList.remove('show');
+      if (newPw.length < 6) { errEl.textContent = 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'; errEl.classList.add('show'); return; }
+      if (newPw !== confPw) { errEl.textContent = 'كلمتا المرور غير متطابقتين'; errEl.classList.add('show'); return; }
+      try {
+        await updatePassword(currentUser, newPw);
+        document.getElementById('new_password').value    = '';
+        document.getElementById('confirm_password').value = '';
+        showToast('تم تغيير كلمة المرور ✅', 'success');
+      } catch(e) {
+        if (e.code === 'auth/requires-recent-login') {
+          errEl.textContent = 'يجب إعادة تسجيل الدخول لتغيير كلمة المرور';
+        } else { errEl.textContent = 'خطأ: ' + e.message; }
+        errEl.classList.add('show');
+      }
+    };
+
+    // Open private channel with confirmation
+    window.openPrivateChannel = function() {
+      if (!privateChannelUrl) return showToast('لم يتم إضافة رابط القناة بعد', 'error');
+      const confirmed = confirm(
+        '⚠️ تنبيه مهم\n\n' +
+        'هذه القناة خاصة بطلاب معهد التأصيل العلمي المسجلين فقط.\n\n' +
+        'لا يُسمح بنشر الرابط أو مشاركته مع أي شخص غير مسجّل.\n\n' +
+        'هل تؤكد الموافقة على ذلك؟'
+      );
+      if (confirmed) window.open(privateChannelUrl, '_blank');
+    };
+  </script>
+</body>
+</html>
