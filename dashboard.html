@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>لوحة التحكم — معهد التأصيل العلمي</title>
+  <title>الرئيسية — معهد التأصيل العلمي</title>
   <link rel="stylesheet" href="styles.css">
   <style>
     body { background: #f7f5fa; }
@@ -383,92 +383,102 @@
 
   <div id="footerPlaceholder"></div>
 
-  <script type="module">
-    import { renderHeader, renderFooter, LOGO_SRC } from './components.js';
+    <script type="module">
+    import { renderHeader, renderFooter, initSharedBehavior } from './components.js';
     import {
       auth, db,
       signOut, onAuthStateChanged,
       doc, getDoc, updateDoc, collection, getDocs
     } from './firebase.js';
 
-    document.getElementById('headerPlaceholder').innerHTML = renderHeader('');
-    document.getElementById('footerPlaceholder').innerHTML = renderFooter();
-    document.getElementById('loadingLogo').src = LOGO_SRC;
+    document.getElementById('loadingLogo').src = (await import('./components.js')).LOGO_SRC;
 
-    const header = document.getElementById('siteHeader');
-    const hamburger = document.getElementById('hamburger');
-    const mobileMenu = document.getElementById('mobileMenu');
-    window.addEventListener('scroll', () => header.classList.toggle('scrolled', window.scrollY > 40));
-    hamburger && hamburger.addEventListener('click', () => mobileMenu.classList.toggle('open'));
-
-    // ===== CURRICULUM DATA =====
-    const CURRICULUM = [
-      {
-        id: 'prep', label: 'المرحلة التمهيدية', items: [
-          { id: 'prep_1', label: 'كتاب المدخل إلى طلب العلم' },
-          { id: 'prep_2', label: 'كتاب تذكرة السامع والمتكلم' },
-          { id: 'prep_3', label: 'كتاب الجرد (يختاره الشيخ)' },
-        ]
-      },
-      {
-        id: 'p1', label: 'المرحلة الأولى — العقيدة والتوحيد', items: [
-          { id: 'p1_1', label: 'القواعد الأربع' },
-          { id: 'p1_2', label: 'نواقض الإسلام' },
-          { id: 'p1_3', label: 'الأصول الثلاثة وأدلتها' },
-          { id: 'p1_4', label: 'كشف الشبهات' },
-        ]
-      },
-      {
-        id: 'p2', label: 'المرحلة الثانية — علوم الآلة والسنة', items: [
-          { id: 'p2_1', label: 'متن الآجرومية' },
-          { id: 'p2_2', label: 'التذكرة في علوم الحديث' },
-          { id: 'p2_3', label: 'الأرجوزة الميئية (السيرة)' },
-          { id: 'p2_4', label: 'الرسالة اللطيفة في أصول الفقه' },
-          { id: 'p2_5', label: 'الأربعون النووية مع زيادات ابن رجب' },
-        ]
-      },
-      {
-        id: 'p3', label: 'المرحلة الثالثة — الفقه المالكي', items: [
-          { id: 'p3_1', label: 'مقدمات التفقه' },
-          { id: 'p3_2', label: 'متن الأخضري' },
-          { id: 'p3_3', label: 'متن العشماوية' },
-          { id: 'p3_4', label: 'نظم ابن أبي كف' },
-          { id: 'p3_5', label: 'المرشد المعين لابن عاشر' },
-          { id: 'p3_6', label: 'منظومة ابن سند في القواعد الفقهية' },
-        ]
-      },
-      {
-        id: 'p4', label: 'المرحلة الرابعة — أصول التفسير والعقيدة', items: [
-          { id: 'p4_1', label: 'مقدمة في أصول التفسير' },
-          { id: 'p4_2', label: 'كتاب التوحيد' },
-          { id: 'p4_3', label: 'القواعد والضوابط السلفية في الأسماء والصفات' },
-          { id: 'p4_4', label: 'العقيدة الواسطية' },
-        ]
-      },
-      {
-        id: 'p5', label: 'المرحلة الخامسة — المقاصد والآداب', items: [
-          { id: 'p5_1', label: 'منظومة تبصرة القاصد في علم المقاصد' },
-          { id: 'p5_2', label: 'الجامع من القوانين الفقهية (الآداب)' },
-          { id: 'p5_3', label: 'منظومة السبل المرضية في السياسة الشرعية' },
-        ]
-      },
-      {
-        id: 'p6', label: 'المرحلة السادسة — فقه الدعوة والمناظرة', items: [
-          { id: 'p6_1', label: 'رسالة الأمر بالمعروف والنهي عن المنكر' },
-          { id: 'p6_2', label: 'متن آداب البحث والمناظرة' },
-          { id: 'p6_3', label: 'متن الرد على المخالف' },
-          { id: 'p6_4', label: 'متن الحصانة الفكرية' },
-        ]
-      }
-    ];
-    const TOTAL_ITEMS = CURRICULUM.reduce((a, p) => a + p.items.length, 0);
-
-    let currentUser = null;
-    let currentUserData = null;
-    let userProgress = {};
-
-    // ===== AUTH LISTENER =====
+    // Protect page — redirect if not logged in
     onAuthStateChanged(auth, async (user) => {
+      if (!user) { window.location.href = 'index.html'; return; }
+
+      // Load user data
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (!userDoc.exists()) { window.location.href = 'index.html'; return; }
+      const userData = userDoc.data();
+      userProgress  = userData.progress || {};
+
+      // Load contact info for footer
+      let contactData = null;
+      try {
+        const cs = await getDoc(doc(db,'contactInfo','main'));
+        if (cs.exists()) {
+          contactData = cs.data();
+          const ch = await getDocs(collection(db,'contactInfo','main','channels'));
+          const channels=[]; ch.forEach(d=>channels.push(d.data()));
+          contactData.channels = channels.sort((a,b)=>(a.order||0)-(b.order||0));
+        }
+      } catch(e){}
+
+      document.getElementById('headerPlaceholder').innerHTML = renderHeader('dashboard.html', userData);
+      document.getElementById('footerPlaceholder').innerHTML = renderFooter(contactData);
+      initSharedBehavior();
+
+      currentUser = user;
+      currentUserData = userData;
+
+      // Notifications
+      loadNotifications(user.uid);
+
+      const isAdmin = userData.role === 'superAdmin' || userData.role === 'supervisor';
+
+      // Sidebar user info
+      document.getElementById('sideUserName').textContent = userData.fullName || 'مستخدم';
+      document.getElementById('sideRoleBadge').textContent = isAdmin ? 'مشرف' : 'طالب';
+      document.getElementById('sideRoleBadge').className = 'user-role-badge ' + (isAdmin ? 'role-admin' : 'role-student');
+
+      if (isAdmin) {
+        document.getElementById('studentNav').style.display = 'none';
+        document.getElementById('supervisorNav').style.display = '';
+        document.getElementById('panel-welcome').classList.remove('active');
+        document.getElementById('panel-supWelcome').classList.add('active');
+        document.getElementById('supWelcomeName').textContent = userData.fullName;
+        loadStudentsList();
+      } else {
+        document.getElementById('welcomeName').textContent = userData.fullName;
+        buildCurriculum();
+        updateAllProgress();
+      }
+
+      document.getElementById('loadingScreen').classList.add('hidden');
+      document.getElementById('dashWrapper').style.display = '';
+    });
+
+    async function loadNotifications(uid) {
+      try {
+        const snap = await getDocs(collection(db,'notifications',uid,'items'));
+        const items = [];
+        snap.forEach(d => items.push({id:d.id,...d.data()}));
+        items.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+        const unread = items.filter(n=>!n.read).length;
+        const bell = document.getElementById('notifBell');
+        const count = document.getElementById('notifCount');
+        if (bell) bell.style.display = 'flex';
+        if (count) { count.textContent = unread; count.style.display = unread > 0 ? 'flex' : 'none'; }
+        const list = document.getElementById('notifList');
+        if (list && items.length) {
+          const icons = { exam:'📝', course:'📚', lesson:'📖', announcement:'📢', answer:'💬', unlock:'🔓' };
+          list.innerHTML = items.slice(0,15).map(n => `
+            <div class="notif-item ${n.read?'':'unread'}" onclick="markNotifRead('${n.id}','${uid}')">
+              <span class="n-ico">${icons[n.type]||'🔔'}</span>
+              <div class="n-body">
+                <div class="n-msg">${n.title||n.message}</div>
+                <div class="n-time">${n.createdAt ? new Date(n.createdAt).toLocaleDateString('ar-SA',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : ''}</div>
+              </div>
+              ${!n.read ? '<span class="n-dot"></span>' : ''}
+            </div>`).join('');
+        }
+      } catch(e){}
+    }
+
+    window.markNotifRead = async function(nId, uid) {
+      try { await updateDoc(doc(db,'notifications',uid,'items',nId),{read:true}); } catch(e){}
+    };
       if (!user) {
         window.location.href = 'register.html';
         return;
