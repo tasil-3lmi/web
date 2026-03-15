@@ -1,16 +1,27 @@
-// ══════════════════════════════════════════════════════════
-// معهد التأصيل العلمي — app.js
-// نظام متعدد الصفحات مع Firebase Auth + Firestore
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
+// معهد التأصيل العلمي — app.js  (نسخة نظيفة بدون تكرار)
+// Firebase Auth + Firestore  |  Multi-page routing  |  Hash fallback
+// ══════════════════════════════════════════════════════════════════════════
 
-// ── مسار الصفحات ──
-const PAGES = {
+// ─────────────────────────────────────────────────────────
+// 1.  ROUTING  (HashRouter-style — يعمل مع GitHub Pages)
+// ---------------------------------------------------------
+// كل صفحة تضع window._PAGE_TARGET باسمها عند التحميل.
+// عند التنقل يُحفظ الهدف في sessionStorage ثم يُحوَّل
+// المتصفح للملف المناسب.  إذا لم يُوجد الملف (GitHub 404)
+// يُعيد 404.html التوجيهَ لـ index.html مع حفظ الهدف.
+// ─────────────────────────────────────────────────────────
+const PAGE_FILES = {
   landing:       "index.html",
+  "about-public":"index.html",
   login:         "login.html",
   dashboard:     "dashboard.html",
   courses:       "courses.html",
   "course-detail":"courses.html",
+  "course-form": "courses.html",
+  "lesson-form": "courses.html",
   tests:         "tests.html",
+  "test-detail": "tests.html",
   schedule:      "schedule.html",
   qa:            "qa.html",
   "about-app":   "about.html",
@@ -19,415 +30,577 @@ const PAGES = {
   "admin-qa":    "admin.html",
 };
 
-// الصفحة الحالية من اسم الملف
-function currentPage(){
-  const f = location.pathname.split("/").pop() || "index.html";
-  const m = {"index.html":"landing","login.html":"login","dashboard.html":"dashboard",
+const PUBLIC_PAGES = ["landing","about-public","login"];
+
+function currentFile(){
+  return (location.pathname.split("/").pop() || "index.html").toLowerCase();
+}
+function pageForFile(f){
+  const m={
+    "index.html":"landing","login.html":"login","dashboard.html":"dashboard",
     "courses.html":"courses","tests.html":"tests","schedule.html":"schedule",
-    "qa.html":"qa","about.html":"about-app","profile.html":"profile","admin.html":"admin"};
+    "qa.html":"qa","about.html":"about-app","profile.html":"profile","admin.html":"admin"
+  };
   return m[f] || "landing";
 }
 
 // التنقل بين الصفحات
 function goTo(page){
-  const file = PAGES[page];
-  const cur  = (location.pathname.split("/").pop()) || "index.html";
-  if(file && file !== cur){
+  const target = PAGE_FILES[page];
+  if(!target) return;
+  const cur = currentFile();
+  if(target !== cur){
     sessionStorage.setItem("_goto", page);
-    location.href = file;
+    location.href = target;
   } else {
     _renderPage(page);
   }
 }
+// اختصارات مستخدَمة في HTML
+function navTo(page){ goTo(page); }
+function showPage(name){
+  if(PUBLIC_PAGES.includes(name)){
+    const cur = currentFile();
+    if(!PUBLIC_PAGES.includes(pageForFile(cur))){ sessionStorage.setItem("_goto",name); location.href="index.html"; return; }
+    _showPublicPage(name);
+  } else { goTo(name); }
+}
 
-// ── متغيرات الحالة ──
-const LS  = k=>{ try{ return JSON.parse(localStorage.getItem(k)||"null"); }catch(e){ return null; }};
-const SS  = (k,v)=>{ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} };
+// ─────────────────────────────────────────────────────────
+// 2.  STATE
+// ─────────────────────────────────────────────────────────
+const _ls  = k=>{ try{return JSON.parse(localStorage.getItem(k)||"null");}catch(e){return null;} };
+const _ss  = (k,v)=>{ try{localStorage.setItem(k,JSON.stringify(v));}catch(e){} };
 
-let APP = {
+const APP = {
   user: null,
-  courses: LS("ti_courses") || [{"id": 1, "title": "مدخل إلى طلب العلم", "icon": "compass", "color": "#b8965e", "visible": true, "description": "تأسيس صحيح لمنهج طالب العلم الشرعي", "info": "مقرر مدخل إلى طلب العلم — المرحلة: تمهيدي", "_order": 0, "lessons": [{"id": 1, "title": "مقدمة ومدخل — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 2, "title": "تذكرة السامع والمتكلم", "icon": "ear", "color": "#a07840", "visible": true, "description": "آداب العلم والتعلم والمعلم", "info": "مقرر تذكرة السامع والمتكلم — المرحلة: تمهيدي", "_order": 1, "lessons": [{"id": 1, "title": "مقدمة ومدخل — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 3, "title": "الجرد القرآني التطبيقي", "icon": "book-open", "color": "#8B6914", "visible": true, "description": "تطبيق عملي يختاره الشيخ لمراجعة القرآن", "info": "مقرر الجرد القرآني التطبيقي — المرحلة: تمهيدي", "_order": 2, "lessons": [{"id": 1, "title": "مقدمة ومدخل — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 4, "title": "القواعد الأربع", "icon": "square", "color": "#3B1B40", "visible": true, "description": "قواعد التوحيد الأربع للإمام محمد بن عبد الوهاب", "info": "مقرر القواعد الأربع — المرحلة: أول", "_order": 3, "lessons": [{"id": 1, "title": "مقدمة ومدخل — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 5, "title": "نواقض الإسلام", "icon": "alert-triangle", "color": "#4a2250", "visible": true, "description": "النواقض العشرة التي تنقض الإسلام", "info": "مقرر نواقض الإسلام — المرحلة: أول", "_order": 4, "lessons": [{"id": 1, "title": "مقدمة ومدخل — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 6, "title": "الأصول الثلاثة وأدلتها", "icon": "triangle", "color": "#5a2d63", "visible": true, "description": "معرفة الله ودينه ونبيه محمد ﷺ", "info": "مقرر الأصول الثلاثة وأدلتها — المرحلة: أول", "_order": 5, "lessons": [{"id": 1, "title": "مقدمة ومدخل — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 7, "title": "كشف الشبهات", "icon": "shield", "color": "#3B1B40", "visible": true, "description": "كشف شبهات المشركين في مسائل التوحيد", "info": "مقرر كشف الشبهات — المرحلة: أول", "_order": 6, "lessons": [{"id": 1, "title": "مقدمة ومدخل — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 8, "title": "متن الآجرومية", "icon": "pen-line", "color": "#1a5276", "visible": true, "description": "متن النحو الأساسي للمبتدئين", "info": "مقرر متن الآجرومية — المرحلة: ثانٍ", "_order": 7, "lessons": [{"id": 1, "title": "مقدمة ومدخل — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 9, "title": "التذكرة في علوم الحديث", "icon": "scroll", "color": "#1b4f72", "visible": true, "description": "مقدمة في مصطلح الحديث لابن الملقن", "info": "مقرر التذكرة في علوم الحديث — المرحلة: ثانٍ", "_order": 8, "lessons": [{"id": 1, "title": "مقدمة ومدخل — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 10, "title": "الأرجوزة الميئية في السيرة", "icon": "star", "color": "#154360", "visible": true, "description": "السيرة النبوية في نظم شعري مختصر", "info": "مقرر الأرجوزة الميئية في السيرة — المرحلة: ثانٍ", "_order": 9, "lessons": [{"id": 1, "title": "مقدمة ومدخل — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 11, "title": "الرسالة اللطيفة في أصول الفقه", "icon": "file-text", "color": "#0e3251", "visible": true, "description": "مقدمة في أصول الفقه للسعدي", "info": "مقرر الرسالة اللطيفة في أصول الفقه — المرحلة: ثانٍ", "_order": 10, "lessons": [{"id": 1, "title": "مقدمة ومدخل — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 12, "title": "الأربعون النووية", "icon": "list", "color": "#1a5276", "visible": true, "description": "أربعون حديثاً نبوياً مع زيادات ابن رجب", "info": "مقرر الأربعون النووية — المرحلة: ثانٍ", "_order": 11, "lessons": [{"id": 1, "title": "مقدمة ومدخل — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 13, "title": "مقدمات التفقه", "icon": "layers", "color": "#117a65", "visible": true, "description": "مقدمات في فقه الفقه للسفاريني وابن رجب", "info": "مقرر مقدمات التفقه — المرحلة: ثالث", "_order": 12, "lessons": [{"id": 1, "title": "مقدمة ومدخل — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 14, "title": "متن الأخضري في العبادات", "icon": "moon", "color": "#0e6655", "visible": true, "description": "العبادات الأساسية في الفقه المالكي", "info": "مقرر متن الأخضري في العبادات — المرحلة: ثالث", "_order": 13, "lessons": [{"id": 1, "title": "مقدمة ومدخل — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 15, "title": "متن العشماوية", "icon": "book", "color": "#117a65", "visible": true, "description": "مختصر في الفقه المالكي", "info": "مقرر متن العشماوية — المرحلة: ثالث", "_order": 14, "lessons": [{"id": 1, "title": "مقدمة ومدخل — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 16, "title": "نظم ابن أبي كف", "icon": "music", "color": "#0d5e4a", "visible": true, "description": "أدلة المذهب المالكي في نظم شعري", "info": "مقرر نظم ابن أبي كف — المرحلة: ثالث", "_order": 15, "lessons": [{"id": 1, "title": "مقدمة ومدخل — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 17, "title": "نظم المرشد المعين لابن عاشر", "icon": "map", "color": "#117a65", "visible": true, "description": "دراسة نقدية للمرشد المعين", "info": "مقرر نظم المرشد المعين لابن عاشر — المرحلة: ثالث", "_order": 16, "lessons": [{"id": 1, "title": "مقدمة ومدخل — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 18, "title": "منظومة القواعد الفقهية", "icon": "grid", "color": "#0a4d3a", "visible": true, "description": "القواعد الفقهية الكبرى في نظم ابن سند", "info": "مقرر منظومة القواعد الفقهية — المرحلة: ثالث", "_order": 17, "lessons": [{"id": 1, "title": "مقدمة ومدخل — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 19, "title": "مقدمة في أصول التفسير", "icon": "search", "color": "#6e2f0a", "visible": true, "description": "أصول تفسير القرآن لابن تيمية", "info": "مقرر مقدمة في أصول التفسير — المرحلة: رابع", "_order": 18, "lessons": [{"id": 1, "title": "مقدمة ومدخل — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 20, "title": "كتاب التوحيد", "icon": "heart", "color": "#7d3410", "visible": true, "description": "كتاب التوحيد للشيخ محمد بن عبد الوهاب", "info": "مقرر كتاب التوحيد — المرحلة: رابع", "_order": 19, "lessons": [{"id": 1, "title": "مقدمة ومدخل — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 21, "title": "القواعد السلفية في الأسماء والصفات", "icon": "settings", "color": "#6e2f0a", "visible": true, "description": "قواعد وضوابط في باب الأسماء والصفات", "info": "مقرر القواعد السلفية في الأسماء والصفات — المرحلة: رابع", "_order": 20, "lessons": [{"id": 1, "title": "مقدمة ومدخل — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 22, "title": "العقيدة الواسطية", "icon": "award", "color": "#8b3c11", "visible": true, "description": "متن العقيدة الواسطية لابن تيمية", "info": "مقرر العقيدة الواسطية — المرحلة: رابع", "_order": 21, "lessons": [{"id": 1, "title": "مقدمة ومدخل — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 23, "title": "منظومة المقاصد للعصيمي", "icon": "target", "color": "#512e5f", "visible": true, "description": "علم مقاصد الشريعة في نظم شعري", "info": "مقرر منظومة المقاصد للعصيمي — المرحلة: خامس", "_order": 22, "lessons": [{"id": 1, "title": "مقدمة ومدخل — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 24, "title": "الآداب من الجامع لابن جزي", "icon": "heart-handshake", "color": "#5b3068", "visible": true, "description": "آداب الإسلام من كتاب القوانين الفقهية", "info": "مقرر الآداب من الجامع لابن جزي — المرحلة: خامس", "_order": 23, "lessons": [{"id": 1, "title": "مقدمة ومدخل — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 25, "title": "السبل المرضية في السياسة الشرعية", "icon": "balance-scale", "color": "#6c3483", "visible": true, "description": "منظومة حافظ الحكمي في السياسة الشرعية", "info": "مقرر السبل المرضية في السياسة الشرعية — المرحلة: خامس", "_order": 24, "lessons": [{"id": 1, "title": "مقدمة ومدخل — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 26, "title": "الأمر بالمعروف والنهي عن المنكر", "icon": "megaphone", "color": "#922b21", "visible": true, "description": "رسالة ابن تيمية في الحسبة الشرعية", "info": "مقرر الأمر بالمعروف والنهي عن المنكر — المرحلة: سادس", "_order": 25, "lessons": [{"id": 1, "title": "مقدمة ومدخل — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 27, "title": "آداب البحث والمناظرة", "icon": "message-square", "color": "#a93226", "visible": true, "description": "متن طاشكبري زاده في المناظرة", "info": "مقرر آداب البحث والمناظرة — المرحلة: سادس", "_order": 26, "lessons": [{"id": 1, "title": "مقدمة ومدخل — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 28, "title": "الرد على المخالف", "icon": "shield-alert", "color": "#922b21", "visible": true, "description": "أصول الرد على أهل البدع والمخالفين", "info": "مقرر الرد على المخالف — المرحلة: سادس", "_order": 27, "lessons": [{"id": 1, "title": "مقدمة ومدخل — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 29, "title": "الحصانة الفكرية", "icon": "lock", "color": "#b03a2e", "visible": true, "description": "حماية العقل المسلم من الغزو الفكري", "info": "مقرر الحصانة الفكرية — المرحلة: سادس", "_order": 28, "lessons": [{"id": 1, "title": "مقدمة ومدخل — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 30, "title": "فقه الدعوة والتأثير", "icon": "radio", "color": "#a04000", "visible": true, "description": "أصول وأساليب الدعوة إلى الله", "info": "مقرر فقه الدعوة والتأثير — المرحلة: سادس", "_order": 29, "lessons": [{"id": 1, "title": "مقدمة ومدخل — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}],
-  tests:   LS("ti_tests")   || [{"id": 1, "courseId": 1, "title": "اختبار الوحدة الأولى — مدخل إلى طلب العلم", "visible": true, "questions": [{"q": "ما موضوع مقرر مدخل إلى طلب العلم؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 2, "courseId": 1, "title": "الاختبار النهائي — مدخل إلى طلب العلم", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر مدخل إلى طلب العلم؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 3, "courseId": 2, "title": "اختبار الوحدة الأولى — تذكرة السامع والمتكلم", "visible": true, "questions": [{"q": "ما موضوع مقرر تذكرة السامع والمتكلم؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 4, "courseId": 2, "title": "الاختبار النهائي — تذكرة السامع والمتكلم", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر تذكرة السامع والمتكلم؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 5, "courseId": 3, "title": "اختبار الوحدة الأولى — الجرد القرآني التطبيقي", "visible": true, "questions": [{"q": "ما موضوع مقرر الجرد القرآني التطبيقي؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 6, "courseId": 3, "title": "الاختبار النهائي — الجرد القرآني التطبيقي", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر الجرد القرآني التطبيقي؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 7, "courseId": 4, "title": "اختبار الوحدة الأولى — القواعد الأربع", "visible": true, "questions": [{"q": "ما موضوع مقرر القواعد الأربع؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 8, "courseId": 4, "title": "الاختبار النهائي — القواعد الأربع", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر القواعد الأربع؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 9, "courseId": 5, "title": "اختبار الوحدة الأولى — نواقض الإسلام", "visible": true, "questions": [{"q": "ما موضوع مقرر نواقض الإسلام؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 10, "courseId": 5, "title": "الاختبار النهائي — نواقض الإسلام", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر نواقض الإسلام؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 11, "courseId": 6, "title": "اختبار الوحدة الأولى — الأصول الثلاثة وأدلتها", "visible": true, "questions": [{"q": "ما موضوع مقرر الأصول الثلاثة وأدلتها؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 12, "courseId": 6, "title": "الاختبار النهائي — الأصول الثلاثة وأدلتها", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر الأصول الثلاثة وأدلتها؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 13, "courseId": 7, "title": "اختبار الوحدة الأولى — كشف الشبهات", "visible": true, "questions": [{"q": "ما موضوع مقرر كشف الشبهات؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 14, "courseId": 7, "title": "الاختبار النهائي — كشف الشبهات", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر كشف الشبهات؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 15, "courseId": 8, "title": "اختبار الوحدة الأولى — متن الآجرومية", "visible": true, "questions": [{"q": "ما موضوع مقرر متن الآجرومية؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 16, "courseId": 8, "title": "الاختبار النهائي — متن الآجرومية", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر متن الآجرومية؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 17, "courseId": 9, "title": "اختبار الوحدة الأولى — التذكرة في علوم الحديث", "visible": true, "questions": [{"q": "ما موضوع مقرر التذكرة في علوم الحديث؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 18, "courseId": 9, "title": "الاختبار النهائي — التذكرة في علوم الحديث", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر التذكرة في علوم الحديث؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 19, "courseId": 10, "title": "اختبار الوحدة الأولى — الأرجوزة الميئية في السيرة", "visible": true, "questions": [{"q": "ما موضوع مقرر الأرجوزة الميئية في السيرة؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 20, "courseId": 10, "title": "الاختبار النهائي — الأرجوزة الميئية في السيرة", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر الأرجوزة الميئية في السيرة؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 21, "courseId": 11, "title": "اختبار الوحدة الأولى — الرسالة اللطيفة في أصول الفقه", "visible": true, "questions": [{"q": "ما موضوع مقرر الرسالة اللطيفة في أصول الفقه؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 22, "courseId": 11, "title": "الاختبار النهائي — الرسالة اللطيفة في أصول الفقه", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر الرسالة اللطيفة في أصول الفقه؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 23, "courseId": 12, "title": "اختبار الوحدة الأولى — الأربعون النووية", "visible": true, "questions": [{"q": "ما موضوع مقرر الأربعون النووية؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 24, "courseId": 12, "title": "الاختبار النهائي — الأربعون النووية", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر الأربعون النووية؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 25, "courseId": 13, "title": "اختبار الوحدة الأولى — مقدمات التفقه", "visible": true, "questions": [{"q": "ما موضوع مقرر مقدمات التفقه؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 26, "courseId": 13, "title": "الاختبار النهائي — مقدمات التفقه", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر مقدمات التفقه؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 27, "courseId": 14, "title": "اختبار الوحدة الأولى — متن الأخضري في العبادات", "visible": true, "questions": [{"q": "ما موضوع مقرر متن الأخضري في العبادات؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 28, "courseId": 14, "title": "الاختبار النهائي — متن الأخضري في العبادات", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر متن الأخضري في العبادات؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 29, "courseId": 15, "title": "اختبار الوحدة الأولى — متن العشماوية", "visible": true, "questions": [{"q": "ما موضوع مقرر متن العشماوية؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 30, "courseId": 15, "title": "الاختبار النهائي — متن العشماوية", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر متن العشماوية؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 31, "courseId": 16, "title": "اختبار الوحدة الأولى — نظم ابن أبي كف", "visible": true, "questions": [{"q": "ما موضوع مقرر نظم ابن أبي كف؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 32, "courseId": 16, "title": "الاختبار النهائي — نظم ابن أبي كف", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر نظم ابن أبي كف؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 33, "courseId": 17, "title": "اختبار الوحدة الأولى — نظم المرشد المعين لابن عاشر", "visible": true, "questions": [{"q": "ما موضوع مقرر نظم المرشد المعين لابن عاشر؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 34, "courseId": 17, "title": "الاختبار النهائي — نظم المرشد المعين لابن عاشر", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر نظم المرشد المعين لابن عاشر؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 35, "courseId": 18, "title": "اختبار الوحدة الأولى — منظومة القواعد الفقهية", "visible": true, "questions": [{"q": "ما موضوع مقرر منظومة القواعد الفقهية؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 36, "courseId": 18, "title": "الاختبار النهائي — منظومة القواعد الفقهية", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر منظومة القواعد الفقهية؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 37, "courseId": 19, "title": "اختبار الوحدة الأولى — مقدمة في أصول التفسير", "visible": true, "questions": [{"q": "ما موضوع مقرر مقدمة في أصول التفسير؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 38, "courseId": 19, "title": "الاختبار النهائي — مقدمة في أصول التفسير", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر مقدمة في أصول التفسير؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 39, "courseId": 20, "title": "اختبار الوحدة الأولى — كتاب التوحيد", "visible": true, "questions": [{"q": "ما موضوع مقرر كتاب التوحيد؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 40, "courseId": 20, "title": "الاختبار النهائي — كتاب التوحيد", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر كتاب التوحيد؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 41, "courseId": 21, "title": "اختبار الوحدة الأولى — القواعد السلفية في الأسماء والصفات", "visible": true, "questions": [{"q": "ما موضوع مقرر القواعد السلفية في الأسماء والصفات؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 42, "courseId": 21, "title": "الاختبار النهائي — القواعد السلفية في الأسماء والصفات", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر القواعد السلفية في الأسماء والصفات؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 43, "courseId": 22, "title": "اختبار الوحدة الأولى — العقيدة الواسطية", "visible": true, "questions": [{"q": "ما موضوع مقرر العقيدة الواسطية؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 44, "courseId": 22, "title": "الاختبار النهائي — العقيدة الواسطية", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر العقيدة الواسطية؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 45, "courseId": 23, "title": "اختبار الوحدة الأولى — منظومة المقاصد للعصيمي", "visible": true, "questions": [{"q": "ما موضوع مقرر منظومة المقاصد للعصيمي؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 46, "courseId": 23, "title": "الاختبار النهائي — منظومة المقاصد للعصيمي", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر منظومة المقاصد للعصيمي؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 47, "courseId": 24, "title": "اختبار الوحدة الأولى — الآداب من الجامع لابن جزي", "visible": true, "questions": [{"q": "ما موضوع مقرر الآداب من الجامع لابن جزي؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 48, "courseId": 24, "title": "الاختبار النهائي — الآداب من الجامع لابن جزي", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر الآداب من الجامع لابن جزي؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 49, "courseId": 25, "title": "اختبار الوحدة الأولى — السبل المرضية في السياسة الشرعية", "visible": true, "questions": [{"q": "ما موضوع مقرر السبل المرضية في السياسة الشرعية؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 50, "courseId": 25, "title": "الاختبار النهائي — السبل المرضية في السياسة الشرعية", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر السبل المرضية في السياسة الشرعية؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 51, "courseId": 26, "title": "اختبار الوحدة الأولى — الأمر بالمعروف والنهي عن المنكر", "visible": true, "questions": [{"q": "ما موضوع مقرر الأمر بالمعروف والنهي عن المنكر؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 52, "courseId": 26, "title": "الاختبار النهائي — الأمر بالمعروف والنهي عن المنكر", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر الأمر بالمعروف والنهي عن المنكر؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 53, "courseId": 27, "title": "اختبار الوحدة الأولى — آداب البحث والمناظرة", "visible": true, "questions": [{"q": "ما موضوع مقرر آداب البحث والمناظرة؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 54, "courseId": 27, "title": "الاختبار النهائي — آداب البحث والمناظرة", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر آداب البحث والمناظرة؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 55, "courseId": 28, "title": "اختبار الوحدة الأولى — الرد على المخالف", "visible": true, "questions": [{"q": "ما موضوع مقرر الرد على المخالف؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 56, "courseId": 28, "title": "الاختبار النهائي — الرد على المخالف", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر الرد على المخالف؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 57, "courseId": 29, "title": "اختبار الوحدة الأولى — الحصانة الفكرية", "visible": true, "questions": [{"q": "ما موضوع مقرر الحصانة الفكرية؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 58, "courseId": 29, "title": "الاختبار النهائي — الحصانة الفكرية", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر الحصانة الفكرية؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 59, "courseId": 30, "title": "اختبار الوحدة الأولى — فقه الدعوة والتأثير", "visible": true, "questions": [{"q": "ما موضوع مقرر فقه الدعوة والتأثير؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 60, "courseId": 30, "title": "الاختبار النهائي — فقه الدعوة والتأثير", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر فقه الدعوة والتأثير؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}],
-  questions: LS("ti_questions") || [],
-  notifications: LS("ti_notifs") || [],
-  schedule: LS("ti_schedule") || {},
-  schedulePeriods: LS("ti_sched_periods") || ["الفجر","الضحى","العصر","المغرب","العشاء"],
-  siteConfig: LS("ti_config") || {
-    introVideo:"",
-    aboutText:"معهد التأصيل العلمي منصة تعليمية متخصصة في نشر العلوم الشرعية وفق منهج أهل السنة والجماعة.",
-    studyPlan: [],
-    contactEmail:"info@taaseel.edu",
-    contactTelegram:"@TaaseelInstitute",
+  courses:  _ls("ti_courses") || [{"id": 1, "title": "مدخل إلى طلب العلم", "icon": "compass", "color": "#b8965e", "visible": true, "description": "تأسيس صحيح لمنهج طالب العلم الشرعي", "info": "مقرر مدخل إلى طلب العلم — المرحلة: تمهيدي", "_order": 0, "lessons": [{"id": 1, "title": "مقدمة ومدخل — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — مدخل إلى طلب العلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 2, "title": "تذكرة السامع والمتكلم", "icon": "ear", "color": "#a07840", "visible": true, "description": "آداب العلم والتعلم والمعلم", "info": "مقرر تذكرة السامع والمتكلم — المرحلة: تمهيدي", "_order": 1, "lessons": [{"id": 1, "title": "مقدمة ومدخل — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — تذكرة السامع والمتكلم", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 3, "title": "الجرد القرآني التطبيقي", "icon": "book-open", "color": "#8B6914", "visible": true, "description": "تطبيق عملي يختاره الشيخ لمراجعة القرآن", "info": "مقرر الجرد القرآني التطبيقي — المرحلة: تمهيدي", "_order": 2, "lessons": [{"id": 1, "title": "مقدمة ومدخل — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — الجرد القرآني التطبيقي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 4, "title": "القواعد الأربع", "icon": "square", "color": "#3B1B40", "visible": true, "description": "قواعد التوحيد الأربع للإمام محمد بن عبد الوهاب", "info": "مقرر القواعد الأربع — المرحلة: أول", "_order": 3, "lessons": [{"id": 1, "title": "مقدمة ومدخل — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — القواعد الأربع", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 5, "title": "نواقض الإسلام", "icon": "alert-triangle", "color": "#4a2250", "visible": true, "description": "النواقض العشرة التي تنقض الإسلام", "info": "مقرر نواقض الإسلام — المرحلة: أول", "_order": 4, "lessons": [{"id": 1, "title": "مقدمة ومدخل — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — نواقض الإسلام", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 6, "title": "الأصول الثلاثة وأدلتها", "icon": "triangle", "color": "#5a2d63", "visible": true, "description": "معرفة الله ودينه ونبيه محمد ﷺ", "info": "مقرر الأصول الثلاثة وأدلتها — المرحلة: أول", "_order": 5, "lessons": [{"id": 1, "title": "مقدمة ومدخل — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — الأصول الثلاثة وأدلتها", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 7, "title": "كشف الشبهات", "icon": "shield", "color": "#3B1B40", "visible": true, "description": "كشف شبهات المشركين في مسائل التوحيد", "info": "مقرر كشف الشبهات — المرحلة: أول", "_order": 6, "lessons": [{"id": 1, "title": "مقدمة ومدخل — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — كشف الشبهات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 8, "title": "متن الآجرومية", "icon": "pen-line", "color": "#1a5276", "visible": true, "description": "متن النحو الأساسي للمبتدئين", "info": "مقرر متن الآجرومية — المرحلة: ثانٍ", "_order": 7, "lessons": [{"id": 1, "title": "مقدمة ومدخل — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — متن الآجرومية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 9, "title": "التذكرة في علوم الحديث", "icon": "scroll", "color": "#1b4f72", "visible": true, "description": "مقدمة في مصطلح الحديث لابن الملقن", "info": "مقرر التذكرة في علوم الحديث — المرحلة: ثانٍ", "_order": 8, "lessons": [{"id": 1, "title": "مقدمة ومدخل — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — التذكرة في علوم الحديث", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 10, "title": "الأرجوزة الميئية في السيرة", "icon": "star", "color": "#154360", "visible": true, "description": "السيرة النبوية في نظم شعري مختصر", "info": "مقرر الأرجوزة الميئية في السيرة — المرحلة: ثانٍ", "_order": 9, "lessons": [{"id": 1, "title": "مقدمة ومدخل — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — الأرجوزة الميئية في السيرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 11, "title": "الرسالة اللطيفة في أصول الفقه", "icon": "file-text", "color": "#0e3251", "visible": true, "description": "مقدمة في أصول الفقه للسعدي", "info": "مقرر الرسالة اللطيفة في أصول الفقه — المرحلة: ثانٍ", "_order": 10, "lessons": [{"id": 1, "title": "مقدمة ومدخل — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — الرسالة اللطيفة في أصول الفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 12, "title": "الأربعون النووية", "icon": "list", "color": "#1a5276", "visible": true, "description": "أربعون حديثاً نبوياً مع زيادات ابن رجب", "info": "مقرر الأربعون النووية — المرحلة: ثانٍ", "_order": 11, "lessons": [{"id": 1, "title": "مقدمة ومدخل — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — الأربعون النووية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 13, "title": "مقدمات التفقه", "icon": "layers", "color": "#117a65", "visible": true, "description": "مقدمات في فقه الفقه للسفاريني وابن رجب", "info": "مقرر مقدمات التفقه — المرحلة: ثالث", "_order": 12, "lessons": [{"id": 1, "title": "مقدمة ومدخل — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — مقدمات التفقه", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 14, "title": "متن الأخضري في العبادات", "icon": "moon", "color": "#0e6655", "visible": true, "description": "العبادات الأساسية في الفقه المالكي", "info": "مقرر متن الأخضري في العبادات — المرحلة: ثالث", "_order": 13, "lessons": [{"id": 1, "title": "مقدمة ومدخل — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — متن الأخضري في العبادات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 15, "title": "متن العشماوية", "icon": "book", "color": "#117a65", "visible": true, "description": "مختصر في الفقه المالكي", "info": "مقرر متن العشماوية — المرحلة: ثالث", "_order": 14, "lessons": [{"id": 1, "title": "مقدمة ومدخل — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — متن العشماوية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 16, "title": "نظم ابن أبي كف", "icon": "music", "color": "#0d5e4a", "visible": true, "description": "أدلة المذهب المالكي في نظم شعري", "info": "مقرر نظم ابن أبي كف — المرحلة: ثالث", "_order": 15, "lessons": [{"id": 1, "title": "مقدمة ومدخل — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — نظم ابن أبي كف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 17, "title": "نظم المرشد المعين لابن عاشر", "icon": "map", "color": "#117a65", "visible": true, "description": "دراسة نقدية للمرشد المعين", "info": "مقرر نظم المرشد المعين لابن عاشر — المرحلة: ثالث", "_order": 16, "lessons": [{"id": 1, "title": "مقدمة ومدخل — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — نظم المرشد المعين لابن عاشر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 18, "title": "منظومة القواعد الفقهية", "icon": "grid", "color": "#0a4d3a", "visible": true, "description": "القواعد الفقهية الكبرى في نظم ابن سند", "info": "مقرر منظومة القواعد الفقهية — المرحلة: ثالث", "_order": 17, "lessons": [{"id": 1, "title": "مقدمة ومدخل — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — منظومة القواعد الفقهية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 19, "title": "مقدمة في أصول التفسير", "icon": "search", "color": "#6e2f0a", "visible": true, "description": "أصول تفسير القرآن لابن تيمية", "info": "مقرر مقدمة في أصول التفسير — المرحلة: رابع", "_order": 18, "lessons": [{"id": 1, "title": "مقدمة ومدخل — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — مقدمة في أصول التفسير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 20, "title": "كتاب التوحيد", "icon": "heart", "color": "#7d3410", "visible": true, "description": "كتاب التوحيد للشيخ محمد بن عبد الوهاب", "info": "مقرر كتاب التوحيد — المرحلة: رابع", "_order": 19, "lessons": [{"id": 1, "title": "مقدمة ومدخل — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — كتاب التوحيد", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 21, "title": "القواعد السلفية في الأسماء والصفات", "icon": "settings", "color": "#6e2f0a", "visible": true, "description": "قواعد وضوابط في باب الأسماء والصفات", "info": "مقرر القواعد السلفية في الأسماء والصفات — المرحلة: رابع", "_order": 20, "lessons": [{"id": 1, "title": "مقدمة ومدخل — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — القواعد السلفية في الأسماء والصفات", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 22, "title": "العقيدة الواسطية", "icon": "award", "color": "#8b3c11", "visible": true, "description": "متن العقيدة الواسطية لابن تيمية", "info": "مقرر العقيدة الواسطية — المرحلة: رابع", "_order": 21, "lessons": [{"id": 1, "title": "مقدمة ومدخل — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — العقيدة الواسطية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 23, "title": "منظومة المقاصد للعصيمي", "icon": "target", "color": "#512e5f", "visible": true, "description": "علم مقاصد الشريعة في نظم شعري", "info": "مقرر منظومة المقاصد للعصيمي — المرحلة: خامس", "_order": 22, "lessons": [{"id": 1, "title": "مقدمة ومدخل — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — منظومة المقاصد للعصيمي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 24, "title": "الآداب من الجامع لابن جزي", "icon": "heart-handshake", "color": "#5b3068", "visible": true, "description": "آداب الإسلام من كتاب القوانين الفقهية", "info": "مقرر الآداب من الجامع لابن جزي — المرحلة: خامس", "_order": 23, "lessons": [{"id": 1, "title": "مقدمة ومدخل — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — الآداب من الجامع لابن جزي", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 25, "title": "السبل المرضية في السياسة الشرعية", "icon": "balance-scale", "color": "#6c3483", "visible": true, "description": "منظومة حافظ الحكمي في السياسة الشرعية", "info": "مقرر السبل المرضية في السياسة الشرعية — المرحلة: خامس", "_order": 24, "lessons": [{"id": 1, "title": "مقدمة ومدخل — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — السبل المرضية في السياسة الشرعية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 26, "title": "الأمر بالمعروف والنهي عن المنكر", "icon": "megaphone", "color": "#922b21", "visible": true, "description": "رسالة ابن تيمية في الحسبة الشرعية", "info": "مقرر الأمر بالمعروف والنهي عن المنكر — المرحلة: سادس", "_order": 25, "lessons": [{"id": 1, "title": "مقدمة ومدخل — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — الأمر بالمعروف والنهي عن المنكر", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 27, "title": "آداب البحث والمناظرة", "icon": "message-square", "color": "#a93226", "visible": true, "description": "متن طاشكبري زاده في المناظرة", "info": "مقرر آداب البحث والمناظرة — المرحلة: سادس", "_order": 26, "lessons": [{"id": 1, "title": "مقدمة ومدخل — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — آداب البحث والمناظرة", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 28, "title": "الرد على المخالف", "icon": "shield-alert", "color": "#922b21", "visible": true, "description": "أصول الرد على أهل البدع والمخالفين", "info": "مقرر الرد على المخالف — المرحلة: سادس", "_order": 27, "lessons": [{"id": 1, "title": "مقدمة ومدخل — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — الرد على المخالف", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 29, "title": "الحصانة الفكرية", "icon": "lock", "color": "#b03a2e", "visible": true, "description": "حماية العقل المسلم من الغزو الفكري", "info": "مقرر الحصانة الفكرية — المرحلة: سادس", "_order": 28, "lessons": [{"id": 1, "title": "مقدمة ومدخل — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — الحصانة الفكرية", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}, {"id": 30, "title": "فقه الدعوة والتأثير", "icon": "radio", "color": "#a04000", "visible": true, "description": "أصول وأساليب الدعوة إلى الله", "info": "مقرر فقه الدعوة والتأثير — المرحلة: سادس", "_order": 29, "lessons": [{"id": 1, "title": "مقدمة ومدخل — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 2, "title": "الفصل الأول: التعريف والأهمية — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 3, "title": "الفصل الثاني: الأصول والقواعد — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 4, "title": "الفصل الثالث: الشروط والأركان — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 5, "title": "الفصل الرابع: الفروع والتطبيقات — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 6, "title": "الفصل الخامس: المسائل المهمة — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 7, "title": "الفصل السادس: الخلافات وتحقيقها — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 8, "title": "مسائل مختارة (1) — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 9, "title": "مسائل مختارة (2) — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 10, "title": "التطبيق العملي (1) — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 11, "title": "التطبيق العملي (2) — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 12, "title": "مراجعة شاملة (1) — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 13, "title": "مراجعة شاملة (2) — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 14, "title": "أسئلة وإشكالات — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 15, "title": "الربط بالعلوم الأخرى — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 16, "title": "نماذج تطبيقية من التراث — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 17, "title": "الدرس الخاص بالأدلة — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 18, "title": "التلخيص والمراجعة — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 19, "title": "الاختبار التمهيدي — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}, {"id": 20, "title": "الخاتمة والتوصيات — فقه الدعوة والتأثير", "visible": true, "locked": false, "youtube": "", "audio": "", "attachments": [], "exercises": []}]}],
+  tests:    _ls("ti_tests")   || [{"id": 1, "courseId": 1, "title": "اختبار الوحدة الأولى — مدخل إلى طلب العلم", "visible": true, "questions": [{"q": "ما موضوع مقرر مدخل إلى طلب العلم؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 2, "courseId": 1, "title": "الاختبار النهائي — مدخل إلى طلب العلم", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر مدخل إلى طلب العلم؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 3, "courseId": 2, "title": "اختبار الوحدة الأولى — تذكرة السامع والمتكلم", "visible": true, "questions": [{"q": "ما موضوع مقرر تذكرة السامع والمتكلم؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 4, "courseId": 2, "title": "الاختبار النهائي — تذكرة السامع والمتكلم", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر تذكرة السامع والمتكلم؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 5, "courseId": 3, "title": "اختبار الوحدة الأولى — الجرد القرآني التطبيقي", "visible": true, "questions": [{"q": "ما موضوع مقرر الجرد القرآني التطبيقي؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 6, "courseId": 3, "title": "الاختبار النهائي — الجرد القرآني التطبيقي", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر الجرد القرآني التطبيقي؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 7, "courseId": 4, "title": "اختبار الوحدة الأولى — القواعد الأربع", "visible": true, "questions": [{"q": "ما موضوع مقرر القواعد الأربع؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 8, "courseId": 4, "title": "الاختبار النهائي — القواعد الأربع", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر القواعد الأربع؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 9, "courseId": 5, "title": "اختبار الوحدة الأولى — نواقض الإسلام", "visible": true, "questions": [{"q": "ما موضوع مقرر نواقض الإسلام؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 10, "courseId": 5, "title": "الاختبار النهائي — نواقض الإسلام", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر نواقض الإسلام؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 11, "courseId": 6, "title": "اختبار الوحدة الأولى — الأصول الثلاثة وأدلتها", "visible": true, "questions": [{"q": "ما موضوع مقرر الأصول الثلاثة وأدلتها؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 12, "courseId": 6, "title": "الاختبار النهائي — الأصول الثلاثة وأدلتها", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر الأصول الثلاثة وأدلتها؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 13, "courseId": 7, "title": "اختبار الوحدة الأولى — كشف الشبهات", "visible": true, "questions": [{"q": "ما موضوع مقرر كشف الشبهات؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 14, "courseId": 7, "title": "الاختبار النهائي — كشف الشبهات", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر كشف الشبهات؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 15, "courseId": 8, "title": "اختبار الوحدة الأولى — متن الآجرومية", "visible": true, "questions": [{"q": "ما موضوع مقرر متن الآجرومية؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 16, "courseId": 8, "title": "الاختبار النهائي — متن الآجرومية", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر متن الآجرومية؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 17, "courseId": 9, "title": "اختبار الوحدة الأولى — التذكرة في علوم الحديث", "visible": true, "questions": [{"q": "ما موضوع مقرر التذكرة في علوم الحديث؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 18, "courseId": 9, "title": "الاختبار النهائي — التذكرة في علوم الحديث", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر التذكرة في علوم الحديث؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 19, "courseId": 10, "title": "اختبار الوحدة الأولى — الأرجوزة الميئية في السيرة", "visible": true, "questions": [{"q": "ما موضوع مقرر الأرجوزة الميئية في السيرة؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 20, "courseId": 10, "title": "الاختبار النهائي — الأرجوزة الميئية في السيرة", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر الأرجوزة الميئية في السيرة؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 21, "courseId": 11, "title": "اختبار الوحدة الأولى — الرسالة اللطيفة في أصول الفقه", "visible": true, "questions": [{"q": "ما موضوع مقرر الرسالة اللطيفة في أصول الفقه؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 22, "courseId": 11, "title": "الاختبار النهائي — الرسالة اللطيفة في أصول الفقه", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر الرسالة اللطيفة في أصول الفقه؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 23, "courseId": 12, "title": "اختبار الوحدة الأولى — الأربعون النووية", "visible": true, "questions": [{"q": "ما موضوع مقرر الأربعون النووية؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 24, "courseId": 12, "title": "الاختبار النهائي — الأربعون النووية", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر الأربعون النووية؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 25, "courseId": 13, "title": "اختبار الوحدة الأولى — مقدمات التفقه", "visible": true, "questions": [{"q": "ما موضوع مقرر مقدمات التفقه؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 26, "courseId": 13, "title": "الاختبار النهائي — مقدمات التفقه", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر مقدمات التفقه؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 27, "courseId": 14, "title": "اختبار الوحدة الأولى — متن الأخضري في العبادات", "visible": true, "questions": [{"q": "ما موضوع مقرر متن الأخضري في العبادات؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 28, "courseId": 14, "title": "الاختبار النهائي — متن الأخضري في العبادات", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر متن الأخضري في العبادات؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 29, "courseId": 15, "title": "اختبار الوحدة الأولى — متن العشماوية", "visible": true, "questions": [{"q": "ما موضوع مقرر متن العشماوية؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 30, "courseId": 15, "title": "الاختبار النهائي — متن العشماوية", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر متن العشماوية؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 31, "courseId": 16, "title": "اختبار الوحدة الأولى — نظم ابن أبي كف", "visible": true, "questions": [{"q": "ما موضوع مقرر نظم ابن أبي كف؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 32, "courseId": 16, "title": "الاختبار النهائي — نظم ابن أبي كف", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر نظم ابن أبي كف؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 33, "courseId": 17, "title": "اختبار الوحدة الأولى — نظم المرشد المعين لابن عاشر", "visible": true, "questions": [{"q": "ما موضوع مقرر نظم المرشد المعين لابن عاشر؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 34, "courseId": 17, "title": "الاختبار النهائي — نظم المرشد المعين لابن عاشر", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر نظم المرشد المعين لابن عاشر؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 35, "courseId": 18, "title": "اختبار الوحدة الأولى — منظومة القواعد الفقهية", "visible": true, "questions": [{"q": "ما موضوع مقرر منظومة القواعد الفقهية؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 36, "courseId": 18, "title": "الاختبار النهائي — منظومة القواعد الفقهية", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر منظومة القواعد الفقهية؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 37, "courseId": 19, "title": "اختبار الوحدة الأولى — مقدمة في أصول التفسير", "visible": true, "questions": [{"q": "ما موضوع مقرر مقدمة في أصول التفسير؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 38, "courseId": 19, "title": "الاختبار النهائي — مقدمة في أصول التفسير", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر مقدمة في أصول التفسير؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 39, "courseId": 20, "title": "اختبار الوحدة الأولى — كتاب التوحيد", "visible": true, "questions": [{"q": "ما موضوع مقرر كتاب التوحيد؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 40, "courseId": 20, "title": "الاختبار النهائي — كتاب التوحيد", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر كتاب التوحيد؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 41, "courseId": 21, "title": "اختبار الوحدة الأولى — القواعد السلفية في الأسماء والصفات", "visible": true, "questions": [{"q": "ما موضوع مقرر القواعد السلفية في الأسماء والصفات؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 42, "courseId": 21, "title": "الاختبار النهائي — القواعد السلفية في الأسماء والصفات", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر القواعد السلفية في الأسماء والصفات؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 43, "courseId": 22, "title": "اختبار الوحدة الأولى — العقيدة الواسطية", "visible": true, "questions": [{"q": "ما موضوع مقرر العقيدة الواسطية؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 44, "courseId": 22, "title": "الاختبار النهائي — العقيدة الواسطية", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر العقيدة الواسطية؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 45, "courseId": 23, "title": "اختبار الوحدة الأولى — منظومة المقاصد للعصيمي", "visible": true, "questions": [{"q": "ما موضوع مقرر منظومة المقاصد للعصيمي؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 46, "courseId": 23, "title": "الاختبار النهائي — منظومة المقاصد للعصيمي", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر منظومة المقاصد للعصيمي؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 47, "courseId": 24, "title": "اختبار الوحدة الأولى — الآداب من الجامع لابن جزي", "visible": true, "questions": [{"q": "ما موضوع مقرر الآداب من الجامع لابن جزي؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 48, "courseId": 24, "title": "الاختبار النهائي — الآداب من الجامع لابن جزي", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر الآداب من الجامع لابن جزي؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 49, "courseId": 25, "title": "اختبار الوحدة الأولى — السبل المرضية في السياسة الشرعية", "visible": true, "questions": [{"q": "ما موضوع مقرر السبل المرضية في السياسة الشرعية؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 50, "courseId": 25, "title": "الاختبار النهائي — السبل المرضية في السياسة الشرعية", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر السبل المرضية في السياسة الشرعية؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 51, "courseId": 26, "title": "اختبار الوحدة الأولى — الأمر بالمعروف والنهي عن المنكر", "visible": true, "questions": [{"q": "ما موضوع مقرر الأمر بالمعروف والنهي عن المنكر؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 52, "courseId": 26, "title": "الاختبار النهائي — الأمر بالمعروف والنهي عن المنكر", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر الأمر بالمعروف والنهي عن المنكر؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 53, "courseId": 27, "title": "اختبار الوحدة الأولى — آداب البحث والمناظرة", "visible": true, "questions": [{"q": "ما موضوع مقرر آداب البحث والمناظرة؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 54, "courseId": 27, "title": "الاختبار النهائي — آداب البحث والمناظرة", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر آداب البحث والمناظرة؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 55, "courseId": 28, "title": "اختبار الوحدة الأولى — الرد على المخالف", "visible": true, "questions": [{"q": "ما موضوع مقرر الرد على المخالف؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 56, "courseId": 28, "title": "الاختبار النهائي — الرد على المخالف", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر الرد على المخالف؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 57, "courseId": 29, "title": "اختبار الوحدة الأولى — الحصانة الفكرية", "visible": true, "questions": [{"q": "ما موضوع مقرر الحصانة الفكرية؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 58, "courseId": 29, "title": "الاختبار النهائي — الحصانة الفكرية", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر الحصانة الفكرية؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}, {"id": 59, "courseId": 30, "title": "اختبار الوحدة الأولى — فقه الدعوة والتأثير", "visible": true, "questions": [{"q": "ما موضوع مقرر فقه الدعوة والتأثير؟", "options": ["دراسة علمية شرعية متخصصة", "دراسة لغوية فقط", "دراسة تاريخية", "دراسة فلسفية"], "answer": 0}, {"q": "ما الهدف الرئيسي من دراسة هذا المقرر؟", "options": ["التعمق في العلم الشرعي", "الحصول على شهادة", "التفوق على الآخرين", "ليس لهدف محدد"], "answer": 0}, {"q": "ما منهج المعهد في التدريس؟", "options": ["منهج أهل السنة والجماعة", "المنهج العقلاني", "المنهج الفلسفي", "المنهج الإلحادي"], "answer": 0}, {"q": "كم عدد الدروس في هذا المقرر؟", "options": ["20 درساً", "10 دروس", "5 دروس", "30 درساً"], "answer": 0}, {"q": "ما أول خطوة في طلب العلم؟", "options": ["الإخلاص لله", "حضور الدروس", "شراء الكتب", "البحث في الإنترنت"], "answer": 0}]}, {"id": 60, "courseId": 30, "title": "الاختبار النهائي — فقه الدعوة والتأثير", "visible": true, "questions": [{"q": "ما أبرز مباحث مقرر فقه الدعوة والتأثير؟", "options": ["المباحث الشرعية الأساسية", "المباحث الرياضية", "المباحث الأدبية", "المباحث الطبية"], "answer": 0}, {"q": "ما الفرق بين العلم النافع وغير النافع؟", "options": ["ما أورث خشية الله وما لا يورثها", "ما يُدرَّس في الجامعة فقط", "ما ينفع في الدنيا فقط", "لا فرق بينهما"], "answer": 0}, {"q": "ما حكم طلب العلم الشرعي؟", "options": ["فرض كفاية وبعضه فرض عين", "مستحب فقط", "مباح", "واجب على العلماء فقط"], "answer": 0}, {"q": "من أبرز العلماء المعتمدين في هذا المقرر؟", "options": ["علماء أهل السنة المعتمدون", "علماء المتكلمين", "الفلاسفة", "الصوفية فقط"], "answer": 0}, {"q": "ما المنهج الصحيح في التلقي عن العلماء؟", "options": ["التلقي المباشر مع الضبط والإتقان", "القراءة المنفردة فقط", "الاعتماد على الإنترنت", "السماع دون تدوين"], "answer": 0}]}],
+  questions: _ls("ti_questions") || [],
+  notifications: _ls("ti_notifs") || [],
+  schedule: _ls("ti_schedule") || {},
+  schedulePeriods: _ls("ti_sched_periods") || ["الفجر","الضحى","العصر","المغرب","العشاء"],
+  siteConfig: _ls("ti_config") || {
+    introVideo:"", aboutText:"معهد التأصيل العلمي — منصة تعليمية شرعية وفق منهج أهل السنة والجماعة.",
+    studyPlan:[],
+    contactEmail:"info@taaseel.edu", contactTelegram:"@TaaseelInstitute",
     contactPhone:"+966 50 000 0000",
-    sheikhChannel:"",
-    privateChannel:"",
-    team:[],
+    sheikhChannel:"", privateChannel:"", team:[],
   },
+  currentCourse: null,
+  currentLesson: null,
+  activePage: "dashboard",
 };
 
 function saveState(){
-  SS("ti_courses",   APP.courses);
-  SS("ti_tests",     APP.tests);
-  SS("ti_questions", APP.questions);
-  SS("ti_notifs",    APP.notifications);
-  SS("ti_config",    APP.siteConfig);
-  SS("ti_schedule",  APP.schedule);
-  SS("ti_sched_periods", APP.schedulePeriods);
+  _ss("ti_courses",      APP.courses);
+  _ss("ti_tests",        APP.tests);
+  _ss("ti_questions",    APP.questions);
+  _ss("ti_notifs",       APP.notifications);
+  _ss("ti_config",       APP.siteConfig);
+  _ss("ti_schedule",     APP.schedule);
+  _ss("ti_sched_periods",APP.schedulePeriods);
 }
 
-// ── مساعدات ──
+// ─────────────────────────────────────────────────────────
+// 3.  HELPERS
+// ─────────────────────────────────────────────────────────
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2); }
 function toId(v){ return String(v); }
 function findById(arr,id){ return arr.find(x=>toId(x.id)===toId(id)); }
 function isAdmin(){ return APP.user?.isAdmin===true; }
 function isSuperAdmin(){ return APP.user?.isAdmin && APP.user?.adminRole==="super"; }
-function hasPerm(p){
-  if(!APP.user?.isAdmin) return false;
-  if(APP.user.adminRole==="super") return true;
-  return APP.user.adminPermissions?.[p]===true;
-}
+function hasPerm(p){ if(!isAdmin()) return false; if(isSuperAdmin()) return true; return APP.user?.adminPermissions?.[p]===true; }
+function getFile(id){ return document.getElementById(id)?.files?.[0]||null; }
 
-// ── Toast ──
 function toast(msg,type="info",dur=3500){
-  const c=document.getElementById("toast-container");
-  if(!c) return;
-  const t=document.createElement("div");
-  t.className=`toast ${type}`;
-  const icons={info:"bell",success:"check-circle",error:"x-circle"};
-  t.innerHTML=`<i data-lucide="${icons[type]||"bell"}" style="width:16px;height:16px;flex-shrink:0"></i>${msg}`;
-  c.appendChild(t);
-  lucide.createIcons({nodes:[t]});
-  setTimeout(()=>{ t.classList.add("out"); setTimeout(()=>t.remove(),400); },dur);
+  const c=document.getElementById("toast-container"); if(!c) return;
+  const t=document.createElement("div"); t.className=`toast ${type}`;
+  const ic={info:"bell",success:"check-circle",error:"x-circle"};
+  t.innerHTML=`<i data-lucide="${ic[type]||'bell'}" style="width:16px;height:16px;flex-shrink:0"></i>${msg}`;
+  c.appendChild(t); lucide.createIcons({nodes:[t]});
+  setTimeout(()=>{t.classList.add("out");setTimeout(()=>t.remove(),400);},dur);
 }
 
-// ── Modal ──
-function openModal(content,title=""){
+function openModal(html,title=""){
   document.getElementById("modal-container").innerHTML=`
     <div class="modal-overlay" onclick="closeModal()">
       <div class="modal-box" onclick="event.stopPropagation()">
-        <div class="modal-head">
-          <span class="modal-title">${title}</span>
-          <button class="modal-close" onclick="closeModal()">✕</button>
-        </div>
-        ${content}
-      </div>
-    </div>`;
+        <div class="modal-head"><span class="modal-title">${title}</span>
+          <button class="modal-close" onclick="closeModal()">✕</button></div>
+        ${html}</div></div>`;
   lucide.createIcons();
 }
 function closeModal(){ document.getElementById("modal-container").innerHTML=""; }
+
 function confirm2(msg,cb){
   openModal(`<div style="text-align:center;padding:10px 0">
     <div style="font-size:38px;margin-bottom:12px">⚠️</div>
-    <p style="color:var(--text);font-size:15px;margin-bottom:20px">${msg}</p>
+    <p style="margin-bottom:20px;font-size:15px">${msg}</p>
     <div style="display:flex;gap:10px;justify-content:center">
-      <button class="btn btn-danger" onclick="closeModal();(${cb.toString()})()">تأكيد الحذف</button>
+      <button class="btn btn-danger" onclick="closeModal();(${cb.toString()})()">تأكيد</button>
       <button class="btn btn-ghost" onclick="closeModal()">إلغاء</button>
-    </div>
-  </div>`,"تأكيد");
+    </div></div>`,"تأكيد الحذف");
 }
 
-// ── setBtnLoading ──
 function setBtnLoading(id,loading,text){
-  const btn=document.getElementById(id);
-  if(!btn) return;
-  if(loading){ btn.disabled=true; btn._orig=btn.innerHTML; if(text) btn.innerHTML=`<span style="opacity:.7">${text}</span>`; }
-  else{ btn.disabled=false; if(btn._orig) btn.innerHTML=btn._orig; }
+  const btn=document.getElementById(id); if(!btn) return;
+  if(loading){btn.disabled=true;btn._orig=btn.innerHTML;if(text)btn.innerHTML=`<span style="opacity:.7">${text}</span>`;}
+  else{btn.disabled=false;if(btn._orig)btn.innerHTML=btn._orig;}
 }
 
-// ── Firebase error messages ──
-function fbErr(code){
-  const m={
-    "auth/user-not-found":"البريد غير مسجل",
-    "auth/wrong-password":"كلمة المرور غير صحيحة",
-    "auth/invalid-credential":"البريد أو كلمة المرور غير صحيحة",
-    "auth/email-already-in-use":"البريد مسجل مسبقاً",
-    "auth/invalid-email":"صيغة البريد غير صحيحة",
-    "auth/weak-password":"كلمة المرور ضعيفة (6 أحرف+)",
-    "auth/too-many-requests":"محاولات كثيرة، انتظر قليلاً",
-    "auth/network-request-failed":"تعذّر الاتصال بالإنترنت",
-    "auth/user-disabled":"هذا الحساب موقوف",
-    "auth/operation-not-allowed":"هذه الطريقة غير مفعّلة في Firebase",
-    "auth/unauthorized-domain":"النطاق غير مُصرَّح به — أضفه في Firebase Console",
-  };
-  return m[code]||`خطأ: ${code||"غير معروف"}`;
-}
-
-// ── Notifications ──
+// ─────────────────────────────────────────────────────────
+// 4.  NOTIFICATIONS
+// ─────────────────────────────────────────────────────────
 function addNotif(msg,type="info"){
   APP.notifications.unshift({id:uid(),msg,type,date:new Date().toLocaleDateString("ar"),read:false});
   if(APP.notifications.length>50) APP.notifications=APP.notifications.slice(0,50);
-  saveState();
-  updateNotifBadge();
+  saveState(); updateNotifBadge();
 }
 function updateNotifBadge(){
   const dot=document.getElementById("notif-badge-dot");
-  const unread=APP.notifications.filter(n=>!n.read).length;
-  if(dot) dot.style.display=unread>0?"":"none";
+  if(dot) dot.style.display=APP.notifications.filter(n=>!n.read).length>0?"":"none";
 }
 function toggleNotifPanel(){
-  const p=document.getElementById("notif-panel");
-  if(!p) return;
-  p.style.display=p.style.display==="none"?"":"none";
-  if(p.style.display!=="none") renderNotifPanel();
+  const p=document.getElementById("notif-panel"); if(!p) return;
+  const showing=p.style.display!=="none"; p.style.display=showing?"none":""; if(!showing) renderNotifPanel();
 }
+function closeNotifPanel(){ const p=document.getElementById("notif-panel"); if(p) p.style.display="none"; }
 function renderNotifPanel(){
-  const list=document.getElementById("notif-list");
-  if(!list) return;
-  APP.notifications.forEach(n=>n.read=true);
-  saveState(); updateNotifBadge();
+  APP.notifications.forEach(n=>n.read=true); saveState(); updateNotifBadge();
+  const list=document.getElementById("notif-list"); if(!list) return;
   list.innerHTML=APP.notifications.length===0
-    ?`<div style="padding:16px;text-align:center;color:var(--muted);font-size:13px">لا توجد إشعارات</div>`
-    :APP.notifications.map(n=>`<div style="padding:10px 14px;border-bottom:1px solid rgba(212,180,142,.1);font-size:13px;color:var(--text)">${n.msg}<div style="font-size:11px;color:var(--muted);margin-top:2px">${n.date}</div></div>`).join("");
+    ?`<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">لا توجد إشعارات</div>`
+    :APP.notifications.map(n=>`<div style="padding:10px 14px;border-bottom:1px solid rgba(212,180,142,.1);font-size:13px">${n.msg}<div style="font-size:11px;color:var(--muted);margin-top:2px">${n.date}</div></div>`).join("");
 }
 function clearNotifs(){ APP.notifications=[]; saveState(); renderNotifPanel(); updateNotifBadge(); }
-function closeNotifPanel(){ const p=document.getElementById("notif-panel"); if(p) p.style.display="none"; }
 
-// ── Mobile menu ──
-function openMobileMenu(){
-  document.getElementById("mobile-menu-overlay").style.display="";
-  document.getElementById("mobile-menu").classList.add("open");
-}
-function closeMobileMenu(){
-  document.getElementById("mobile-menu-overlay").style.display="none";
-  document.getElementById("mobile-menu").classList.remove("open");
-}
+// ─────────────────────────────────────────────────────────
+// 5.  MOBILE MENU
+// ─────────────────────────────────────────────────────────
+function openMobileMenu(){ document.getElementById("mobile-menu-overlay").style.display=""; document.getElementById("mobile-menu").classList.add("open"); }
+function closeMobileMenu(){ document.getElementById("mobile-menu-overlay").style.display="none"; document.getElementById("mobile-menu").classList.remove("open"); }
+function toggleMobileMenu(){ const m=document.getElementById("mobile-menu"); m.classList.contains("open")?closeMobileMenu():openMobileMenu(); }
 
-// ── Nav active state ──
-function setNavActive(page){
-  document.querySelectorAll(".nav-btn,.mob-nav-btn").forEach(b=>b.classList.remove("active"));
-  const nb=document.getElementById("nb-"+page);
-  if(nb) nb.classList.add("active");
-}
+// ─────────────────────────────────────────────────────────
+// 6.  FIRESTORE HELPERS
+// ─────────────────────────────────────────────────────────
+async function fsGet(col,id){ try{const s=await FB_DB.collection(col).doc(id).get();return s.exists?s.data():null;}catch(e){console.log("fsGet error:",e.message);return null;} }
+async function fsSet(col,id,data){ try{await FB_DB.collection(col).doc(id).set(data,{merge:true});}catch(e){console.log("fsSet error:",e.message);} }
+async function fsDel(col,id){ try{await FB_DB.collection(col).doc(id).delete();}catch(e){} }
+async function fsAll(col){ try{const s=await FB_DB.collection(col).get();return s.docs.map(d=>({id:d.id,...d.data()}));}catch(e){return [];} }
 
-// ══════════════════════════════════════════════════════════
-// FIRESTORE HELPERS
-// ══════════════════════════════════════════════════════════
-async function fsGet(col,id){ try{ const s=await FB_DB.collection(col).doc(id).get(); return s.exists?s.data():null; }catch(e){ return null; }}
-async function fsSet(col,id,data){ try{ await FB_DB.collection(col).doc(id).set(data,{merge:true}); }catch(e){ console.warn("fsSet",col,e.code); }}
-async function fsDel(col,id){ try{ await FB_DB.collection(col).doc(id).delete(); }catch(e){} }
-async function fsAll(col){ try{ const s=await FB_DB.collection(col).get(); return s.docs.map(d=>({id:d.id,...d.data()})); }catch(e){ return []; }}
+// Specific helpers
+async function fsGetUser(uid){ return fsGet("users",uid); }
+async function fsSetUser(uid,data){ return fsSet("users",uid,data); }
+async function fsGetAdmin(uid){ return fsGet("admins",uid); }
+async function fsSetAdmin(uid,data){ return fsSet("admins",uid,data); }
+async function fsGetAllAdmins(){ return fsAll("admins"); }
+async function fsDeleteAdmin(uid){ return fsDel("admins",uid); }
+async function fsGetAllUsers(){ return fsAll("users"); }
+async function fsDeleteUser(uid){ return fsDel("users",uid); }
 
-async function fsSaveCourse(c){ await fsSet("courses",String(c.id),{...c,_order:APP.courses.findIndex(x=>toId(x.id)===toId(c.id))}); }
+async function fsSaveCourse(c){ await fsSet("courses",String(c.id),c); }
 async function fsDeleteCourse(id){ await fsDel("courses",String(id)); }
+async function fsLoadCourses(){ const d=await fsAll("courses"); return d.sort((a,b)=>(a._order||0)-(b._order||0)); }
+
 async function fsSaveTest(t){ await fsSet("tests",String(t.id),t); }
 async function fsDeleteTest(id){ await fsDel("tests",String(id)); }
+async function fsLoadTests(){ return fsAll("tests"); }
+
 async function fsSaveQuestion(q){ await fsSet("questions",String(q.id),q); }
 async function fsDeleteQuestion(id){ await fsDel("questions",String(id)); }
+async function fsLoadQuestions(){ return fsAll("questions"); }
+
 async function fsSaveConfig(){ await fsSet("config","main",APP.siteConfig); }
-async function fsSaveSchedule(){ await fsSet("schedule","main",{schedule:APP.schedule,periods:APP.schedulePeriods}); }
+async function fsLoadConfig(){ return fsGet("config","main"); }
+
+async function fsSaveSchedule(){
+  await fsSet("schedule","main",{schedule:APP.schedule,periods:APP.schedulePeriods});
+}
+async function fsLoadSchedule(){ return fsGet("schedule","main"); }
+
+async function fsGetAppData(){ return fsGet("config","main"); }
+async function fsSetAppData(data){ return fsSet("config","main",data); }
+
+// Sync local → Firestore
+async function fbWriteCourse(course){
+  const i=APP.courses.findIndex(c=>toId(c.id)===toId(course.id));
+  if(i>=0) APP.courses[i]=course; else APP.courses.push(course);
+  saveState(); await fsSaveCourse({...course,_order:APP.courses.findIndex(c=>toId(c.id)===toId(course.id))});
+}
+async function fbRemoveCourse(id){ APP.courses=APP.courses.filter(c=>toId(c.id)!==toId(id)); saveState(); await fsDeleteCourse(id); }
+async function fbSyncCourses(){ saveState(); await Promise.all(APP.courses.map((c,i)=>fsSaveCourse({...c,_order:i}))); }
+
+async function fbWriteTest(t){ const i=APP.tests.findIndex(x=>toId(x.id)===toId(t.id)); if(i>=0) APP.tests[i]=t; else APP.tests.push(t); saveState(); await fsSaveTest(t); }
+async function fbRemoveTest(id){ APP.tests=APP.tests.filter(t=>toId(t.id)!==toId(id)); saveState(); await fsDeleteTest(id); }
+
+async function fbWriteQuestion(q){ const i=APP.questions.findIndex(x=>toId(x.id)===toId(q.id)); if(i>=0) APP.questions[i]=q; else APP.questions.push(q); saveState(); await fsSaveQuestion(q); }
+async function fbRemoveQuestion(id){ APP.questions=APP.questions.filter(x=>toId(x.id)!==toId(id)); saveState(); await fsDeleteQuestion(id); }
+
+async function fbWriteConfig(){ saveState(); await fsSaveConfig(); }
 
 async function loadFromFirestore(){
   try{
-    const [coursesSnap,testsSnap,qsSnap,cfgSnap,schSnap] = await Promise.all([
-      FB_DB.collection("courses").orderBy("_order","asc").get().catch(()=>FB_DB.collection("courses").get()),
-      FB_DB.collection("tests").get(),
-      FB_DB.collection("questions").get(),
-      FB_DB.collection("config").doc("main").get(),
-      FB_DB.collection("schedule").doc("main").get(),
+    const [courses,tests,questions,cfg,sch] = await Promise.all([
+      fsLoadCourses(), fsLoadTests(), fsLoadQuestions(), fsLoadConfig(), fsLoadSchedule()
     ]);
-    if(coursesSnap.docs.length) APP.courses=coursesSnap.docs.map(d=>d.data()).sort((a,b)=>(a._order||0)-(b._order||0));
-    if(testsSnap.docs.length)   APP.tests=testsSnap.docs.map(d=>d.data());
-    if(qsSnap.docs.length)      APP.questions=qsSnap.docs.map(d=>d.data());
-    if(cfgSnap.exists)          APP.siteConfig={...APP.siteConfig,...cfgSnap.data()};
-    if(schSnap.exists){ const d=schSnap.data(); if(d.schedule) APP.schedule=d.schedule; if(d.periods) APP.schedulePeriods=d.periods; }
-    saveState();
-    console.log(`✅ Firestore: ${APP.courses.length} مقرر, ${APP.tests.length} اختبار`);
-  }catch(e){ console.warn("Firestore load:", e.code, e.message); }
+    if(courses?.length)  { APP.courses=courses; _ss("ti_courses",courses); }
+    else if(APP.courses.length) await Promise.all(APP.courses.map((c,i)=>fsSaveCourse({...c,_order:i})));
+    if(tests?.length)    { APP.tests=tests; _ss("ti_tests",tests); }
+    else if(APP.tests.length) await Promise.all(APP.tests.map(t=>fsSaveTest(t)));
+    if(questions?.length){ APP.questions=questions; _ss("ti_questions",questions); }
+    if(cfg)              { APP.siteConfig={...APP.siteConfig,...cfg}; _ss("ti_config",APP.siteConfig); }
+    if(sch){ if(sch.schedule) APP.schedule=sch.schedule; if(sch.periods) APP.schedulePeriods=sch.periods; }
+    console.log(`✅ Firestore loaded: ${APP.courses.length} مقرر, ${APP.tests.length} اختبار`);
+  }catch(e){ console.log("loadFromFirestore error:",e.message); }
 }
 
-// ══════════════════════════════════════════════════════════
-// AUTH — تسجيل الدخول والخروج
-// ══════════════════════════════════════════════════════════
-const ADMIN_EMAIL = "abwdahm645@gmail.com";
+// ─────────────────────────────────────────────────────────
+// 7.  FIREBASE AUTH
+// ---------------------------------------------------------
+// نقطة: firebase-config.js يتم استدعاؤه في كل صفحة HTML
+// قبل app.js وهو يُنشئ FB_AUTH و FB_DB كمتغيرات عامة.
+// الدوال هنا تستخدم createUserWithEmailAndPassword
+// و signInWithEmailAndPassword مباشرةً.
+// ─────────────────────────────────────────────────────────
+const SUPER_ADMIN_EMAIL = "abwdahm645@gmail.com";
+const SUPER_ADMIN_PASS  = "4m6m7878";
 let _adminEmail="", _adminPass="";
 
 async function ensureSuperAdmin(){
   try{
-    await FB_AUTH.createUserWithEmailAndPassword(ADMIN_EMAIL,"4m6m7878");
-    const uid2=(await FB_AUTH.signInWithEmailAndPassword(ADMIN_EMAIL,"4m6m7878")).user.uid;
-    await fsSet("admins",uid2,{fullName:"أبو الجواد الحنبلي",username:"dahm6",email:ADMIN_EMAIL,role:"super",permissions:{},createdAt:new Date().toISOString()});
+    await FB_AUTH.createUserWithEmailAndPassword(SUPER_ADMIN_EMAIL, SUPER_ADMIN_PASS);
+    const cred2 = await FB_AUTH.signInWithEmailAndPassword(SUPER_ADMIN_EMAIL, SUPER_ADMIN_PASS);
+    await fsSet("admins", cred2.user.uid, {
+      fullName:"أبو الجواد الحنبلي", username:"dahm6",
+      email:SUPER_ADMIN_EMAIL, role:"super", permissions:{},
+      createdAt:new Date().toISOString()
+    });
     await FB_AUTH.signOut();
-  }catch(e){ if(e.code!=="auth/email-already-in-use") console.warn("ensureSuperAdmin:",e.code); }
+    console.log("✅ Super admin created");
+  }catch(e){
+    if(e.code!=="auth/email-already-in-use") console.log("ensureSuperAdmin:",e.message);
+  }
 }
 
-// ── دخول الطالب ──
+// ── 7a. تسجيل الدخول (طالب) ──
 async function doLogin(){
-  const email=document.getElementById("l-email").value.trim();
-  const pass=document.getElementById("l-pass").value;
-  const errEl=document.getElementById("login-err");
-  errEl.style.display="none";
-  if(!email||!pass){ showErr(errEl,"يرجى إدخال البريد وكلمة المرور"); return; }
-  setBtnLoading("btn-email-login",true,"جارٍ الدخول...");
+  const email = document.getElementById("l-email").value.trim();
+  const pass  = document.getElementById("l-pass").value;
+  const errEl = document.getElementById("login-err");
+  errEl.style.display = "none";
+
+  if(!email || !pass){ _showErr(errEl,"يرجى إدخال البريد وكلمة المرور"); return; }
+  setBtnLoading("btn-email-login", true, "جارٍ الدخول...");
+
   try{
-    await FB_AUTH.signInWithEmailAndPassword(email,pass);
-    // onAuthStateChanged will handle the rest
-    if(document.getElementById("l-remember")?.checked)
-      try{ localStorage.setItem("ti_rm",btoa(JSON.stringify({e:email,p:pass}))); }catch(_){}
+    // ✅ signInWithEmailAndPassword
+    const cred = await FB_AUTH.signInWithEmailAndPassword(email, pass);
+    console.log("✅ doLogin: Firebase auth success, uid=", cred.user.uid);
+
+    const remember = document.getElementById("l-remember")?.checked;
+    if(remember) try{ localStorage.setItem("ti_rm", btoa(JSON.stringify({e:email,p:pass}))); }catch(_){}
     else localStorage.removeItem("ti_rm");
+
+    // onAuthStateChanged will complete the login
   }catch(e){
-    showErr(errEl,fbErr(e.code));
-    setBtnLoading("btn-email-login",false,"دخول");
+    console.log("❌ doLogin error:", e.message);  // ✅ console.log كما طُلب
+    _showErr(errEl, _fbErr(e.code));
+    setBtnLoading("btn-email-login", false, "دخول");
   }
 }
 
-// ── دخول المشرف ──
-async function doAdminLogin(){
-  const email=document.getElementById("al-email").value.trim();
-  const pass=document.getElementById("al-pass").value;
-  const errEl=document.getElementById("admin-login-err");
-  errEl.style.display="none";
-  if(!email||!pass){ showErr(errEl,"يرجى إدخال البريد وكلمة المرور"); return; }
-  setBtnLoading("btn-admin-login",true,"جارٍ التحقق...");
+// ── 7b. تسجيل مستخدم جديد ──
+async function doRegister(){
+  const name  = document.getElementById("r-name").value.trim();
+  const email = document.getElementById("r-email").value.trim();
+  const pass  = document.getElementById("r-pass").value;
+  const pass2 = document.getElementById("r-pass2")?.value || pass;
+  const errEl = document.getElementById("reg-err");
+  errEl.style.display = "none";
+
+  if(!name)         { _showErr(errEl,"⚠️ يرجى إدخال الاسم الثلاثي"); return; }
+  if(!email)        { _showErr(errEl,"⚠️ يرجى إدخال البريد الإلكتروني"); return; }
+  if(!pass)         { _showErr(errEl,"⚠️ يرجى إدخال كلمة المرور"); return; }
+  if(pass.length<6) { _showErr(errEl,"⚠️ كلمة المرور 6 أحرف على الأقل"); return; }
+  if(pass !== pass2){ _showErr(errEl,"⚠️ كلمتا المرور غير متطابقتَين"); return; }
+
+  setBtnLoading("btn-register", true, "جارٍ إنشاء الحساب...");
   try{
-    const cred=await FB_AUTH.signInWithEmailAndPassword(email,pass);
-    const adminData=await fsGet("admins",cred.user.uid);
-    if(!adminData){ await FB_AUTH.signOut(); showErr(errEl,"ليس حساب مشرف"); setBtnLoading("btn-admin-login",false,"دخول المسؤول"); return; }
-    _adminEmail=email; _adminPass=pass;
-    if(document.getElementById("al-remember")?.checked)
-      try{ localStorage.setItem("ti_admin_rm",btoa(JSON.stringify({e:email,p:pass,ts:Date.now()}))); }catch(_){}
-    // onAuthStateChanged will handle loginUser
+    // ✅ createUserWithEmailAndPassword
+    const cred = await FB_AUTH.createUserWithEmailAndPassword(email, pass);
+    console.log("✅ doRegister: account created, uid=", cred.user.uid);
+
+    const profile = {
+      uid:   cred.user.uid, name, email,
+      phone:    document.getElementById("r-phone")?.value.trim() || "",
+      age:      document.getElementById("r-age")?.value || "",
+      telegram: document.getElementById("r-tg")?.value.trim() || "",
+      level:    document.getElementById("r-level")?.value || "",
+      status:   "pending",
+      completedLessons:[], testResults:[],
+      createdAt: new Date().toISOString(), provider:"email"
+    };
+
+    // حفظ في Firestore
+    try{
+      await FB_DB.collection("users").doc(cred.user.uid).set(profile);
+      console.log("✅ doRegister: profile saved to Firestore");
+    }catch(fe){
+      console.log("❌ doRegister Firestore error:", fe.message);  // ✅ console.log في catch
+    }
+
+    await FB_AUTH.signOut();
+
+    // مسح الحقول
+    ["r-name","r-email","r-pass","r-pass2","r-phone","r-age","r-tg"].forEach(id=>{
+      const el=document.getElementById(id); if(el) el.value="";
+    });
+    const lvl=document.getElementById("r-level"); if(lvl) lvl.value="";
+
+    _showOk(errEl,"🎉 تم التسجيل بنجاح!<br>حسابك في انتظار موافقة المسؤول.");
+    setTimeout(()=>switchTab("login"), 3000);
+
   }catch(e){
-    showErr(errEl,fbErr(e.code));
-    setBtnLoading("btn-admin-login",false,"دخول المسؤول");
+    console.log("❌ doRegister error:", e.message);  // ✅ console.log في catch
+    _showErr(errEl, _fbErr(e.code));
+  }finally{
+    setBtnLoading("btn-register", false, "إنشاء الحساب");
   }
 }
 
-// ── تسجيل الخروج ──
+// ── 7c. تسجيل دخول المشرف ──
+async function doAdminLogin(){
+  const email = document.getElementById("al-email").value.trim();
+  const pass  = document.getElementById("al-pass").value;
+  const errEl = document.getElementById("admin-login-err");
+  errEl.style.display = "none";
+
+  if(!email || !pass){ _showErr(errEl,"يرجى إدخال البريد وكلمة المرور"); return; }
+  setBtnLoading("btn-admin-login", true, "جارٍ التحقق...");
+
+  try{
+    // ✅ signInWithEmailAndPassword
+    const cred = await FB_AUTH.signInWithEmailAndPassword(email, pass);
+    console.log("✅ doAdminLogin: Firebase auth success, uid=", cred.user.uid);
+
+    const adminData = await fsGet("admins", cred.user.uid);
+    if(!adminData){
+      await FB_AUTH.signOut();
+      _showErr(errEl,"هذا الحساب غير مسجّل كمشرف");
+      console.log("❌ doAdminLogin: uid not in admins collection");
+      setBtnLoading("btn-admin-login", false, "دخول المسؤول");
+      return;
+    }
+
+    _adminEmail = email; _adminPass = pass;
+
+    // تذكرني للمشرف
+    if(document.getElementById("al-remember")?.checked){
+      try{ localStorage.setItem("ti_admin_rm", btoa(JSON.stringify({e:email,p:pass,ts:Date.now()}))); }catch(_){}
+    }
+    // onAuthStateChanged will call loginUser
+
+  }catch(e){
+    console.log("❌ doAdminLogin error:", e.message);  // ✅ console.log في catch
+    _showErr(errEl, _fbErr(e.code));
+    setBtnLoading("btn-admin-login", false, "دخول المسؤول");
+  }
+}
+
+// ── 7d. تسجيل الخروج ──
 async function doLogout(){
   localStorage.removeItem("ti_rm");
   localStorage.removeItem("ti_admin_rm");
-  APP.user=null; _adminEmail=""; _adminPass="";
+  APP.user = null; _adminEmail = ""; _adminPass = "";
   try{ await FB_AUTH.signOut(); }catch(e){}
-  location.href="index.html";
+  location.href = "index.html";
 }
 
-// ── تسجيل مستخدم جديد ──
-async function doRegister(){
-  const name  =document.getElementById("r-name").value.trim();
-  const email =document.getElementById("r-email").value.trim();
-  const pass  =document.getElementById("r-pass").value;
-  const pass2 =document.getElementById("r-pass2")?.value||pass;
-  const errEl =document.getElementById("reg-err");
-  errEl.style.display="none";
-  if(!name)  { showErr(errEl,"⚠️ يرجى إدخال الاسم الثلاثي"); return; }
-  if(!email) { showErr(errEl,"⚠️ يرجى إدخال البريد الإلكتروني"); return; }
-  if(!pass)  { showErr(errEl,"⚠️ يرجى إدخال كلمة المرور"); return; }
-  if(pass.length<6){ showErr(errEl,"⚠️ كلمة المرور 6 أحرف على الأقل"); return; }
-  if(pass!==pass2){ showErr(errEl,"⚠️ كلمتا المرور غير متطابقتَين"); return; }
-  setBtnLoading("btn-register",true,"جارٍ إنشاء الحساب...");
+// ── 7e. Google Sign-in ──
+async function doGoogleLogin(){
+  setBtnLoading("btn-google-login", true, "جارٍ التوجيه...");
   try{
-    const cred=await FB_AUTH.createUserWithEmailAndPassword(email,pass);
-    const profile={uid:cred.user.uid,name,email,
-      phone:document.getElementById("r-phone")?.value.trim()||"",
-      age:document.getElementById("r-age")?.value||"",
-      telegram:document.getElementById("r-tg")?.value.trim()||"",
-      level:document.getElementById("r-level")?.value||"",
-      status:"pending",completedLessons:[],testResults:[],
-      createdAt:new Date().toISOString(),provider:"email"};
-    try{ await FB_DB.collection("users").doc(cred.user.uid).set(profile); }
-    catch(fe){ console.warn("Firestore write:",fe.code); }
-    await FB_AUTH.signOut();
-    ["r-name","r-email","r-pass","r-pass2","r-phone","r-age","r-tg"].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=""; });
-    const lvl=document.getElementById("r-level"); if(lvl) lvl.value="";
-    showOk(errEl,"🎉 تم التسجيل بنجاح! حسابك في انتظار موافقة المسؤول.");
-    setTimeout(()=>switchTab("login"),3000);
-  }catch(e){ showErr(errEl,fbErr(e.code)); }
-  finally{ setBtnLoading("btn-register",false,"إنشاء الحساب"); }
+    const provider = new firebase.auth.GoogleAuthProvider();
+    provider.setCustomParameters({prompt:"select_account"});
+    sessionStorage.setItem("_pendingSocial","google");
+    await FB_AUTH.signInWithRedirect(provider);
+  }catch(e){
+    console.log("❌ doGoogleLogin error:", e.message);
+    setBtnLoading("btn-google-login", false, null);
+    toast(_fbErr(e.code),"error");
+  }
 }
 
-function showErr(el,msg){ el.textContent=msg; el.style.cssText="display:block;color:#dc3545;font-size:13px;padding:10px 14px;background:#fff5f5;border-radius:10px;margin-bottom:12px;border:1px solid #ffcccc"; }
-function showOk(el,msg){ el.innerHTML=msg; el.style.cssText="display:block;color:#155724;font-size:13px;padding:12px 16px;background:#d4edda;border-radius:10px;margin-bottom:12px;border:1px solid #c3e6cb;line-height:1.8;text-align:center"; }
+// ── 7f. Apple Sign-in ──
+async function doAppleLogin(){
+  setBtnLoading("btn-apple-login", true, "جارٍ التوجيه...");
+  try{
+    const provider = new firebase.auth.OAuthProvider("apple.com");
+    provider.addScope("email"); provider.addScope("name");
+    sessionStorage.setItem("_pendingSocial","apple");
+    await FB_AUTH.signInWithRedirect(provider);
+  }catch(e){
+    console.log("❌ doAppleLogin error:", e.message);
+    setBtnLoading("btn-apple-login", false, null);
+    toast(_fbErr(e.code),"error");
+  }
+}
+
+// ── 7g. تذكرني ──
+const RM_KEY = "ti_rm";
+function saveRememberMe(e,p){ try{ localStorage.setItem(RM_KEY,btoa(JSON.stringify({e,p}))); }catch(_){} }
+function loadRememberMe(){ try{ const r=localStorage.getItem(RM_KEY); return r?JSON.parse(atob(r)):null; }catch(e){ localStorage.removeItem(RM_KEY);return null; } }
+
+// ── 7h. Firebase error messages ──
+function _fbErr(code){
+  const m={
+    "auth/user-not-found":"البريد غير مسجّل",
+    "auth/wrong-password":"كلمة المرور غير صحيحة",
+    "auth/invalid-credential":"البريد أو كلمة المرور غير صحيحة",
+    "auth/email-already-in-use":"البريد مسجّل مسبقاً",
+    "auth/invalid-email":"صيغة البريد غير صحيحة",
+    "auth/weak-password":"كلمة المرور ضعيفة — 6 أحرف كحد أدنى",
+    "auth/too-many-requests":"محاولات كثيرة، انتظر قليلاً",
+    "auth/network-request-failed":"تعذّر الاتصال بالإنترنت",
+    "auth/user-disabled":"هذا الحساب موقوف",
+    "auth/operation-not-allowed":"Email/Password غير مفعّل في Firebase Console",
+    "auth/unauthorized-domain":"النطاق غير مُصرَّح به — أضفه في Firebase → Authentication → Settings",
+  };
+  return m[code] || `خطأ: ${code||"غير معروف"}`;
+}
+// حُذف _fbErrMsg وأُبقي _fbErr فقط لتجنب التكرار
+const _fbErrMsg = _fbErr;
+
+// ── 7i. UI helpers ──
+function _showErr(el,msg){ el.innerHTML=msg; el.style.cssText="display:block;color:#dc3545;font-size:13px;padding:10px 14px;background:#fff5f5;border-radius:10px;margin-bottom:12px;border:1px solid #ffcccc;"; }
+function _showOk(el,msg){ el.innerHTML=msg; el.style.cssText="display:block;color:#155724;font-size:13px;padding:12px 16px;background:#d4edda;border-radius:10px;margin-bottom:12px;border:1px solid #c3e6cb;line-height:1.9;text-align:center;"; }
 
 function togglePassVis(inputId,btn){
   const inp=document.getElementById(inputId); if(!inp) return;
-  inp.type=inp.type==="password"?"text":"password";
+  inp.type = inp.type==="password"?"text":"password";
   const icon=btn.querySelector("i");
-  if(icon) icon.setAttribute("data-lucide",inp.type==="password"?"eye":"eye-off");
+  if(icon) icon.setAttribute("data-lucide", inp.type==="password"?"eye":"eye-off");
   lucide.createIcons({nodes:[btn]});
 }
 
-// ── Switch tabs ──
 function switchLoginMode(mode){
-  const isAdmin=(mode==="admin");
-  document.getElementById("student-tabs").style.display=isAdmin?"none":"";
-  document.getElementById("login-form").style.display=isAdmin?"none":"";
-  document.getElementById("register-form").style.display="none";
-  document.getElementById("admin-login-form").style.display=isAdmin?"":"none";
-  const act="flex:1;padding:9px;border-radius:9px;border:none;cursor:pointer;font-family:'Zain',sans-serif;font-size:12px;font-weight:700;background:linear-gradient(135deg,var(--purple),var(--purple-l));color:#fff";
-  const inact="flex:1;padding:9px;border-radius:9px;border:none;cursor:pointer;font-family:'Zain',sans-serif;font-size:12px;font-weight:700;background:transparent;color:var(--muted)";
-  document.getElementById("mode-admin").style.cssText=isAdmin?act:inact;
-  document.getElementById("mode-student").style.cssText=isAdmin?inact:act;
-}
-function switchTab(t){
-  document.getElementById("login-form").style.display=t==="login"?"":"none";
-  document.getElementById("register-form").style.display=t==="register"?"":"none";
-  const act="flex:1;padding:10px;border-radius:10px;border:none;cursor:pointer;font-family:'Zain',sans-serif;font-size:13px;font-weight:700;background:linear-gradient(135deg,var(--purple),var(--purple-l));color:#fff;box-shadow:0 4px 14px rgba(59,27,64,.22)";
-  const inact="flex:1;padding:10px;border-radius:10px;border:none;cursor:pointer;font-family:'Zain',sans-serif;font-size:13px;font-weight:700;background:transparent;color:var(--muted)";
-  document.getElementById("tab-login").style.cssText=t==="login"?act:inact;
-  document.getElementById("tab-register").style.cssText=t==="register"?act:inact;
+  const isAdm = mode==="admin";
+  document.getElementById("student-tabs").style.display = isAdm?"none":"";
+  document.getElementById("login-form").style.display = isAdm?"none":"";
+  document.getElementById("register-form").style.display = "none";
+  document.getElementById("admin-login-form").style.display = isAdm?"":"none";
+  const A="flex:1;padding:9px;border-radius:9px;border:none;cursor:pointer;font-family:'Zain',sans-serif;font-size:12px;font-weight:700;background:linear-gradient(135deg,var(--purple),var(--purple-l));color:#fff";
+  const I="flex:1;padding:9px;border-radius:9px;border:none;cursor:pointer;font-family:'Zain',sans-serif;font-size:12px;font-weight:700;background:transparent;color:var(--muted)";
+  document.getElementById("mode-admin").style.cssText  = isAdm?A:I;
+  document.getElementById("mode-student").style.cssText = isAdm?I:A;
 }
 
-// ── loginUser ── 
+function switchTab(t){
+  document.getElementById("login-form").style.display    = t==="login"?"":"none";
+  document.getElementById("register-form").style.display = t==="register"?"":"none";
+  const A="flex:1;padding:10px;border-radius:10px;border:none;cursor:pointer;font-family:'Zain',sans-serif;font-size:13px;font-weight:700;background:linear-gradient(135deg,var(--purple),var(--purple-l));color:#fff;box-shadow:0 4px 14px rgba(59,27,64,.22)";
+  const I="flex:1;padding:10px;border-radius:10px;border:none;cursor:pointer;font-family:'Zain',sans-serif;font-size:13px;font-weight:700;background:transparent;color:var(--muted)";
+  document.getElementById("tab-login").style.cssText    = t==="login"?A:I;
+  document.getElementById("tab-register").style.cssText = t==="register"?A:I;
+}
+
+// ─────────────────────────────────────────────────────────
+// 8.  loginUser  — يُنفَّذ بعد التحقق من المصادقة
+// ─────────────────────────────────────────────────────────
 function loginUser(u){
-  APP.user=u;
-  document.getElementById("public-wrapper").style.display="none";
-  document.getElementById("app-wrapper").style.display="";
-  // nav badges
-  ["nb-admin","nb-admin-qa","admin-badge"].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=isAdmin()?"":"none"; });
-  const badge=document.getElementById("admin-badge");
-  if(badge && isAdmin()) badge.textContent=u.adminRole==="super"?"المشرف العام":(u.adminUsername||"مشرف");
+  APP.user = u;
+  document.getElementById("public-wrapper").style.display = "none";
+  document.getElementById("app-wrapper").style.display    = "";
+
+  if(isAdmin()){
+    ["nb-admin","nb-admin-qa","admin-badge"].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=""; });
+    const badge=document.getElementById("admin-badge");
+    if(badge) badge.textContent = u.adminRole==="super"?"المشرف العام":(u.adminUsername||"مشرف");
+    const mobAdmin=document.getElementById("mob-nb-admin"); if(mobAdmin) mobAdmin.style.display="";
+  } else {
+    ["nb-admin","nb-admin-qa","admin-badge"].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display="none"; });
+  }
+
+  _updateAppFooter();
   updateNotifBadge();
-  updateAppFooter();
-  const dest=sessionStorage.getItem("_goto")||"dashboard";
+
+  const dest = sessionStorage.getItem("_goto") || "dashboard";
   sessionStorage.removeItem("_goto");
+  console.log("✅ loginUser → navigating to:", dest);
   _renderPage(dest);
   toast(`أهلاً ${u.name}! 👋`,"success");
 }
 
-// ══════════════════════════════════════════════════════════
-// PAGE RENDERER — يعرض الصفحة المناسبة
-// ══════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────
+// 9.  PAGE DISPLAY
+// ─────────────────────────────────────────────────────────
+function _showPublicPage(name){
+  document.getElementById("public-wrapper").style.display = "";
+  document.getElementById("app-wrapper").style.display    = "none";
+  document.querySelectorAll("#public-wrapper .page").forEach(p=>p.classList.remove("active"));
+  const el = document.getElementById("page-"+name); if(el) el.classList.add("active");
+  if(name==="landing"){ renderPublicPlan(); renderAboutPublic(); }
+  if(name==="about-public") renderAboutPublic();
+  updatePubNav();
+}
+
 function _renderPage(page){
-  // hide all app pages
   document.querySelectorAll("#app-wrapper .page").forEach(p=>p.classList.remove("active"));
   const el=document.getElementById("app-page-"+page);
   if(el){ el.classList.add("active"); el.style.animation="none"; requestAnimationFrame(()=>el.style.animation=""); }
-  APP.activePage=page;
-  setNavActive(page);
+  APP.activePage = page;
+  document.querySelectorAll(".nav-btn,.mob-nav-btn").forEach(b=>b.classList.remove("active"));
+  const nb=document.getElementById("nb-"+page); if(nb) nb.classList.add("active");
   closeNotifPanel();
   const renders={
-    dashboard:renderDashboard, courses:renderCourses,
-    "course-detail":renderCourseDetail,
-    tests:renderTests, schedule:renderSchedule,
-    qa:renderQA, "about-app":renderAboutApp,
-    profile:renderProfile, admin:renderAdmin,
-    "admin-qa":renderAdminQA,
+    dashboard:renderDashboard, courses:renderCourses, "course-detail":renderCourseDetail,
+    tests:renderTests, schedule:renderSchedule, qa:renderQA,
+    "about-app":renderAboutApp, profile:renderProfile,
+    admin:renderAdmin, "admin-qa":renderAdminQA,
   };
   if(renders[page]) renders[page]();
 }
 
-// shortcut used in HTML onclick
-function navTo(page){ goTo(page); }
-function showPage(name){
-  const pub=["landing","about-public","login"];
-  if(pub.includes(name)){
-    const cur=currentPage();
-    if(!pub.includes(cur)){ sessionStorage.setItem("_goto",name); location.href="index.html"; return; }
-    document.getElementById("public-wrapper").style.display="";
-    document.getElementById("app-wrapper").style.display="none";
-    document.querySelectorAll("#public-wrapper .page").forEach(p=>p.classList.remove("active"));
-    const el=document.getElementById("page-"+name);
-    if(el) el.classList.add("active");
-    if(name==="landing"){ renderPublicPlan(); renderAboutPublic(); }
-    if(name==="about-public") renderAboutPublic();
-    updatePubNav();
-  } else { goTo(name); }
+// ─────────────────────────────────────────────────────────
+// 10.  PUBLIC PAGE HELPERS
+// ─────────────────────────────────────────────────────────
+function updatePubNav(){
+  const nav=document.getElementById("pub-nav"); if(!nav) return;
+  const fn=()=>{ const s=window.scrollY>50; nav.style.background=s?"rgba(42,18,48,.94)":"transparent"; nav.style.backdropFilter=s?"blur(16px)":"none"; nav.style.borderBottom=s?"1px solid rgba(212,180,142,.15)":"none"; };
+  window.removeEventListener("scroll",fn); window.addEventListener("scroll",fn); fn();
+}
+function scrollToAbout(){ document.getElementById("about-teaser")?.scrollIntoView({behavior:"smooth"}); }
+
+function _updateAppFooter(){
+  const cfg=APP.siteConfig;
+  const el=(id,show)=>{ const e=document.getElementById(id); if(e) e.style.display=show?"":"none"; };
+  el("footer-tg-btn",    cfg.contactTelegram);
+  el("nb-channel",       cfg.privateChannel||cfg.sheikhChannel);
+  el("mob-nb-channel",   cfg.privateChannel||cfg.contactTelegram);
 }
 
-// ══════════════════════════════════════════════════════════
-// YOUTUBE HELPERS
-// ══════════════════════════════════════════════════════════
-function toYtEmbed(url){
+function openTelegram(){ _openTg(APP.siteConfig.contactTelegram); }
+function openSheikhChannel(){ _openTg(APP.siteConfig.sheikhChannel); }
+function openPrivateChannel(){ _openTg(APP.siteConfig.privateChannel); }
+function openTelegramFromNav(){ _openTg(APP.siteConfig.privateChannel||APP.siteConfig.contactTelegram); }
+function _openTg(val){
+  if(!val){ toast("لم يتم تعيين الرابط","info"); return; }
+  val=val.trim();
+  const url=val.startsWith("http")?val:val.startsWith("@")?`https://t.me/${val.slice(1)}`:`https://t.me/${val}`;
+  window.open(url,"_blank");
+}
+function openPrivateChannelWithWarning(){
+  openModal(`<div style="text-align:center">
+    <div style="color:#dc3545;font-size:13px;padding:8px 12px;background:#fff5f5;border-radius:8px;margin-bottom:14px">⚠️ يُمنع مشاركة الرابط</div>
+    <button class="btn btn-primary" onclick="closeModal();openPrivateChannel()">الانتقال للقناة</button>
+  </div>`,"قناة المعهد الخاصة");
+}
+function _tgHandle(u){ openTelegram(); }
+
+// YouTube helpers
+function toYoutubeEmbed(url){
   if(!url) return "";
   url=url.trim();
   if(url.includes("/embed/")) return url;
@@ -435,891 +608,182 @@ function toYtEmbed(url){
   const w=url.match(/[?&]v=([^&\s]+)/); if(w) return `https://www.youtube.com/embed/${w[1]}`;
   return url;
 }
-function fixYtUrls(courses){ return courses.map(c=>({...c,lessons:(c.lessons||[]).map(l=>({...l,youtube:toYtEmbed(l.youtube||"")}))})); }
+function _fixYtUrls(courses){ return courses.map(c=>({...c,lessons:(c.lessons||[]).map(l=>({...l,youtube:toYoutubeEmbed(l.youtube||"")}))})); }
 
-// ══════════════════════════════════════════════════════════
-// PUBLIC NAV
-// ══════════════════════════════════════════════════════════
-function updatePubNav(){
-  const nav=document.getElementById("pub-nav");
-  if(!nav) return;
-  window.addEventListener("scroll",()=>{
-    const scrolled=window.scrollY>50;
-    nav.style.background=scrolled?"rgba(42,18,48,.94)":"transparent";
-    nav.style.backdropFilter=scrolled?"blur(16px)":"none";
-    nav.style.borderBottom=scrolled?"1px solid rgba(212,180,142,.15)":"none";
-  });
-}
-function scrollToAbout(){ document.getElementById("about-teaser")?.scrollIntoView({behavior:"smooth"}); }
+// Progress helpers
+function getLocalTs(){ try{ return parseInt(localStorage.getItem("ti_ts")||"0"); }catch(e){ return 0; } }
+function bumpLocalTs(){ try{ localStorage.setItem("ti_ts",String(Date.now())); }catch(e){} }
 
-function updateAppFooter(){
-  const cfg=APP.siteConfig;
-  const tgBtn=document.getElementById("footer-tg-btn");
-  if(tgBtn) tgBtn.style.display=cfg.contactTelegram?"inline-flex":"none";
-  const sheikhEl=document.getElementById("app-footer-sheikh");
-  if(sheikhEl) sheikhEl.style.display=cfg.sheikhChannel?"":"none";
-  const shLabel=document.getElementById("footer-sheikh-channel");
-  if(shLabel) shLabel.style.display=cfg.sheikhChannel?"":"none";
-  const channelBtn=document.getElementById("nb-channel");
-  if(channelBtn) channelBtn.style.display=cfg.privateChannel||cfg.sheikhChannel?"":"none";
-  const mobCh=document.getElementById("mob-nb-channel");
-  if(mobCh) mobCh.style.display=cfg.privateChannel||cfg.contactTelegram?"":"none";
-}
-function openTelegramFromNav(){ _openTg(APP.siteConfig.privateChannel||APP.siteConfig.contactTelegram); }
-function openTelegram(){ _openTg(APP.siteConfig.contactTelegram); }
-function openSheikhChannel(){ _openTg(APP.siteConfig.sheikhChannel); }
-function openPrivateChannel(){ _openTg(APP.siteConfig.privateChannel); }
-function _openTg(val){
-  if(!val){ toast("لم يتم تعيين رابط","info"); return; }
-  val=val.trim();
-  const url=val.startsWith("http")?val:val.startsWith("@")?`https://t.me/${val.slice(1)}`:`https://t.me/${val}`;
-  window.open(url,"_blank");
-}
-function openPrivateChannelWithWarning(){
-  openModal(`<div style="text-align:center">
-    <div style="color:#dc3545;font-size:13px;padding:8px;background:#fff5f5;border-radius:8px;margin-bottom:14px">⚠️ يُمنع نشر رابط القناة الخاصة</div>
-    <button class="btn btn-primary" onclick="closeModal();openPrivateChannel()"><i data-lucide="send" style="width:14px;height:14px"></i> الانتقال للقناة</button>
-  </div>`,"قناة المعهد الخاصة");
-}
+// ─────────────────────────────────────────────────────────
+// 11.  STARTUP  (DOMContentLoaded)
+// ─────────────────────────────────────────────────────────
+window.addEventListener("DOMContentLoaded", async () => {
 
-
-// localStorage sync (always works offline)
-function saveState(){
-  SS("ti_courses",       APP.courses);
-  SS("ti_tests",         APP.tests);
-  SS("ti_questions",     APP.questions);
-  SS("ti_notifications", APP.notifications);
-  SS("ti_config",        APP.siteConfig);
-  SS("ti_schedule",      APP.schedule);
-  SS("ti_schedule_periods", APP.schedulePeriods);
-}
-
-// ── Instant Firebase write for a single course (add/edit) ──
-async function fbWriteCourse(course){
-  const idx = APP.courses.findIndex(c=>toId(c.id)===toId(course.id));
-  if(idx>=0) APP.courses[idx]=course; else APP.courses.push(course);
-  saveState();
-  await fsSaveCourse({...course, _order: APP.courses.findIndex(c=>toId(c.id)===toId(course.id))});
-}
-// ── Delete a course from Firebase ──
-async function fbRemoveCourse(id){
-  APP.courses=APP.courses.filter(c=>toId(c.id)!==toId(id));
-  saveState();
-  await fsDeleteCourse(id);
-}
-// ── Save entire courses array (after reorder / toggle) ──
-async function fbSyncCourses(){
-  saveState();
-  await Promise.all(APP.courses.map((c,i)=>fsSaveCourse({...c,_order:i})));
-}
-
-// ── Test CRUD ──
-async function fbWriteTest(test){
-  const idx = APP.tests.findIndex(t=>toId(t.id)===toId(test.id));
-  if(idx>=0) APP.tests[idx]=test; else APP.tests.push(test);
-  saveState();
-  await fsSaveTest(test);
-}
-async function fbRemoveTest(id){
-  APP.tests=APP.tests.filter(t=>toId(t.id)!==toId(id));
-  saveState();
-  await fsDeleteTest(id);
-}
-
-// ── Question CRUD ──
-async function fbWriteQuestion(q){
-  const idx = APP.questions.findIndex(x=>toId(x.id)===toId(q.id));
-  if(idx>=0) APP.questions[idx]=q; else APP.questions.push(q);
-  saveState();
-  await fsSaveQuestion(q);
-}
-async function fbRemoveQuestion(id){
-  APP.questions=APP.questions.filter(x=>toId(x.id)!==toId(id));
-  saveState();
-  await fsDeleteQuestion(id);
-}
-
-// ── Config ──
-async function fbWriteConfig(){
-  saveState();
-  await fsSaveConfig(APP.siteConfig);
-}
-
-// ── Load all data from Firestore on startup ──
-async function loadFromFirestore(){
-  try{
-    const [coursesData, testsData, questionsData, cfgData] = await Promise.all([
-      fsLoadCourses(), fsLoadTests(), fsLoadQuestions(), fsLoadConfig()
-    ]);
-
-    // Courses — تحميل من Firestore إذا وُجدت بيانات
-    if(coursesData && coursesData.length > 0){
-      const sorted = [...coursesData].sort((a,b)=>(a._order||0)-(b._order||0));
-      APP.courses = _fixYtUrls(sorted);
-      SS("ti_courses", APP.courses);
-    } else if(APP.courses.length > 0){
-      // رفع البيانات المحلية لـ Firestore (مزامنة أولية)
-      await Promise.all(APP.courses.map((c,i)=>fsSaveCourse({...c,_order:i})));
-    }
-
-    // Tests
-    if(testsData && testsData.length > 0){
-      APP.tests = testsData;
-      SS("ti_tests", APP.tests);
-    } else if(APP.tests.length > 0){
-      await Promise.all(APP.tests.map(t=>fsSaveTest(t)));
-    }
-
-    // Questions
-    if(questionsData && questionsData.length > 0){
-      APP.questions = questionsData;
-      SS("ti_questions", APP.questions);
-    }
-
-    // Config
-    if(cfgData && Object.keys(cfgData).length > 0){
-      APP.siteConfig = {...APP.siteConfig, ...cfgData};
-      SS("ti_config", APP.siteConfig);
-    }
-
-    // Schedule
-    try{
-      const schDoc = await fsLoadSchedule();
-      if(schDoc){
-        if(schDoc.schedule) APP.schedule=schDoc.schedule;
-        if(schDoc.periods) APP.schedulePeriods=schDoc.periods;
-      }
-    }catch(e){}
-
-    console.log(`✅ Firebase: ${APP.courses.length} مقرر، ${APP.tests.length} اختبار`);
-    return true;
-  }catch(e){
-    console.warn("loadFromFirestore failed, using localStorage:", e);
-    return false;
+  // ── GitHub Pages HashRouter: handle 404 redirect ──
+  // 404.html يحفظ المسار في sessionStorage ويُوجّه لـ index.html
+  const _gh = sessionStorage.getItem("_gh404");
+  if(_gh){
+    sessionStorage.removeItem("_gh404");
+    const _fname = _gh.split("/").pop().split("?")[0];
+    const _pg = pageForFile(_fname);
+    if(_pg && _pg !== "landing") sessionStorage.setItem("_goto", _pg);
   }
-}
 
-// ══════════════════════════════════════════════════════════
-// UTILS
-// ══════════════════════════════════════════════════════════
-function uid(){ return Date.now() + Math.random().toString(36).slice(2); }
-function toast(msg, type="info", dur=3000){
-  const c = document.getElementById("toast-container");
-  const t = document.createElement("div");
-  t.className = `toast ${type}`;
-  const icons = {info:"bell", success:"check-circle", error:"x-circle"};
-  t.innerHTML = `<i data-lucide="${icons[type]||'bell'}" style="width:16px;height:16px;flex-shrink:0"></i>${msg}`;
-  c.appendChild(t);
-  lucide.createIcons({nodes:[t]});
-  setTimeout(()=>{t.classList.add("out"); setTimeout(()=>t.remove(),400)}, dur);
-}
-function confirm2(msg, cb){
-  openModal(`<div style="text-align:center;padding:10px 0">
-    <div style="font-size:38px;margin-bottom:12px">⚠️</div>
-    <p style="color:var(--text);font-size:15px;margin-bottom:20px">${msg}</p>
-    <div style="display:flex;gap:10px;justify-content:center">
-      <button class="btn btn-danger" onclick="closeModal();(${cb.toString()})()">تأكيد الحذف</button>
-      <button class="btn btn-ghost" onclick="closeModal()">إلغاء</button>
-    </div>
-  </div>`, "تأكيد");
-}
-function getFile(inputId){
-  return document.getElementById(inputId)?.files?.[0] || null;
-}
-function isAdmin(){ return APP.user?.isAdmin === true; }
-function isSuperAdmin(){ return APP.user?.isAdmin && APP.user?.adminRole==="super"; }
+  // Fix data
+  APP.courses = _fixYtUrls(APP.courses);
+  lucide.createIcons();
 
-// ══════════════════════════════════════════════════════════
-// NAVIGATION & PAGES
-// ══════════════════════════════════════════════════════════
-function showPage(name){
-  // توجيه متعدد الصفحات
-  const targetFile = _getExpectedFile(name);
-  const currentFile = _getCurrentFile();
-  if(targetFile && targetFile !== currentFile){
-    sessionStorage.setItem("_navTarget", name);
-    window.location.href = targetFile;
-    return;
-  }
-  document.getElementById("public-wrapper").style.display = "none";
-  document.getElementById("app-wrapper").style.display = "none";
-  const publicPages = ["landing","about-public","login"];
-  if(publicPages.includes(name)){
-    document.getElementById("public-wrapper").style.display = "";
-    document.querySelectorAll("#public-wrapper .page").forEach(p=>p.classList.remove("active"));
-    const el = document.getElementById(`page-${name}`);
-    if(el){ el.classList.add("active"); el.style.animation="none"; requestAnimationFrame(()=>{ el.style.animation=""; }); }
-    if(name==="landing") renderPublicPlan();
-    if(name==="about-public") renderAboutPublic();
-    updatePubNav();
-  }
-}
-function updatePubNav(){
-  const nav = document.getElementById("pub-nav");
-  if(!nav) return;
-  window.addEventListener("scroll",()=>{
-    nav.style.background = window.scrollY>50 ? "rgba(42,18,48,.92)" : "transparent";
-    nav.style.backdropFilter = window.scrollY>50 ? "blur(16px)" : "none";
-    nav.style.borderBottom = window.scrollY>50 ? "1px solid rgba(212,180,142,.15)" : "none";
-  },{once:false});
-}
-function navTo(page){
-  // توجيه متعدد الصفحات
-  const targetFile = _getExpectedFile(page);
-  const currentFile = _getCurrentFile();
-  if(targetFile && targetFile !== currentFile){
-    sessionStorage.setItem("_navTarget", page);
-    window.location.href = targetFile;
-    return;
-  }
-  document.getElementById("public-wrapper").style.display = "none";
-  document.getElementById("app-wrapper").style.display = "";
-  document.querySelectorAll("#app-wrapper .page").forEach(p=>p.classList.remove("active"));
-  const el = document.getElementById(`app-page-${page}`);
-  if(!el) return;
-  el.classList.add("active");
-  el.style.animation="none";
-  requestAnimationFrame(()=>{ el.style.animation=""; });
-  APP.activePage = page;
-  // Nav active state
-  document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));
-  const nb = document.getElementById(`nb-${page}`);
-  if(nb) nb.classList.add("active");
-  // Render page
-  const renders = {
-    dashboard: renderDashboard, courses: renderCourses,
-    "course-detail": renderCourseDetail,
-    tests: renderTests, qa: renderQA,
-    schedule: renderSchedule,
-    "about-app": renderAboutApp, profile: renderProfile,
-    admin: renderAdmin, "admin-qa": renderAdminQA,
-  };
-  if(renders[page]) renders[page]();
-  closeNotifPanel();
-}
-function scrollToAbout(){ document.getElementById("about-teaser").scrollIntoView({behavior:"smooth"}); }
+  const _target = window._PAGE_TARGET || "landing";
+  console.log("▶ PAGE TARGET:", _target, "| file:", currentFile());
 
-// ══════════════════════════════════════════════════════════
-// AUTH
-// ══════════════════════════════════════════════════════════
-function switchLoginMode(mode){
-  const studentTabs=document.getElementById("student-tabs");
-  const loginForm=document.getElementById("login-form");
-  const regForm=document.getElementById("register-form");
-  const adminForm=document.getElementById("admin-login-form");
-  const modeStudent=document.getElementById("mode-student");
-  const modeAdmin=document.getElementById("mode-admin");
-  const act="flex:1;padding:9px;border-radius:9px;border:none;cursor:pointer;font-family:'Zain',sans-serif;font-size:12px;font-weight:700;transition:all .25s;background:linear-gradient(135deg,var(--purple),var(--purple-l));color:#fff;box-shadow:0 3px 10px rgba(59,27,64,.2)";
-  const inact="flex:1;padding:9px;border-radius:9px;border:none;cursor:pointer;font-family:'Zain',sans-serif;font-size:12px;font-weight:700;transition:all .25s;background:transparent;color:var(--muted)";
-  if(mode==="admin"){
-    modeAdmin.style.cssText=act; modeStudent.style.cssText=inact;
-    studentTabs.style.display="none"; loginForm.style.display="none";
-    regForm.style.display="none"; adminForm.style.display="";
+  // Show public page immediately
+  if(PUBLIC_PAGES.includes(_target)){
+    _showPublicPage(_target);
   } else {
-    modeStudent.style.cssText=act; modeAdmin.style.cssText=inact;
-    studentTabs.style.display=""; adminForm.style.display="none";
-    loginForm.style.display=""; regForm.style.display="none";
-  }
-}
-function switchTab(t){
-  document.getElementById("login-form").style.display = t==="login"?"":"none";
-  document.getElementById("register-form").style.display = t==="register"?"":"none";
-  const tl=document.getElementById("tab-login"), tr2=document.getElementById("tab-register");
-  const act="flex:1;padding:10px;border-radius:10px;border:none;cursor:pointer;font-family:'Zain',sans-serif;font-size:13px;font-weight:700;transition:all .28s;background:linear-gradient(135deg,var(--purple),var(--purple-l));color:#fff;box-shadow:0 4px 14px rgba(59,27,64,.22)";
-  const inact="flex:1;padding:10px;border-radius:10px;border:none;cursor:pointer;font-family:'Zain',sans-serif;font-size:13px;font-weight:700;transition:all .28s;background:transparent;color:var(--muted)";
-  if(t==="login"){ tl.style.cssText=act; tr2.style.cssText=inact; }
-  else           { tr2.style.cssText=act; tl.style.cssText=inact; }
-}
-
-// ── Admin login — Firebase Auth + Firestore ──
-async function doAdminLogin(){
-  const email = document.getElementById("al-email").value.trim();
-  const pass  = document.getElementById("al-pass").value;
-  const err   = document.getElementById("admin-login-err");
-  err.style.display="none";
-  if(!email||!pass){ err.textContent="يرجى إدخال البريد وكلمة المرور"; err.style.display=""; return; }
-  setBtnLoading("btn-admin-login",true,"جارٍ التحقق...");
-  try{
-    // 1. تسجيل دخول Firebase Auth
-    const cred = await FB_AUTH.signInWithEmailAndPassword(email, pass);
-    const uid = cred.user.uid;
-
-    // 2. التحقق من وجود الحساب في مجموعة "admins"
-    const adminProfile = await fsGetAdmin(uid);
-    if(!adminProfile){
-      // ليس مسؤولاً — أخرجه فوراً
-      await FB_AUTH.signOut();
-      err.textContent = "هذا الحساب ليس حساب مسؤول";
-      err.style.display = "";
-      return;
-    }
-
-    // 3. تسجيل الدخول كمسؤول
-    _adminSessionEmail = email;
-    _adminSessionPass  = pass;
-    loginUser({
-      id:               uid,
-      name:             adminProfile.fullName || adminProfile.username,
-      adminLabel:       adminProfile.username,
-      adminFullName:    adminProfile.fullName,
-      adminUsername:    adminProfile.username,
-      isAdmin:          true,
-      adminRole:        adminProfile.role,
-      adminPermissions: adminProfile.permissions || {},
-      completedLessons: [],
-      testResults:      [],
-    });
-  }catch(e){
-    err.textContent = _fbErrMsg(e.code);
-    err.style.display = "";
-    // ── حفظ بيانات المشرف دائماً في session (للاستعادة بعد redirect) ──
-    try{
-      sessionStorage.setItem("_adm_e", email);
-      // كلمة المرور لا تُحفظ في sessionStorage للأمان
-    }catch(_){}
-    // ── حفظ في localStorage إذا اختار "تذكرني" ──
-    if(document.getElementById("al-remember")?.checked){
-      try{ 
-        localStorage.setItem("ti_admin_rm", btoa(JSON.stringify({e:email,p:pass,ts:Date.now()})));
-        localStorage.setItem("_adm_e", email);
-      }catch(_){}
-    }
-  }finally{
-    setBtnLoading("btn-admin-login",false,"دخول المسؤول");
-  }
-}
-
-// تسجيل دخول تلقائي للمشرف
-async function tryAutoAdminLogin(){
-  try{
-    const raw = localStorage.getItem("ti_admin_rm");
-    if(!raw) return false;
-    const {e,p,ts} = JSON.parse(atob(raw));
-    // صلاحية 30 يوماً
-    if(Date.now() - ts > 30*24*60*60*1000){ localStorage.removeItem("ti_admin_rm"); return false; }
-    setBtnLoading("btn-admin-login",true,"جارٍ الدخول...");
-    const cred = await FB_AUTH.signInWithEmailAndPassword(e, p);
-    const adminProfile = await fsGetAdmin(cred.user.uid);
-    if(!adminProfile){ await FB_AUTH.signOut(); localStorage.removeItem("ti_admin_rm"); setBtnLoading("btn-admin-login",false,"دخول المسؤول"); return false; }
-    _adminSessionEmail=e; _adminSessionPass=p;
-    loginUser({id:cred.user.uid, name:adminProfile.fullName||adminProfile.username, adminLabel:adminProfile.username, adminFullName:adminProfile.fullName, adminUsername:adminProfile.username, isAdmin:true, adminRole:adminProfile.role, adminPermissions:adminProfile.permissions||{}, completedLessons:[], testResults:[]});
-    return true;
-  }catch(e){ localStorage.removeItem("ti_admin_rm"); setBtnLoading("btn-admin-login",false,"دخول المسؤول"); return false; }
-}
-
-// ── تذكرني ──
-const RM_KEY = "ti_rm";
-function toggleRememberMe(checked){
-  if(!checked){ localStorage.removeItem(RM_KEY); }
-}
-function saveRememberMe(email, pass){
-  try{ localStorage.setItem(RM_KEY, btoa(JSON.stringify({e:email,p:pass}))); }catch(e){}
-}
-function loadRememberMe(){
-  try{
-    const raw = localStorage.getItem(RM_KEY);
-    if(!raw) return null;
-    return JSON.parse(atob(raw));
-  }catch(e){ localStorage.removeItem(RM_KEY); return null; }
-}
-async function tryAutoLogin(){
-  const saved = loadRememberMe();
-  if(!saved||!saved.e||!saved.p) return false;
-  try{
-    const cred = await FB_AUTH.signInWithEmailAndPassword(saved.e, saved.p);
-    await _handleStudentFirebaseLogin(cred.user);
-    return true;
-  }catch(e){
-    // بيانات قديمة — احذف التذكر
-    localStorage.removeItem(RM_KEY);
-    return false;
-  }
-}
-
-// ── Student email/password login ──
-async function doLogin(){
-  const email=document.getElementById("l-email").value.trim();
-  const pass=document.getElementById("l-pass").value;
-  const remember=document.getElementById("l-remember")?.checked||false;
-  const err=document.getElementById("login-err");
-  err.style.display="none";
-  if(!email||!pass){err.textContent="يرجى إدخال البريد وكلمة المرور";err.style.display="";return;}
-  setBtnLoading("btn-email-login",true,"جاري الدخول...");
-  try{
-    const cred=await FB_AUTH.signInWithEmailAndPassword(email,pass);
-    if(remember){ saveRememberMe(email, pass); }
-    else { localStorage.removeItem(RM_KEY); }
-    await _handleStudentFirebaseLogin(cred.user);
-  }catch(e){
-    err.textContent=_fbErrMsg(e.code); err.style.display="";
-  }finally{ setBtnLoading("btn-email-login",false,"دخول"); }
-}
-
-// ── Student registration (Firebase Auth + Firestore) ──
-async function doRegister(){
-  const name=document.getElementById("r-name").value.trim();
-  const email=document.getElementById("r-email").value.trim();
-  const pass=document.getElementById("r-pass").value;
-  const err=document.getElementById("reg-err");
-  const showErr=msg=>{err.textContent=msg;err.style.cssText="display:block;color:#dc3545;font-size:13px;padding:9px 13px;background:#fff5f5;border-radius:9px;margin-bottom:12px;border:1px solid #ffcccc";};
-  const showOk=msg=>{err.innerHTML=msg;err.style.cssText="display:block;color:#28a745;font-size:13px;padding:14px 16px;background:#f0fff4;border-radius:12px;margin-bottom:12px;border:1px solid #b2dfdb;line-height:1.8;text-align:center";};
-
-  err.style.display="none";
-  if(!name){ showErr("⚠️ يرجى إدخال الاسم الثلاثي"); return; }
-  if(!email){ showErr("⚠️ يرجى إدخال البريد الإلكتروني"); return; }
-  if(!pass){ showErr("⚠️ يرجى إدخال كلمة المرور"); return; }
-  if(pass.length<6){ showErr("⚠️ كلمة المرور يجب أن تكون 6 أحرف على الأقل"); return; }
-
-  // التحقق من تطابق كلمتي المرور
-  const pass2 = document.getElementById("r-pass2")?.value||"";
-  if(pass2 && pass !== pass2){ showErr("⚠️ كلمتا المرور غير متطابقتَين"); return; }
-
-  // التحقق من صيغة البريد
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if(!emailRegex.test(email)){
-    showErr("⚠️ صيغة البريد الإلكتروني غير صحيحة"); return;
+    // App page: show spinner
+    document.getElementById("public-wrapper").style.display = "none";
+    document.getElementById("app-wrapper").style.display    = "none";
+    const sp=document.createElement("div");
+    sp.id="_spinner";
+    sp.style.cssText="position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg,#faf8f5);z-index:9999;gap:16px";
+    sp.innerHTML='<div style="width:48px;height:48px;border:4px solid rgba(59,27,64,.12);border-top-color:#3B1B40;border-radius:50%;animation:spin 0.7s linear infinite"></div><div style="font-family:Zain,sans-serif;font-size:14px;color:#7a6a7e;font-weight:600">جارٍ التحقق من الجلسة...</div>';
+    document.body.appendChild(sp);
   }
 
-  setBtnLoading("btn-register",true,"جارٍ إنشاء الحساب...");
-  try{
-    // 1. إنشاء حساب Firebase Auth
-    const cred = await FB_AUTH.createUserWithEmailAndPassword(email, pass);
-    const uid = cred.user.uid;
+  // ── onAuthStateChanged — المحور الرئيسي ──
+  let _authDone = false;
+  FB_AUTH.onAuthStateChanged(async (fbUser) => {
+    if(_authDone && APP.user) return; // already handled
 
-    // 2. بناء الملف الشخصي
-    const profile={
-      uid,
-      name,
-      email,
-      phone:   document.getElementById("r-phone")?.value.trim()||"",
-      age:     document.getElementById("r-age")?.value||"",
-      telegram:document.getElementById("r-tg")?.value.trim()||"",
-      level:   document.getElementById("r-level")?.value||"",
-      status:  "pending",
-      completedLessons: [],
-      testResults: [],
-      createdAt: new Date().toISOString(),
-      provider: "email"
-    };
+    // Remove spinner/overlay
+    document.getElementById("_spinner")?.remove();
+    document.getElementById("redirect-overlay")?.remove();
 
-    // 3. حفظ في Firestore (مع معالجة الأخطاء)
-    let savedToFirestore = false;
-    try{
-      await FB_DB.collection("users").doc(uid).set(profile);
-      savedToFirestore = true;
-    }catch(fsErr){
-      console.warn("Firestore write failed:", fsErr.code, fsErr.message);
-      // حفظ احتياطي في localStorage
+    if(fbUser){
+      if(APP.user){ console.log("onAuthStateChanged: already logged in, skip"); return; }
+      _authDone = true;
+      console.log("onAuthStateChanged: user =", fbUser.uid);
+
+      // Check admin
+      const adminData = await fsGet("admins", fbUser.uid);
+      if(adminData){
+        console.log("✅ Admin detected:", adminData.username);
+        loginUser({
+          id:fbUser.uid, name:adminData.fullName||adminData.username||"مشرف",
+          adminLabel:adminData.username, adminFullName:adminData.fullName,
+          adminUsername:adminData.username, isAdmin:true,
+          adminRole:adminData.role||"supervisor",
+          adminPermissions:adminData.permissions||{},
+          completedLessons:[], testResults:[],
+        });
+        loadFromFirestore().then(()=>{ if(APP.activePage) _renderPage(APP.activePage); });
+        return;
+      }
+
+      // Regular student
+      let profile = null;
       try{
-        const pending = JSON.parse(localStorage.getItem("ti_pending_reg")||"[]");
-        pending.push(profile);
-        localStorage.setItem("ti_pending_reg", JSON.stringify(pending));
-      }catch(_){}
-    }
+        const snap = await FB_DB.collection("users").doc(fbUser.uid).get();
+        if(snap.exists) profile = snap.data();
+        console.log("Student profile:", profile?.status);
+      }catch(e){ console.log("Firestore read error:", e.message); }
 
-    // 4. تسجيل خروج فوري (انتظار الموافقة)
-    await FB_AUTH.signOut();
+      if(!profile){
+        // New user without profile
+        await FB_AUTH.signOut();
+        if(!PUBLIC_PAGES.includes(_target)){ sessionStorage.setItem("_loginMsg","noprofile"); location.href="login.html"; }
+        return;
+      }
 
-    // 5. مسح الحقول
-    ["r-name","r-email","r-pass","r-phone","r-age","r-tg"].forEach(id=>{
-      const el=document.getElementById(id); if(el) el.value="";
-    });
-    const lvl=document.getElementById("r-level"); if(lvl) lvl.value="";
+      const status = (profile.status||"pending").toLowerCase();
+      if(status==="pending"){
+        await FB_AUTH.signOut();
+        if(!PUBLIC_PAGES.includes(_target)){ sessionStorage.setItem("_loginMsg","pending"); location.href="login.html"; }
+        else{ const e=document.getElementById("login-err"); if(e) _showErr(e,"⏳ حسابك في انتظار موافقة المسؤول"); }
+        return;
+      }
+      if(status==="rejected"){
+        await FB_AUTH.signOut();
+        if(!PUBLIC_PAGES.includes(_target)){ sessionStorage.setItem("_loginMsg","rejected"); location.href="login.html"; }
+        else{ const e=document.getElementById("login-err"); if(e) _showErr(e,"❌ تم رفض طلبك — تواصل مع المسؤول"); }
+        return;
+      }
 
-    // 6. رسالة نجاح
-    showOk(
-      "<strong>🎉 تم التسجيل بنجاح!</strong><br/>" +
-      "حسابك في انتظار موافقة المسؤول.<br/>" +
-      "<small style='color:var(--muted)'>ستتلقى إشعاراً عند القبول أو التواصل معنا على تيليجرام.</small>"
-    );
-
-    // العودة لتبويب الدخول بعد 3 ثوانٍ
-    setTimeout(()=>{ try{ switchTab("login"); }catch(_){} }, 3000);
-
-  }catch(authErr){
-    console.error("Register error:", authErr.code, authErr.message);
-    showErr(_fbErrMsg(authErr.code));
-  }finally{
-    setBtnLoading("btn-register",false,"إنشاء الحساب");
-  }
-}
-
-// ── Google Sign-In (redirect — يعمل مع جميع الدول والمتصفحات) ──
-async function doGoogleLogin(){
-  setBtnLoading("btn-google-login",true,"جاري التوجيه...");
-  try{
-    const provider=new firebase.auth.GoogleAuthProvider();
-    provider.setCustomParameters({prompt:"select_account"});
-    // نحفظ نوع مزود الدخول لمعالجة redirect القادم
-    sessionStorage.setItem("_pendingSocial","google");
-    await FB_AUTH.signInWithRedirect(provider);
-  }catch(e){
-    setBtnLoading("btn-google-login",false,null);
-    lucide.createIcons();
-    toast(_fbErrMsg(e.code),"error");
-  }
-}
-
-// ── Apple Sign-In (redirect) ──
-async function doAppleLogin(){
-  setBtnLoading("btn-apple-login",true,"جاري التوجيه...");
-  try{
-    const provider=new firebase.auth.OAuthProvider("apple.com");
-    provider.addScope("email"); provider.addScope("name");
-    provider.setCustomParameters({locale:"ar"});
-    sessionStorage.setItem("_pendingSocial","apple");
-    await FB_AUTH.signInWithRedirect(provider);
-  }catch(e){
-    setBtnLoading("btn-apple-login",false,null);
-    lucide.createIcons();
-    toast(_fbErrMsg(e.code),"error");
-  }
-}
-
-// ── معالجة نتيجة redirect بعد العودة من Google/Apple ──
-async function _handleRedirectResult(){
-  try{
-    const result=await FB_AUTH.getRedirectResult();
-    if(result && result.user){
-      sessionStorage.removeItem("_pendingSocial");
-      await _handleSocialLogin(result);
-    }
-  }catch(e){
-    if(e.code && e.code!=="auth/no-auth-event"){
-      toast(_fbErrMsg(e.code),"error");
-    }
-  }
-}
-
-// ── Handle social (Google / Apple) first-time or returning login ──
-async function _handleSocialLogin(cred){
-  const fbUser=cred.user;
-  let profile=await fsGetUser(fbUser.uid);
-  if(!profile){
-    profile={
-      name:fbUser.displayName||fbUser.email?.split("@")[0]||"مستخدم جديد",
-      email:fbUser.email||"",phone:"",age:"",telegram:"",level:"",
-      status:"pending",completedLessons:[],testResults:[],
-      createdAt:new Date().toISOString(),
-      provider:fbUser.providerData[0]?.providerId||"social"
-    };
-    await fsSetUser(fbUser.uid,profile);
-    await FB_AUTH.signOut();
-    toast("✅ تم ربط حسابك! في انتظار موافقة المسؤول.","success",5000);
-    return;
-  }
-  await _handleStudentFirebaseLogin(fbUser,profile);
-}
-
-// ── Common post-login handler ──
-async function _handleStudentFirebaseLogin(fbUser, profileArg){
-  // ── جلب الملف الشخصي من Firestore ──
-  let profile = profileArg || null;
-  let fsError = null;
-
-  if(!profile){
-    try{
-      const snap = await FB_DB.collection("users").doc(fbUser.uid).get();
-      if(snap.exists) profile = snap.data();
-    }catch(e){
-      fsError = e;
-      console.warn("Firestore read failed:", e.code, e.message);
-    }
-  }
-
-  // ── حالة: Firestore غير متاح ──
-  if(fsError && !profile){
-    // محاولة من localStorage كاحتياط
-    try{
-      const cached = JSON.parse(localStorage.getItem("ti_user_cache_"+fbUser.uid)||"null");
-      if(cached) profile = cached;
-    }catch(_){}
-
-    if(!profile){
-      // نسمح بالدخول المؤقت مع تحذير
-      toast("⚠️ تعذّر التحقق من حالة حسابك — دخول مؤقت","info",6000);
+      // Approved
       loginUser({
-        id: fbUser.uid,
-        name: fbUser.displayName || fbUser.email?.split("@")[0] || "طالب",
-        email: fbUser.email||"",
-        phone:"", age:"", telegram:"", level:"",
-        isAdmin: false,
-        completedLessons:[], testResults:[]
+        id:fbUser.uid, name:profile.name||fbUser.email?.split("@")[0]||"طالب",
+        email:profile.email||fbUser.email||"", phone:profile.phone||"",
+        age:profile.age||"", telegram:profile.telegram||"", level:profile.level||"",
+        isAdmin:false, completedLessons:profile.completedLessons||[], testResults:profile.testResults||[],
       });
-      return;
-    }
-  }
+      loadFromFirestore().then(()=>{ if(APP.activePage) _renderPage(APP.activePage); });
 
-  // ── حالة: مستخدم جديد لم يُسجَّل عبر النموذج ──
-  if(!profile){
-    // تسجيل عبر Google/Apple بدون ملف — أنشئ ملف pending
-    const newProfile = {
-      uid: fbUser.uid,
-      name: fbUser.displayName || fbUser.email?.split("@")[0] || "طالب",
-      email: fbUser.email||"",
-      phone:"", age:"", telegram:"", level:"",
-      status:"pending",
-      completedLessons:[], testResults:[],
-      createdAt: new Date().toISOString(),
-      provider: fbUser.providerData?.[0]?.providerId||"unknown"
-    };
-    try{ await FB_DB.collection("users").doc(fbUser.uid).set(newProfile); }catch(_){}
-    await FB_AUTH.signOut();
-    _showLoginStatus("pending");
-    return;
-  }
+    } else {
+      // Not logged in
+      _authDone = true;
+      console.log("onAuthStateChanged: no user");
 
-  // ── فحص حالة الحساب ──
-  const status = (profile.status||"pending").toLowerCase();
+      if(!PUBLIC_PAGES.includes(_target)){
+        sessionStorage.setItem("_goto", _target);
+        location.href = "login.html";
+        return;
+      }
 
-  if(status === "pending"){
-    await FB_AUTH.signOut();
-    _showLoginStatus("pending");
-    return;
-  }
-
-  if(status === "rejected"){
-    await FB_AUTH.signOut();
-    _showLoginStatus("rejected");
-    return;
-  }
-
-  // ── حفظ مؤقت في localStorage للتسريع ──
-  try{ localStorage.setItem("ti_user_cache_"+fbUser.uid, JSON.stringify(profile)); }catch(_){}
-
-  // ── تسجيل الدخول ──
-  loginUser({
-    id: fbUser.uid,
-    name: profile.name || fbUser.displayName || fbUser.email?.split("@")[0] || "طالب",
-    email: profile.email || fbUser.email||"",
-    phone: profile.phone||"", age: profile.age||"",
-    telegram: profile.telegram||"", level: profile.level||"",
-    isAdmin: false,
-    completedLessons: profile.completedLessons||[],
-    testResults: profile.testResults||[]
-  });
-}
-
-// ── عرض رسالة حالة الحساب في نموذج الدخول ──
-function _showLoginStatus(status){
-  // نعرض الرسالة في حقل خطأ الدخول أو نُظهر toast
-  const loginErr = document.getElementById("login-err");
-  if(status === "pending"){
-    const msg = "⏳ حسابك في انتظار موافقة المسؤول. سيتم إشعارك قريباً.";
-    if(loginErr){ loginErr.textContent=msg; loginErr.style.cssText="display:block;color:#856404;font-size:13px;padding:11px 14px;background:#fff3cd;border-radius:10px;margin-bottom:12px;border:1px solid #ffc107"; }
-    else toast(msg,"info",6000);
-  } else if(status === "rejected"){
-    const msg = "❌ تم رفض طلب تسجيلك. يرجى التواصل مع المسؤول.";
-    if(loginErr){ loginErr.textContent=msg; loginErr.style.cssText="display:block;color:#dc3545;font-size:13px;padding:11px 14px;background:#fff5f5;border-radius:10px;margin-bottom:12px;border:1px solid #dc3545"; }
-    else toast(msg,"error",6000);
-  }
-}
-
-// ── Firebase error messages in Arabic ──
-function _fbErrMsg(code){
-  const m={
-    "auth/user-not-found":"البريد الإلكتروني غير مسجل",
-    "auth/wrong-password":"كلمة المرور غير صحيحة",
-    "auth/invalid-credential":"البريد أو كلمة المرور غير صحيحة",
-    "auth/email-already-in-use":"البريد مسجل مسبقاً",
-    "auth/invalid-email":"صيغة البريد الإلكتروني غير صحيحة",
-    "auth/weak-password":"كلمة المرور ضعيفة (6 أحرف على الأقل)",
-    "auth/too-many-requests":"محاولات كثيرة، يرجى الانتظار قليلاً",
-    "auth/network-request-failed":"تعذّر الاتصال بالإنترنت",
-    "auth/popup-blocked":"البوب-أب محجوب في المتصفح",
-    "auth/popup-closed-by-user":"تم إغلاق نافذة تسجيل الدخول",
-    "auth/account-exists-with-different-credential":"هذا البريد مرتبط بطريقة دخول أخرى",
-    "auth/redirect-cancelled-by-user":"تم إلغاء عملية تسجيل الدخول",
-    "auth/unauthorized-domain":"النطاق غير مُصرَّح به في Firebase Console",
-    "auth/operation-not-allowed":"هذه الطريقة غير مفعّلة في Firebase Console",
-    "auth/user-disabled":"هذا الحساب موقوف",
-    "auth/requires-recent-login":"يرجى إعادة تسجيل الدخول لإتمام هذه العملية",
-  };
-  return m[code]||`حدث خطأ (${code||"غير معروف"})`;
-}
-
-// ── Button loading state ──
-// ── إظهار/إخفاء كلمة المرور ──
-function togglePassVis(inputId, btn){
-  const inp = document.getElementById(inputId);
-  if(!inp) return;
-  const isHidden = inp.type === "password";
-  inp.type = isHidden ? "text" : "password";
-  const icon = btn.querySelector("i");
-  if(icon) icon.setAttribute("data-lucide", isHidden ? "eye-off" : "eye");
-  lucide.createIcons({nodes:[btn]});
-}
-
-function setBtnLoading(id,loading,text){
-  const btn=document.getElementById(id);
-  if(!btn) return;
-  if(loading){ btn.disabled=true; btn._orig=btn.innerHTML; if(text) btn.innerHTML=`<span style="opacity:.7">${text}</span>`; }
-  else{ btn.disabled=false; if(btn._orig) btn.innerHTML=btn._orig; }
-}
-
-function loginUser(u){
-  APP.user=u;
-  document.getElementById("public-wrapper").style.display="none";
-  document.getElementById("app-wrapper").style.display="";
-  if(isAdmin()){
-    document.getElementById("nb-admin").style.display="";
-    document.getElementById("nb-admin-qa").style.display="";
-    document.getElementById("admin-badge").style.display="";
-    const badge=document.getElementById("admin-badge");
-    if(badge){
-      badge.textContent = u.adminRole==="super" ? "المشرف العام" : (u.adminUsername||u.adminLabel||"مشرف");
-    }
-    const mobAdmin=document.getElementById("mob-nb-admin");
-    if(mobAdmin) mobAdmin.style.display="";
-  }
-  const cfg=APP.siteConfig;
-  const mobCh=document.getElementById("mob-nb-channel");
-  if(mobCh && (cfg.privateChannel||cfg.contactTelegram||cfg.sheikhChannel)) mobCh.style.display="";
-  updateNotifBadge();
-  _updateAppFooter();
-  const _dest = (window._PENDING_NAV && window._PENDING_NAV !== "login") ? window._PENDING_NAV : "dashboard";
-  window._PENDING_NAV = null;
-  navTo(_dest);
-  toast(`أهلاً ${u.name}! 👋`,"success");
-}
-
-
-async function doLogout(){
-  localStorage.removeItem(RM_KEY);
-  localStorage.removeItem("ti_admin_rm");
-  APP.user = null;
-  _adminSessionEmail = "";
-  _adminSessionPass  = "";
-  try{ await FB_AUTH.signOut(); }catch(e){}
-  // أخفِ شريط التطبيق وأظهر الصفحة الرئيسية
-  document.getElementById("app-wrapper").style.display = "none";
-  document.getElementById("nb-admin").style.display = "none";
-  document.getElementById("nb-admin-qa").style.display = "none";
-  document.getElementById("admin-badge").style.display = "none";
-  const mobAdmin = document.getElementById("mob-nb-admin");
-  if(mobAdmin) mobAdmin.style.display = "none";
-  toast("تم تسجيل الخروج بنجاح","info");
-  window.location.href = "index.html";
-}
-
-async function deleteMyAccount(){
-  confirm2("هل تريد حذف حسابك نهائياً؟ لا يمكن التراجع عن هذا الإجراء.",async()=>{
-    try{
-      const fbUser=FB_AUTH.currentUser;
-      if(fbUser){
-        // Delete Firestore profile first
-        await fsDeleteUser(fbUser.uid);
-        // Try to delete Firebase Auth account
-        try{
-          await fbUser.delete();
-        }catch(authErr){
-          if(authErr.code==="auth/requires-recent-login"){
-            // Re-authenticate then delete
-            toast("يرجى إعادة تسجيل الدخول لتأكيد حذف الحساب","info",5000);
-            await FB_AUTH.signOut();
-            APP.user=null;
-            document.getElementById("app-wrapper").style.display="none";
-            showPage("login");
-            return;
-          }
+      // Show login message if redirected
+      const msg = sessionStorage.getItem("_loginMsg");
+      if(msg){ sessionStorage.removeItem("_loginMsg");
+        const errEl=document.getElementById("login-err");
+        if(errEl){
+          if(msg==="pending")  _showErr(errEl,"⏳ حسابك في انتظار موافقة المسؤول");
+          if(msg==="rejected") _showErr(errEl,"❌ تم رفض طلبك — تواصل مع المسؤول");
         }
       }
-    }catch(e){ console.warn("deleteMyAccount error",e); }
-    await doLogout();
-    toast("تم حذف حسابك بنجاح","info");
+
+      // Auto-login student
+      const rm = loadRememberMe();
+      if(rm?.e && rm?.p){
+        console.log("Auto-login student:", rm.e);
+        try{ await FB_AUTH.signInWithEmailAndPassword(rm.e, rm.p); }
+        catch(e){ console.log("Auto-login failed:", e.message); localStorage.removeItem("ti_rm"); }
+      }
+
+      // Auto-login admin
+      try{
+        const arm = JSON.parse(atob(localStorage.getItem("ti_admin_rm")||""));
+        if(arm?.e && arm?.p && (Date.now()-arm.ts < 30*24*60*60*1000)){
+          console.log("Auto-login admin:", arm.e);
+          await FB_AUTH.signInWithEmailAndPassword(arm.e, arm.p);
+        }
+      }catch(_){}
+    }
   });
-}
 
-// ══════════════════════════════════════════════════════════
-// NOTIFICATIONS
-// ══════════════════════════════════════════════════════════
-function addNotif(msg, type="info"){
-  const n={id:uid(),msg,type,date:new Date().toLocaleDateString("ar"),read:false};
-  APP.notifications.unshift(n);
-  if(APP.notifications.length>50) APP.notifications=APP.notifications.slice(0,50);
-  saveState();
-  updateNotifBadge();
-}
-function updateNotifBadge(){
-  const unread=APP.notifications.filter(n=>!n.read).length;
-  const dot=document.getElementById("notif-badge-dot");
-  if(dot) dot.style.display=unread>0?"":"none";
-}
-function toggleNotifPanel(){
-  const p=document.getElementById("notif-panel");
-  if(p.style.display==="none"||!p.style.display){
-    renderNotifPanel();
-    p.style.display="";
-    APP.notifications.forEach(n=>n.read=true);
-    saveState();
-    updateNotifBadge();
-  } else { p.style.display="none"; }
-}
-function closeNotifPanel(){ document.getElementById("notif-panel").style.display="none"; }
-function renderNotifPanel(){
-  const list=document.getElementById("notif-list");
-  if(!APP.notifications.length){
-    list.innerHTML=`<p style="color:var(--muted);text-align:center;padding:20px;font-size:13px">لا توجد إشعارات</p>`;return;
+  // Handle Google/Apple redirect result
+  try{
+    const result = await FB_AUTH.getRedirectResult();
+    if(result?.user){
+      sessionStorage.removeItem("_pendingSocial");
+      console.log("✅ Social redirect result:", result.user.uid);
+    }
+  }catch(e){ if(e.code !== "auth/no-auth-event") console.log("Redirect result error:", e.message); }
+
+  // Ensure super admin exists (once)
+  if(PUBLIC_PAGES.includes(_target)) ensureSuperAdmin();
+
+  // Load data in background for public pages
+  if(PUBLIC_PAGES.includes(_target)){
+    loadFromFirestore().then(()=>{ renderPublicPlan(); renderAboutPublic(); });
   }
-  list.innerHTML=APP.notifications.slice(0,15).map(n=>`
-    <div style="padding:10px 12px;border-radius:10px;margin-bottom:5px;background:${n.read?"var(--bg)":"rgba(212,180,142,.1)"};border:1px solid rgba(212,180,142,.15)">
-      <div style="font-size:13px;color:var(--text);margin-bottom:3px">${n.msg}</div>
-      <div style="font-size:11px;color:var(--muted)">${n.date}</div>
-    </div>
-  `).join("");
-}
-function clearNotifs(){ APP.notifications=[]; saveState(); updateNotifBadge(); renderNotifPanel(); }
 
-// ── روابط التيليجرام والقنوات ──
-function _tgHandle(val){
-  // يحوّل @username أو t.me/... إلى رابط t.me
-  if(!val) return "";
-  val=val.trim();
-  if(val.startsWith("http")) return val;
-  if(val.startsWith("@")) return `https://t.me/${val.slice(1)}`;
-  return `https://t.me/${val}`;
-}
-function _openTgLink(val){
-  if(!val){ toast("لم يتم تعيين رابط بعد","info"); return; }
-  const url=_tgHandle(val);
-  // محاولة فتح التطبيق أولاً
-  const appUrl = url.replace("https://t.me/","tg://resolve?domain=");
-  const a=document.createElement("a"); a.href=appUrl; a.style.display="none"; document.body.appendChild(a);
-  a.click(); document.body.removeChild(a);
-  // فتح الرابط العادي كاحتياط
-  setTimeout(()=>{ window.open(url,"_blank"); }, 300);
-}
-function openTelegram(){
-  _openTgLink(APP.siteConfig.contactTelegram);
-}
-function openSheikhChannel(){
-  _openTgLink(APP.siteConfig.sheikhChannel);
-}
-function openPrivateChannel(){
-  _openTgLink(APP.siteConfig.privateChannel);
-}
+  // Close notif panel on outside click
+  document.addEventListener("click", e => {
+    const p=document.getElementById("notif-panel"), btn=document.getElementById("nb-notif");
+    if(p && btn && !p.contains(e.target) && !btn.contains(e.target)) p.style.display="none";
+  });
+});
 
-// ══════════════════════════════════════════════════════════
-// MODALS
-// ══════════════════════════════════════════════════════════
-function openModal(content, title=""){
-  document.getElementById("modal-container").innerHTML=`
-    <div class="modal-overlay" onclick="closeModal()">
-      <div class="modal-box" onclick="event.stopPropagation()">
-        <div class="modal-head">
-          <span class="modal-title">${title}</span>
-          <button class="modal-close" onclick="closeModal()">✕</button>
-        </div>
-        ${content}
-      </div>
-    </div>`;
-  lucide.createIcons();
-}
-function closeModal(){ document.getElementById("modal-container").innerHTML=""; }
 
-// ══════════════════════════════════════════════════════════
-// DASHBOARD
-// ══════════════════════════════════════════════════════════
+// ══ RENDER FUNCTIONS ══
 
 function renderDashboard(){
   const u=APP.user;
@@ -2436,27 +1900,7 @@ function renderAboutPublic(){
   renderPublicPlan();
 }
 
-function _updateAppFooter(){
-  const cfg=APP.siteConfig;
-  // Nav channel button
-  const nbCh=document.getElementById("nb-channel");
-  if(nbCh) nbCh.style.display=(cfg.privateChannel||cfg.sheikhChannel||cfg.contactTelegram)?"":"none";
-  // App footer tg
-  const ftg=document.getElementById("footer-tg-btn");
-  if(ftg){ ftg.style.display=cfg.contactTelegram?"inline-flex":"none"; }
-  const ftgLbl=document.getElementById("footer-tg-label");
-  if(ftgLbl) ftgLbl.textContent=cfg.contactTelegram||"تيليجرام";
-  // App footer sheikh
-  const fsh=document.getElementById("app-footer-sheikh");
-  if(fsh) fsh.style.display=cfg.sheikhChannel?"":"none";
-}
 
-function openTelegramFromNav(){
-  const cfg=APP.siteConfig;
-  if(cfg.privateChannel) openPrivateChannel();
-  else if(cfg.contactTelegram) openTelegram();
-  else if(cfg.sheikhChannel) openSheikhChannel();
-}
 function renderPublicPlan(){
   const el=document.getElementById("public-plan-grid");
   if(!el) return;
@@ -2744,37 +2188,6 @@ service cloud.firestore {<br>
   </div>`;
   lucide.createIcons();
   setTimeout(()=>{ renderAdminUsers("all"); if(isSuperAdmin()) loadSupervisors(); }, 80);
-}
-
-async function checkSyncStatus(){
-  const el=document.getElementById("sync-status");
-  if(!el) return;
-  el.innerHTML=`<span style="color:var(--muted)">جارٍ الفحص...</span>`;
-  try{
-    // اختبار الكتابة
-    await FB_DB.collection("taaseel_app").doc("_ping").set({ping:Date.now()});
-    const localTs=getLocalTs();
-    const snap=await FB_DB.collection("taaseel_app").doc("_meta").get();
-    const fsTs=snap.exists?(snap.data().ts||0):0;
-    const inSync=localTs<=fsTs+1000; // تسامح ثانية واحدة
-    el.innerHTML=`
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-        <div style="width:8px;height:8px;border-radius:50%;background:${inSync?"#28a745":"#ffc107"}"></div>
-        <span style="font-weight:600;color:${inSync?"#28a745":"#b8860b"}">${inSync?"متزامن مع Firestore ✓":"بيانات محلية غير مزامنة"}</span>
-      </div>
-      <div style="font-size:11px;color:var(--muted)">
-        localStorage: ${localTs?new Date(localTs).toLocaleString("ar"):"لا يوجد"}<br>
-        Firestore: ${fsTs?new Date(fsTs).toLocaleString("ar"):"لا يوجد"}
-      </div>`;
-  }catch(e){
-    el.innerHTML=`
-      <div style="display:flex;align-items:center;gap:8px">
-        <div style="width:8px;height:8px;border-radius:50%;background:#dc3545"></div>
-        <span style="font-weight:600;color:#dc3545">Firestore غير متاح — يعمل محلياً فقط</span>
-      </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px">السبب: ${e.code||e.message||"خطأ غير معروف"}</div>
-      <div style="font-size:11px;color:#dc3545;margin-top:4px">⚠️ يرجى مراجعة قواعد Firestore أدناه</div>`;
-  }
 }
 
 async function forceSyncToFirestore(){
@@ -3502,23 +2915,7 @@ function showLockedMsg(){
 }
 
 // ── YouTube URL normalizer ──
-function toYoutubeEmbed(url){
-  if(!url) return "";
-  url = url.trim();
-  if(url.includes("/embed/")) return url;
-  const shortM = url.match(/youtu\.be\/([^?&\s]+)/);
-  if(shortM) return `https://www.youtube.com/embed/${shortM[1]}`;
-  const watchM = url.match(/[?&]v=([^&\s]+)/);
-  if(watchM) return `https://www.youtube.com/embed/${watchM[1]}`;
-  const shortsM = url.match(/\/shorts\/([^?&\s]+)/);
-  if(shortsM) return `https://www.youtube.com/embed/${shortsM[1]}`;
-  return url;
-}
 // إصلاح روابط YouTube في البيانات المخزّنة
-function _fixYtUrls(courses){
-  if(!Array.isArray(courses)) return courses||[];
-  return courses.map(c=>({...c, lessons:(c.lessons||[]).map(l=>({...l, youtube:toYoutubeEmbed(l.youtube||"")})) }));
-}
 
 // Lesson CRUD
 function adminAddLesson(cid){
@@ -3598,13 +2995,6 @@ function adminDeleteLesson(cid,lid){
 }
 
 // Exercise CRUD
-function adminAddExercise(cid,lid){
-  _buildExModal(cid,lid,null);
-}
-function adminEditExercise(cid,lid,ei){
-  _buildExModal(cid,lid,ei);
-}
-// ── Exercise CRUD — يدعم خيارات متعددة وإجابات متعددة ──
 function adminAddExercise(cid,lid){ _buildExModal(cid,lid,null); }
 function adminEditExercise(cid,lid,ei){ _buildExModal(cid,lid,ei); }
 
@@ -3981,34 +3371,10 @@ async function checkSyncStatus(){
 // ══════════════════════════════════════════════════════════
 // MOBILE MENU
 // ══════════════════════════════════════════════════════════
-function toggleMobileMenu(){
-  const menu=document.getElementById("mobile-menu");
-  const overlay=document.getElementById("mobile-menu-overlay");
-  const isOpen=menu.classList.contains("open");
-  if(isOpen){ closeMobileMenu(); }
-  else {
-    menu.classList.add("open");
-    overlay.style.display="block";
-    lucide.createIcons({nodes:[menu]});
-  }
-}
-function closeMobileMenu(){
-  document.getElementById("mobile-menu").classList.remove("open");
-  document.getElementById("mobile-menu-overlay").style.display="none";
-}
 
 // ══════════════════════════════════════════════════════════
 // SCHEDULE (جدول الدروس)
 // ══════════════════════════════════════════════════════════
-async function fsSaveSchedule(sch){
-  try{ await FB_DB.collection("config").doc("schedule").set({data:sch}); }catch(e){}
-}
-async function fsLoadSchedule(){
-  try{
-    const snap=await FB_DB.collection("config").doc("schedule").get();
-    return snap.exists?snap.data().data:null;
-  }catch(e){return null;}
-}
 
 function renderSchedule(){
   const days=["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس"];
@@ -4109,27 +3475,6 @@ async function saveSchedule(){
 // ══════════════════════════════════════════════════════════
 // CHANNEL WARNING MODAL
 // ══════════════════════════════════════════════════════════
-function openPrivateChannelWithWarning(){
-  openModal(`
-    <div style="text-align:center;padding:10px 0">
-      <div style="width:56px;height:56px;border-radius:50%;background:rgba(220,53,69,.1);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;border:2px solid rgba(220,53,69,.2)">
-        <i data-lucide="alert-triangle" style="width:26px;height:26px;color:#dc3545"></i>
-      </div>
-      <h3 style="color:var(--purple);font-size:16px;font-weight:800;margin-bottom:10px">تنبيه مهم</h3>
-      <p style="color:var(--text);font-size:14px;line-height:1.8;margin-bottom:16px">
-        هذه القناة مخصصة حصراً لطلاب معهد التأصيل العلمي.<br>
-        <strong style="color:#dc3545">يُمنع منعاً باتاً نشر الرابط أو مشاركته</strong> مع أي شخص خارج المعهد.
-      </p>
-      <div style="display:flex;gap:10px;justify-content:center">
-        <button class="btn btn-primary" onclick="closeModal();openPrivateChannel()">
-          <i data-lucide="send" style="width:14px;height:14px"></i> أفهم وأوافق — انتقل للقناة
-        </button>
-        <button class="btn btn-ghost" onclick="closeModal()">إغلاق</button>
-      </div>
-    </div>
-  `,"تحذير");
-  lucide.createIcons();
-}
 
 // ══════════════════════════════════════════════════════════
 // INSTITUTE INFO EDIT
@@ -4238,180 +3583,3 @@ function _injectPageLinks(){
 // ══════════════════════════════════════════════════════════
 // STARTUP
 // ══════════════════════════════════════════════════════════
-window.addEventListener("DOMContentLoaded", async () => {
-  // Fix data
-  APP.courses = fixYtUrls(APP.courses);
-  lucide.createIcons();
-
-  // Restore sessionStorage nav target
-  const _stored = sessionStorage.getItem("_navTarget");
-  if(_stored){ sessionStorage.removeItem("_navTarget"); sessionStorage.setItem("_goto",_stored); }
-
-  // Current page
-  const _cur = currentPage();
-  const _publicPages = ["landing","login","about-public"];
-
-  // Show public page immediately if needed
-  if(_publicPages.includes(_cur)){
-    document.getElementById("public-wrapper").style.display = "";
-    document.getElementById("app-wrapper").style.display = "none";
-    document.querySelectorAll("#public-wrapper .page").forEach(p=>p.classList.remove("active"));
-    const _el = document.getElementById("page-"+_cur);
-    if(_el) _el.classList.add("active");
-    renderPublicPlan();
-    renderAboutPublic();
-    updatePubNav();
-  } else {
-    // App page: show spinner while checking auth
-    document.getElementById("public-wrapper").style.display = "none";
-    document.getElementById("app-wrapper").style.display = "none";
-    const spinner = document.createElement("div");
-    spinner.id = "_spinner";
-    spinner.style.cssText = "position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg,#faf8f5);z-index:9999;gap:16px;";
-    spinner.innerHTML = '<div style="width:48px;height:48px;border:4px solid rgba(59,27,64,.12);border-top-color:#3B1B40;border-radius:50%;animation:spin 0.7s linear infinite"></div><div style="font-family:Zain,sans-serif;font-size:14px;color:#7a6a7e;font-weight:600">جارٍ التحقق من الجلسة...</div>';
-    document.body.appendChild(spinner);
-  }
-
-  // ── onAuthStateChanged: the SINGLE source of truth for auth ──
-  let _resolved = false;
-  FB_AUTH.onAuthStateChanged(async (fbUser) => {
-    if(_resolved && APP.user) return; // Already logged in on this page
-
-    // Remove spinner
-    document.getElementById("_spinner")?.remove();
-    document.getElementById("redirect-overlay")?.remove();
-
-    if(fbUser) {
-      if(APP.user) return; // Already handled
-      _resolved = true;
-
-      // Check if admin first
-      const adminData = await fsGet("admins", fbUser.uid);
-      if(adminData) {
-        loginUser({
-          id: fbUser.uid,
-          name: adminData.fullName || adminData.username || "مشرف",
-          adminLabel: adminData.username,
-          adminFullName: adminData.fullName,
-          adminUsername: adminData.username,
-          isAdmin: true,
-          adminRole: adminData.role || "supervisor",
-          adminPermissions: adminData.permissions || {},
-          completedLessons: [],
-          testResults: [],
-        });
-        // Load data in background
-        loadFromFirestore().then(() => {
-          if(APP.activePage) _renderPage(APP.activePage);
-        });
-        return;
-      }
-
-      // Regular student
-      let profile = null;
-      try {
-        const snap = await FB_DB.collection("users").doc(fbUser.uid).get();
-        if(snap.exists) profile = snap.data();
-      } catch(e) {
-        console.warn("Firestore user read:", e.code);
-      }
-
-      if(!profile) {
-        // New user without profile (e.g., Google sign-in)
-        await FB_AUTH.signOut();
-        if(!_publicPages.includes(_cur)) location.href = "login.html";
-        return;
-      }
-
-      const status = (profile.status || "pending").toLowerCase();
-      if(status === "pending") {
-        await FB_AUTH.signOut();
-        if(!_publicPages.includes(_cur)) {
-          sessionStorage.setItem("_loginMsg","pending");
-          location.href = "login.html";
-        } else {
-          const errEl = document.getElementById("login-err");
-          if(errEl) showErr(errEl,"⏳ حسابك في انتظار موافقة المسؤول");
-        }
-        return;
-      }
-      if(status === "rejected") {
-        await FB_AUTH.signOut();
-        if(!_publicPages.includes(_cur)) {
-          sessionStorage.setItem("_loginMsg","rejected");
-          location.href = "login.html";
-        } else {
-          const errEl = document.getElementById("login-err");
-          if(errEl) showErr(errEl,"❌ تم رفض طلب تسجيلك. تواصل مع المسؤول.");
-        }
-        return;
-      }
-
-      // Approved student
-      loginUser({
-        id: fbUser.uid,
-        name: profile.name || fbUser.email?.split("@")[0] || "طالب",
-        email: profile.email || fbUser.email || "",
-        phone: profile.phone||"", age: profile.age||"",
-        telegram: profile.telegram||"", level: profile.level||"",
-        isAdmin: false,
-        completedLessons: profile.completedLessons||[],
-        testResults: profile.testResults||[],
-      });
-      loadFromFirestore().then(() => {
-        if(APP.activePage) _renderPage(APP.activePage);
-      });
-
-    } else {
-      // Not logged in
-      _resolved = true;
-      if(!_publicPages.includes(_cur)) {
-        // Protected page — redirect to login
-        sessionStorage.setItem("_goto", _cur);
-        location.href = "login.html";
-      } else {
-        // Show login message if any
-        const msg = sessionStorage.getItem("_loginMsg");
-        if(msg) {
-          sessionStorage.removeItem("_loginMsg");
-          const errEl = document.getElementById("login-err");
-          if(errEl) {
-            if(msg==="pending") showErr(errEl,"⏳ حسابك في انتظار موافقة المسؤول");
-            if(msg==="rejected") showErr(errEl,"❌ تم رفض طلب تسجيلك. تواصل مع المسؤول.");
-          }
-        }
-        // Auto-login for students
-        try {
-          const rm = JSON.parse(atob(localStorage.getItem("ti_rm")||""));
-          if(rm?.e && rm?.p) await FB_AUTH.signInWithEmailAndPassword(rm.e, rm.p);
-        } catch(_) {}
-        // Auto-login for admins
-        try {
-          const arm = JSON.parse(atob(localStorage.getItem("ti_admin_rm")||""));
-          if(arm?.e && arm?.p && (Date.now()-arm.ts < 30*24*60*60*1000)){
-            await FB_AUTH.signInWithEmailAndPassword(arm.e, arm.p);
-          }
-        } catch(_) {}
-      }
-    }
-  });
-
-  // Load data from Firestore in background (for public pages)
-  if(_publicPages.includes(_cur)) {
-    loadFromFirestore().then(() => {
-      renderPublicPlan();
-      renderAboutPublic();
-    });
-  }
-
-  // Ensure super admin exists
-  ensureSuperAdmin();
-
-  // Close notification panel on outside click
-  document.addEventListener("click", e => {
-    const panel = document.getElementById("notif-panel");
-    const btn = document.getElementById("nb-notif");
-    if(panel && btn && !panel.contains(e.target) && !btn.contains(e.target))
-      panel.style.display = "none";
-  });
-});
