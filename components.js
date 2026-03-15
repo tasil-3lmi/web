@@ -8,7 +8,10 @@ export function renderHeader(activePage = '') {
   const pages = [
     { href: 'index.html',      label: 'الرئيسية' },
     { href: 'about.html',      label: 'من نحن' },
-    { href: 'curriculum.html', label: 'المنهج الدراسي' },
+    { href: 'curriculum.html', label: 'المنهج' },
+    { href: 'courses.html',    label: 'المقررات' },
+    { href: 'schedule.html',   label: 'الجدول' },
+    { href: 'questions.html',  label: 'الأسئلة' },
     { href: 'register.html',   label: 'التسجيل' },
   ];
 
@@ -37,12 +40,27 @@ export function renderHeader(activePage = '') {
       <nav class="main-nav">
         ${navLinks}
       </nav>
-      <button class="hamburger" id="hamburger" aria-label="القائمة">
-        <span></span><span></span><span></span>
-      </button>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button class="notif-bell" id="notifBell" onclick="toggleNotifPanel()" title="الإشعارات" style="display:none;">
+          🔔<span class="notif-count" id="notifCount" style="display:none;">0</span>
+        </button>
+        <button class="hamburger" id="hamburger" aria-label="القائمة">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
     </div>
     <div class="mobile-menu" id="mobileMenu">
       ${mobileLinks}
+    </div>
+    <!-- Notification Panel -->
+    <div class="notif-panel" id="notifPanel" style="display:none;">
+      <div class="notif-header">
+        <span>الإشعارات</span>
+        <button onclick="markAllRead()" style="font-size:0.75rem;background:none;border:none;color:var(--gold);cursor:pointer;">تحديد الكل كمقروء</button>
+      </div>
+      <div class="notif-list" id="notifList">
+        <div style="text-align:center;padding:24px;color:rgba(255,255,255,0.5);font-size:0.85rem;">لا توجد إشعارات</div>
+      </div>
     </div>
   </header>`;
 }
@@ -69,8 +87,9 @@ export function renderFooter() {
       <div class="footer-col">
         <h4>روابط سريعة</h4>
         <a href="index.html"><span>الرئيسية</span></a>
-        <a href="about.html"><span>من نحن</span></a>
-        <a href="curriculum.html"><span>المنهج الدراسي</span></a>
+        <a href="courses.html"><span>المقررات</span></a>
+        <a href="schedule.html"><span>الجدول</span></a>
+        <a href="questions.html"><span>الأسئلة</span></a>
         <a href="register.html"><span>سجّل الآن</span></a>
       </div>
     </div>

@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>الأسئلة والاستفسارات — معهد التأصيل العلمي</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .questions-layout { display: grid; grid-template-columns: 1fr 1.4fr; gap: 40px; align-items: start; }
+    .form-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 32px; box-shadow: var(--shadow); position: sticky; top: 100px; }
+    .form-card h3 { font-size: 1.1rem; font-weight: bold; color: var(--purple); margin-bottom: 24px; display: flex; align-items: center; gap: 10px; }
+    .my-questions h3 { font-size: 1.1rem; font-weight: bold; color: var(--purple); margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+    .empty-state { text-align: center; padding: 48px 20px; color: var(--text-soft); }
+    .empty-state .ico { font-size: 3rem; margin-bottom: 12px; }
+    .filter-row { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+    .filter-btn { padding: 7px 16px; border-radius: 100px; border: 1.5px solid var(--border); background: none; font-family: inherit; font-size: 0.82rem; color: var(--text-soft); cursor: pointer; transition: var(--transition); }
+    .filter-btn.active { background: var(--purple); color: white; border-color: var(--purple); }
+    .login-required { background: rgba(59,27,64,0.04); border: 1px solid var(--border); border-radius: var(--radius); padding: 40px; text-align: center; }
+    .login-required .ico { font-size: 3rem; margin-bottom: 16px; }
+    .login-required p { color: var(--text-soft); margin-bottom: 20px; font-size: 0.92rem; }
+    @media (max-width: 860px) { .questions-layout { grid-template-columns: 1fr; } .form-card { position: static; } }
+  </style>
+</head>
+<body>
+  <div id="headerPlaceholder"></div>
+  <div class="page-content">
+    <div class="page-hero">
+      <div class="container">
+        <div class="breadcrumb"><a href="index.html">الرئيسية</a><span>/</span><span>الأسئلة والاستفسارات</span></div>
+        <h1 class="fade-in-up">الأسئلة والاستفسارات</h1>
+        <p class="fade-in-up delay-1">أرسل سؤالك أو استفسارك وسيصل للمشرفين</p>
+      </div>
+    </div>
+
+    <section class="section">
+      <div class="container">
+        <div id="authRequired" style="display:none;">
+          <div class="login-required">
+            <div class="ico">🔐</div>
+            <h3 style="color:var(--purple);margin-bottom:8px;">يجب تسجيل الدخول أولاً</h3>
+            <p>للاستفادة من هذه الخدمة يجب أن تكون مسجلاً في المعهد</p>
+            <a href="register.html" class="btn btn-primary">تسجيل الدخول</a>
+          </div>
+        </div>
+
+        <div id="mainContent" style="display:none;">
+          <div class="questions-layout">
+            <!-- FORM -->
+            <div class="form-card fade-in-up">
+              <h3>✍️ أرسل سؤالاً جديداً</h3>
+              <form id="questionForm" onsubmit="submitQuestion(event)">
+                <div class="form-group">
+                  <label class="form-label">عنوان السؤال <span class="req">*</span></label>
+                  <input type="text" class="form-control" id="q_title" placeholder="أدخل عنواناً مختصراً" required maxlength="120">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">قسم السؤال <span class="req">*</span></label>
+                  <select class="form-control" id="q_category" required>
+                    <option value="">اختر القسم</option>
+                    <option value="inquiry">استفسار</option>
+                    <option value="scientific">سؤال علمي</option>
+                    <option value="complaint">شكوى</option>
+                    <option value="suggestion">اقتراح</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">تفاصيل السؤال <span class="req">*</span></label>
+                  <textarea class="form-control" id="q_body" rows="5" placeholder="اكتب سؤالك أو استفسارك بالتفصيل..." required maxlength="2000" style="resize:vertical;"></textarea>
+                  <div style="text-align:left;font-size:0.72rem;color:var(--text-soft);margin-top:4px;"><span id="charCount">0</span>/2000</div>
+                </div>
+                <div class="form-error" id="q_error"></div>
+                <button type="submit" class="submit-btn" id="qSubmitBtn">
+                  <span id="qBtnText">إرسال السؤال</span>
+                </button>
+              </form>
+            </div>
+
+            <!-- MY QUESTIONS -->
+            <div class="my-questions reveal">
+              <h3>📋 أسئلتي السابقة</h3>
+              <div class="filter-row">
+                <button class="filter-btn active" onclick="filterQuestions('all', this)">الكل</button>
+                <button class="filter-btn" onclick="filterQuestions('pending', this)">بانتظار الرد</button>
+                <button class="filter-btn" onclick="filterQuestions('answered', this)">تم الرد</button>
+              </div>
+              <div id="questionsList">
+                <div class="empty-state"><div class="ico">📭</div><p>لا توجد أسئلة بعد</p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div id="footerPlaceholder"></div>
+
+  <script type="module">
+    import { renderHeader, renderFooter } from './components.js';
+    import { auth, db, onAuthStateChanged, doc, getDoc, collection, getDocs, setDoc } from './firebase.js';
+    import { query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    document.getElementById('headerPlaceholder').innerHTML = renderHeader('questions.html');
+    document.getElementById('footerPlaceholder').innerHTML = renderFooter();
+    initHeader();
+
+    let currentUser = null, currentUserData = null, allQuestions = [];
+
+    const categoryMap = { inquiry:'استفسار', scientific:'سؤال علمي', complaint:'شكوى', suggestion:'اقتراح' };
+
+    // Char counter
+    document.getElementById('q_body').addEventListener('input', function() {
+      document.getElementById('charCount').textContent = this.value.length;
+    });
+
+    onAuthStateChanged(auth, async user => {
+      if (!user) { document.getElementById('authRequired').style.display = ''; return; }
+      currentUser = user;
+      const snap = await getDoc(doc(db, 'users', user.uid));
+      currentUserData = snap.data();
+      document.getElementById('mainContent').style.display = '';
+      loadMyQuestions();
+    });
+
+    async function loadMyQuestions() {
+      const snap = await getDocs(collection(db, 'questions'));
+      allQuestions = [];
+      snap.forEach(d => { if (d.data().studentId === currentUser.uid) allQuestions.push({ id: d.id, ...d.data() }); });
+      allQuestions.sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
+      renderQuestions(allQuestions);
+    }
+
+    function renderQuestions(list) {
+      const el = document.getElementById('questionsList');
+      if (!list.length) {
+        el.innerHTML = '<div class="empty-state"><div class="ico">📭</div><p>لا توجد أسئلة بعد</p></div>';
+        return;
+      }
+      el.innerHTML = list.map(q => `
+        <div class="question-card-item">
+          <div class="q-card-header">
+            <div>
+              <span class="badge badge-purple" style="margin-bottom:6px;display:inline-block;">${categoryMap[q.category]||q.category}</span>
+              <div class="q-card-title">${q.title}</div>
+            </div>
+            <span class="q-status-badge ${q.status==='answered'?'q-status-answered':'q-status-pending'}">${q.status==='answered'?'✅ تم الرد':'⏳ بانتظار الرد'}</span>
+          </div>
+          <p style="font-size:0.85rem;color:var(--text-soft);line-height:1.7;">${q.body}</p>
+          <div style="font-size:0.72rem;color:var(--text-soft);margin-top:8px;">${formatDate(q.createdAt)}</div>
+          ${q.status==='answered' ? `
+            <div class="q-answer-box">
+              <div class="ans-label">رد المشرف — ${q.answeredBy||'المشرف'}</div>
+              <div class="ans-text">${q.answer}</div>
+              <div style="font-size:0.72rem;color:var(--text-soft);margin-top:6px;">${formatDate(q.answeredAt)}</div>
+            </div>` : ''}
+        </div>`).join('');
+    }
+
+    window.filterQuestions = function(status, btn) {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const filtered = status === 'all' ? allQuestions : allQuestions.filter(q => q.status === status);
+      renderQuestions(filtered);
+    };
+
+    window.submitQuestion = async function(e) {
+      e.preventDefault();
+      const btn = document.getElementById('qSubmitBtn');
+      const btnText = document.getElementById('qBtnText');
+      const errEl = document.getElementById('q_error');
+      errEl.classList.remove('show');
+      const title = document.getElementById('q_title').value.trim();
+      const category = document.getElementById('q_category').value;
+      const body = document.getElementById('q_body').value.trim();
+      btn.disabled = true;
+      btnText.innerHTML = '<span class="spinner"></span> جارٍ الإرسال...';
+      try {
+        const qId = 'q_' + Date.now() + '_' + currentUser.uid.slice(0,6);
+        await setDoc(doc(db, 'questions', qId), {
+          title, category, body,
+          studentId: currentUser.uid,
+          studentName: currentUserData.fullName,
+          status: 'pending',
+          createdAt: new Date().toISOString()
+        });
+        // Notification to supervisors handled server-side via rules
+        document.getElementById('questionForm').reset();
+        document.getElementById('charCount').textContent = '0';
+        btnText.textContent = 'إرسال السؤال';
+        btn.disabled = false;
+        showToast('تم إرسال سؤالك بنجاح ✅', 'success');
+        loadMyQuestions();
+      } catch (err) {
+        errEl.textContent = 'حدث خطأ: ' + err.message;
+        errEl.classList.add('show');
+        btn.disabled = false;
+        btnText.textContent = 'إرسال السؤال';
+      }
+    };
+
+    function formatDate(iso) {
+      if (!iso) return '';
+      return new Date(iso).toLocaleDateString('ar-SA', { year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit' });
+    }
+    function showToast(msg, type='') {
+      let t = document.getElementById('globalToast');
+      if (!t) { t = document.createElement('div'); t.id='globalToast'; t.className='toast'; document.body.appendChild(t); }
+      t.textContent = msg; t.className = 'toast ' + type;
+      setTimeout(() => t.classList.add('show'), 50);
+      setTimeout(() => t.classList.remove('show'), 3200);
+    }
+    function initHeader() {
+      const header = document.getElementById('siteHeader');
+      const hamburger = document.getElementById('hamburger');
+      const mobileMenu = document.getElementById('mobileMenu');
+      window.addEventListener('scroll', () => header.classList.toggle('scrolled', window.scrollY > 40));
+      hamburger && hamburger.addEventListener('click', () => mobileMenu.classList.toggle('open'));
+    }
+    window.toggleNotifPanel = function() {
+      const p = document.getElementById('notifPanel');
+      p.style.display = p.style.display === 'none' ? 'block' : 'none';
+    };
+    window.markAllRead = function() {};
+    const revealEls = document.querySelectorAll('.reveal');
+    const obs = new IntersectionObserver(entries => entries.forEach(e => { if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target);}}),{threshold:0.08});
+    revealEls.forEach(el => obs.observe(el));
+  </script>
+</body>
+</html>

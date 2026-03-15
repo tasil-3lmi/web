@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>المقررات — معهد التأصيل العلمي</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .phase-section { margin-bottom: 56px; }
+    .phase-title { font-size: 1.1rem; font-weight: bold; color: var(--purple); margin-bottom: 20px; display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 2px solid rgba(212,180,142,0.3); }
+    .phase-title .phase-ico { width: 36px; height: 36px; background: linear-gradient(135deg,var(--purple),var(--purple-light)); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: bold; flex-shrink: 0; }
+    .loading-courses { text-align: center; padding: 60px; color: var(--text-soft); }
+  </style>
+</head>
+<body>
+  <div id="headerPlaceholder"></div>
+  <div class="page-content">
+    <div class="page-hero">
+      <div class="container">
+        <div class="breadcrumb"><a href="index.html">الرئيسية</a><span>/</span><span>المقررات</span></div>
+        <h1 class="fade-in-up">المقررات الدراسية</h1>
+        <p class="fade-in-up delay-1">خطة دراسية متكاملة في مرحلة تمهيدية وستة مراحل</p>
+      </div>
+    </div>
+
+    <section class="section">
+      <div class="container">
+        <div id="coursesContainer">
+          <div class="loading-courses"><span class="spinner" style="width:32px;height:32px;border-width:3px;border-color:rgba(59,27,64,0.2);border-top-color:var(--purple);"></span><p style="margin-top:12px;">جارٍ تحميل المقررات...</p></div>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div id="footerPlaceholder"></div>
+
+  <script type="module">
+    import { renderHeader, renderFooter } from './components.js';
+    import { auth, db, onAuthStateChanged, collection, getDocs, doc, getDoc } from './firebase.js';
+
+    document.getElementById('headerPlaceholder').innerHTML = renderHeader('courses.html');
+    document.getElementById('footerPlaceholder').innerHTML = renderFooter();
+    initHeader();
+
+    // Default courses from curriculum
+    const DEFAULT_COURSES = [
+      { id:'prep', phase:'تمهيدية', phaseNum:0, title:'المرحلة التمهيدية', desc:'المدخل إلى طلب العلم وتذكرة السامع والمتكلم', icon:'📖', visible:true, locked:false },
+      { id:'p1', phase:'المرحلة الأولى', phaseNum:1, title:'العقيدة والتوحيد', desc:'القواعد الأربع ونواقض الإسلام والأصول الثلاثة وكشف الشبهات', icon:'🕌', visible:true, locked:false },
+      { id:'p2', phase:'المرحلة الثانية', phaseNum:2, title:'علوم الآلة والسنة', desc:'الآجرومية والتذكرة والرسالة اللطيفة والأربعون النووية', icon:'📜', visible:true, locked:false },
+      { id:'p3', phase:'المرحلة الثالثة', phaseNum:3, title:'الفقه المالكي وأصوله', desc:'الأخضري والعشماوية ونظم ابن أبي كف والمرشد المعين', icon:'⚖️', visible:true, locked:true },
+      { id:'p4', phase:'المرحلة الرابعة', phaseNum:4, title:'أصول التفسير والعقيدة', desc:'مقدمة التفسير وكتاب التوحيد والعقيدة الواسطية', icon:'📚', visible:true, locked:true },
+      { id:'p5', phase:'المرحلة الخامسة', phaseNum:5, title:'المقاصد والآداب', desc:'تبصرة القاصد والقوانين الفقهية والسياسة الشرعية', icon:'🔑', visible:true, locked:true },
+      { id:'p6', phase:'المرحلة السادسة', phaseNum:6, title:'فقه الدعوة والمناظرة', desc:'الأمر بالمعروف وآداب البحث والرد على المخالف', icon:'🌿', visible:true, locked:true },
+    ];
+
+    let userProgress = {};
+
+    onAuthStateChanged(auth, async user => {
+      if (user) {
+        const snap = await getDoc(doc(db, 'users', user.uid));
+        userProgress = snap.data()?.progress || {};
+        document.getElementById('notifBell') && (document.getElementById('notifBell').style.display = 'flex');
+        loadNotifications(user.uid);
+      }
+      loadCourses();
+    });
+
+    async function loadCourses() {
+      let courses = [...DEFAULT_COURSES];
+      try {
+        const snap = await getDocs(collection(db, 'courses'));
+        snap.forEach(d => {
+          const idx = courses.findIndex(c => c.id === d.id);
+          if (idx >= 0) courses[idx] = { ...courses[idx], ...d.data(), id: d.id };
+          else courses.push({ ...d.data(), id: d.id });
+        });
+      } catch(e) {}
+
+      courses = courses.filter(c => c.visible !== false);
+      courses.sort((a,b) => (a.phaseNum||0) - (b.phaseNum||0));
+
+      // Group by phase
+      const phases = {};
+      courses.forEach(c => {
+        const k = c.phase || 'عام';
+        if (!phases[k]) phases[k] = { num: c.phaseNum||0, courses: [] };
+        phases[k].courses.push(c);
+      });
+
+      const container = document.getElementById('coursesContainer');
+      container.innerHTML = '';
+      Object.entries(phases).sort((a,b) => a[1].num - b[1].num).forEach(([phaseName, phaseData]) => {
+        const section = document.createElement('div');
+        section.className = 'phase-section reveal';
+        section.innerHTML = `
+          <div class="phase-title">
+            <div class="phase-ico">${phaseData.num === 0 ? '٠' : phaseData.num}</div>
+            ${phaseName}
+          </div>
+          <div class="courses-grid">
+            ${phaseData.courses.map(c => buildCourseCard(c)).join('')}
+          </div>`;
+        container.appendChild(section);
+      });
+
+      const obs = new IntersectionObserver(entries => entries.forEach(e => { if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target);}}),{threshold:0.08});
+      document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+    }
+
+    function buildCourseCard(c) {
+      const href = c.locked ? '#' : `course.html?id=${c.id}`;
+      return `<a href="${href}" class="course-card${c.locked?' locked':''}">
+        <div class="course-card-header">
+          ${c.locked ? '<div class="course-lock-ico">🔒</div>' : ''}
+          <div class="course-phase-badge">${c.phase||''}</div>
+          <div class="course-title-card">${c.icon||'📚'} ${c.title}</div>
+        </div>
+        <div class="course-card-body">
+          <p class="course-desc">${c.desc||''}</p>
+          <div class="course-meta">
+            <span class="course-lessons-count">📖 ${c.lessonCount||20} درس</span>
+            <span class="course-progress-mini">${c.locked?'🔒 مقفل':'متاح →'}</span>
+          </div>
+        </div>
+      </a>`;
+    }
+
+    async function loadNotifications(uid) { /* implemented in dashboard */ }
+
+    function initHeader() {
+      const header = document.getElementById('siteHeader');
+      const hamburger = document.getElementById('hamburger');
+      const mobileMenu = document.getElementById('mobileMenu');
+      window.addEventListener('scroll', () => header.classList.toggle('scrolled', window.scrollY > 40));
+      hamburger && hamburger.addEventListener('click', () => mobileMenu.classList.toggle('open'));
+    }
+    window.toggleNotifPanel = function() { const p = document.getElementById('notifPanel'); if(p) p.style.display = p.style.display==='none'?'block':'none'; };
+    window.markAllRead = function() {};
+  </script>
+</body>
+</html>

@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>المقرر — معهد التأصيل العلمي</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .course-top-banner {
+      background: linear-gradient(135deg, var(--purple), var(--purple-light));
+      padding: 110px 0 40px;
+    }
+    .course-top-banner h1 { font-size: clamp(1.6rem,3.5vw,2.4rem); color: white; margin-bottom: 10px; }
+    .course-top-banner p { color: rgba(255,255,255,0.7); font-size: 0.95rem; max-width: 600px; }
+    .course-top-meta { display: flex; gap: 20px; margin-top: 20px; flex-wrap: wrap; }
+    .course-top-meta span { font-size: 0.82rem; color: rgba(255,255,255,0.65); display: flex; align-items: center; gap: 6px; }
+    .exam-link-banner {
+      background: linear-gradient(90deg,rgba(212,180,142,0.15),rgba(212,180,142,0.05));
+      border: 1px solid rgba(212,180,142,0.3);
+      border-radius: var(--radius-sm);
+      padding: 16px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
+    }
+    .exam-link-banner p { font-size: 0.88rem; color: var(--purple); font-weight: bold; }
+    .no-lesson { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 300px; color: var(--text-soft); gap: 12px; }
+  </style>
+</head>
+<body>
+  <div id="headerPlaceholder"></div>
+  <div class="page-content">
+    <div class="course-top-banner">
+      <div class="container">
+        <div class="breadcrumb" style="justify-content:flex-start;"><a href="index.html" style="color:rgba(255,255,255,0.5);">الرئيسية</a><span style="color:rgba(255,255,255,0.3);">/</span><a href="courses.html" style="color:var(--gold);">المقررات</a><span style="color:rgba(255,255,255,0.3);">/</span><span id="crCourse" style="color:rgba(255,255,255,0.7);">...</span></div>
+        <h1 id="courseTitle">جارٍ التحميل...</h1>
+        <p id="courseDesc"></p>
+        <div class="course-top-meta">
+          <span>📖 <span id="lessonCountLabel">20</span> درس</span>
+          <span>📋 <span id="examCountLabel">0</span> اختبار</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="course-layout">
+      <!-- Sidebar -->
+      <aside class="lessons-sidebar">
+        <div class="sidebar-course-title" id="sidebarCourseTitle">...</div>
+        <div id="lessonLinks"></div>
+        <div style="padding:12px 20px;border-top:1px solid var(--border);margin-top:8px;">
+          <div id="examLinks"></div>
+        </div>
+      </aside>
+
+      <!-- Main content -->
+      <div class="lesson-content" id="lessonContent">
+        <div class="no-lesson">
+          <span style="font-size:3rem;">📚</span>
+          <p>اختر درساً من القائمة الجانبية</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="footerPlaceholder"></div>
+
+  <script type="module">
+    import { renderHeader, renderFooter } from './components.js';
+    import { auth, db, onAuthStateChanged, doc, getDoc, collection, getDocs, updateDoc } from './firebase.js';
+
+    document.getElementById('headerPlaceholder').innerHTML = renderHeader('courses.html');
+    document.getElementById('footerPlaceholder').innerHTML = renderFooter();
+    initHeader();
+
+    const params = new URLSearchParams(location.search);
+    const courseId = params.get('id') || 'prep';
+
+    const DEFAULT_COURSES = {
+      prep: { title:'المرحلة التمهيدية', desc:'المدخل إلى طلب العلم وتذكرة السامع والمتكلم وكتاب الجرد' },
+      p1: { title:'العقيدة والتوحيد', desc:'القواعد الأربع ونواقض الإسلام والأصول الثلاثة وكشف الشبهات' },
+      p2: { title:'علوم الآلة والسنة', desc:'الآجرومية والتذكرة والأربعون النووية والرسالة اللطيفة' },
+      p3: { title:'الفقه المالكي', desc:'الأخضري والعشماوية ونظم ابن أبي كف والمرشد المعين' },
+      p4: { title:'أصول التفسير والعقيدة', desc:'مقدمة التفسير وكتاب التوحيد والعقيدة الواسطية' },
+      p5: { title:'المقاصد والآداب', desc:'تبصرة القاصد والقوانين الفقهية والسياسة الشرعية' },
+      p6: { title:'فقه الدعوة والمناظرة', desc:'الأمر بالمعروف وآداب البحث والرد على المخالف' },
+    };
+
+    let courseData = DEFAULT_COURSES[courseId] || { title:'مقرر', desc:'' };
+    let lessons = [];
+    let exams = [];
+    let userProgress = {};
+    let currentUser = null;
+
+    onAuthStateChanged(auth, async user => {
+      currentUser = user;
+      if (user) {
+        const snap = await getDoc(doc(db, 'users', user.uid));
+        userProgress = snap.data()?.progress || {};
+      }
+      loadCourse();
+    });
+
+    async function loadCourse() {
+      // Load course data
+      try {
+        const cSnap = await getDoc(doc(db, 'courses', courseId));
+        if (cSnap.exists()) courseData = { ...courseData, ...cSnap.data() };
+      } catch(e) {}
+
+      document.getElementById('courseTitle').textContent = courseData.title;
+      document.getElementById('courseDesc').textContent = courseData.desc;
+      document.getElementById('crCourse').textContent = courseData.title;
+      document.getElementById('sidebarCourseTitle').textContent = courseData.title;
+      document.title = courseData.title + ' — معهد التأصيل العلمي';
+
+      // Load lessons
+      try {
+        const lSnap = await getDocs(collection(db, 'courses', courseId, 'lessons'));
+        lSnap.forEach(d => lessons.push({ id: d.id, ...d.data() }));
+        lessons.sort((a,b) => (a.order||0) - (b.order||0));
+      } catch(e) {}
+
+      // Build default 20 lessons if none
+      if (!lessons.length) {
+        for (let i = 1; i <= 20; i++) {
+          lessons.push({ id: 'l'+i, title: 'الدرس ' + i, order: i, visible: true, locked: false });
+        }
+      }
+
+      // Load exams
+      try {
+        const eSnap = await getDocs(collection(db, 'courses', courseId, 'exams'));
+        eSnap.forEach(d => exams.push({ id: d.id, ...d.data() }));
+      } catch(e) {}
+
+      document.getElementById('lessonCountLabel').textContent = lessons.filter(l=>l.visible!==false).length;
+      document.getElementById('examCountLabel').textContent = exams.filter(e=>e.visible!==false).length;
+
+      buildSidebar();
+    }
+
+    function buildSidebar() {
+      const linksEl = document.getElementById('lessonLinks');
+      linksEl.innerHTML = lessons.filter(l => l.visible !== false).map((l, i) => {
+        const done = userProgress['lesson_' + courseId + '_' + l.id];
+        return `<a class="lesson-link${l.locked?' locked-lesson':''}${done?' done':''}"
+          onclick="openLesson('${l.id}')" href="javascript:void(0)" id="ll-${l.id}">
+          <div class="l-num">${done ? '✓' : (i+1)}</div>
+          <span>${l.title}</span>
+          ${l.locked ? '<span style="font-size:0.75rem;margin-right:auto;">🔒</span>' : ''}
+        </a>`;
+      }).join('');
+
+      const examsEl = document.getElementById('examLinks');
+      examsEl.innerHTML = exams.filter(e => e.visible !== false).map(ex => `
+        <a class="lesson-link${ex.locked?' locked-lesson':''}" onclick="openExam('${ex.id}')" href="javascript:void(0)" style="color:var(--gold-dark);">
+          <div class="l-num" style="background:rgba(212,180,142,0.2);color:var(--gold-dark);">📝</div>
+          <span>${ex.title||'الاختبار'}</span>
+          ${ex.locked ? '<span style="font-size:0.75rem;margin-right:auto;">🔒</span>' : ''}
+        </a>`).join('');
+    }
+
+    window.openLesson = async function(lessonId) {
+      document.querySelectorAll('.lesson-link').forEach(l => l.classList.remove('active'));
+      document.getElementById('ll-' + lessonId)?.classList.add('active');
+
+      let lesson = lessons.find(l => l.id === lessonId) || {};
+      try {
+        const snap = await getDoc(doc(db, 'courses', courseId, 'lessons', lessonId));
+        if (snap.exists()) lesson = { ...lesson, ...snap.data() };
+      } catch(e) {}
+
+      // Load exercises
+      let exercises = [];
+      try {
+        const exSnap = await getDocs(collection(db, 'courses', courseId, 'lessons', lessonId, 'exercises'));
+        exSnap.forEach(d => exercises.push({ id: d.id, ...d.data() }));
+        exercises.sort((a,b) => (a.order||0) - (b.order||0));
+      } catch(e) {}
+
+      const content = document.getElementById('lessonContent');
+      content.innerHTML = `
+        <div class="fade-in-up">
+          <h2 style="font-size:1.3rem;color:var(--purple);margin-bottom:8px;">${lesson.title||'الدرس'}</h2>
+          ${lesson.desc ? `<p style="color:var(--text-soft);font-size:0.88rem;margin-bottom:24px;line-height:1.8;">${lesson.desc}</p>` : '<div style="margin-bottom:24px;"></div>'}
+
+          <!-- Video -->
+          <div class="lesson-video-wrap">
+            <div class="lesson-video-inner">
+              ${lesson.videoUrl
+                ? `<iframe src="${lesson.videoUrl.includes('youtu') ? lesson.videoUrl.replace('watch?v=','embed/').replace('youtu.be/','www.youtube.com/embed/') : lesson.videoUrl}?rel=0" allowfullscreen></iframe>`
+                : `<div class="lesson-video-placeholder"><span style="font-size:3rem;">📹</span><p>لم يُضَف فيديو لهذا الدرس بعد</p></div>`}
+            </div>
+          </div>
+
+          <!-- Attachments -->
+          ${(lesson.audioUrl || lesson.pdfUrl) ? `
+          <div class="lesson-attachments">
+            ${lesson.audioUrl ? `
+            <a href="${lesson.audioUrl}" target="_blank" class="attachment-card">
+              <div class="att-ico">🎧</div>
+              <div><h4>المرفق الصوتي</h4><p>اضغط للاستماع</p></div>
+            </a>` : ''}
+            ${lesson.pdfUrl ? `
+            <a href="${lesson.pdfUrl}" target="_blank" class="attachment-card">
+              <div class="att-ico">📄</div>
+              <div><h4>ملف PDF</h4><p>اضغط للتحميل أو العرض</p></div>
+            </a>` : ''}
+          </div>` : ''}
+
+          <!-- Exercises -->
+          ${exercises.filter(ex => ex.visible !== false && ex.locked !== true).length ? `
+          <div class="exercise-section" id="exerciseSection">
+            <div class="exercise-header">
+              <h3>✏️ تمارين الدرس</h3>
+              <span class="badge badge-purple">${exercises.length} سؤال</span>
+            </div>
+            <div id="exerciseQs">
+              ${buildQuestions(exercises, 'ex', lessonId)}
+            </div>
+            <button class="btn btn-primary" onclick="submitExercise('${lessonId}')" id="exSubmitBtn" style="margin-top:20px;">تسليم التمارين</button>
+            <div id="exResult" style="margin-top:16px;display:none;"></div>
+          </div>` : ''}
+
+          <!-- Mark done -->
+          <div style="margin-top:24px;padding:20px;background:var(--white);border-radius:var(--radius);border:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+            <span style="font-size:0.88rem;color:var(--text-soft);">هل أنهيت هذا الدرس؟</span>
+            <button class="btn btn-success btn-sm" onclick="markLessonDone('${lessonId}')">
+              ${userProgress['lesson_'+courseId+'_'+lessonId] ? '✅ تم الإتمام' : 'تحديد كمكتمل ✓'}
+            </button>
+          </div>
+        </div>`;
+
+      window.currentExercises = exercises;
+    };
+
+    window.openExam = function(examId) {
+      window.location.href = `exam.html?course=${courseId}&exam=${examId}`;
+    };
+
+    function buildQuestions(questions, prefix, lessonId) {
+      const letters = ['أ','ب','ج','د','هـ','و','ز','ح','ط','ي'];
+      return questions.filter(q => q.visible !== false).map((q, qi) => `
+        <div class="question-block" id="${prefix}_q_${qi}">
+          <div class="q-num-badge">سؤال ${qi+1}</div>
+          <div class="q-text">${q.question}</div>
+          <div class="options-list">
+            ${(q.options||[]).map((opt, oi) => `
+              <label class="option-item" id="${prefix}_opt_${qi}_${oi}">
+                <input type="${(q.correctIndexes||[]).length>1?'checkbox':'radio'}" name="${prefix}_q${qi}" value="${oi}"
+                  onchange="handleOptionChange('${prefix}', ${qi}, ${oi}, this)">
+                <span class="option-letter">${letters[oi]||oi+1}</span>
+                <span>${opt}</span>
+              </label>`).join('')}
+          </div>
+        </div>`).join('');
+    }
+
+    window.handleOptionChange = function(prefix, qi, oi, input) {
+      const q = window.currentExercises?.[qi];
+      if (!q) return;
+      const isMulti = (q.correctIndexes||[]).length > 1;
+      if (!isMulti) {
+        // Deselect siblings
+        document.querySelectorAll(`input[name="${prefix}_q${qi}"]`).forEach(inp => {
+          document.getElementById(`${prefix}_opt_${qi}_${inp.value}`)?.classList.toggle('selected', inp === input && inp.checked);
+        });
+      } else {
+        document.getElementById(`${prefix}_opt_${qi}_${oi}`)?.classList.toggle('selected', input.checked);
+      }
+    };
+
+    window.submitExercise = function(lessonId) {
+      const exercises = window.currentExercises || [];
+      let correct = 0;
+      exercises.filter(q=>q.visible!==false).forEach((q, qi) => {
+        const correctSet = new Set(q.correctIndexes||[]);
+        const isMulti = correctSet.size > 1;
+        let userCorrect = false;
+        if (isMulti) {
+          const checked = [...document.querySelectorAll(`input[name="ex_q${qi}"]:checked`)].map(i=>parseInt(i.value));
+          userCorrect = checked.length === correctSet.size && checked.every(i=>correctSet.has(i));
+        } else {
+          const checked = document.querySelector(`input[name="ex_q${qi}"]:checked`);
+          userCorrect = checked && correctSet.has(parseInt(checked.value));
+        }
+        if (userCorrect) correct++;
+        // Show answers
+        (q.options||[]).forEach((_,oi) => {
+          const el = document.getElementById(`ex_opt_${qi}_${oi}`);
+          if (!el) return;
+          el.classList.remove('correct','wrong','selected');
+          if (correctSet.has(oi)) el.classList.add('correct');
+          const inp = el.querySelector('input');
+          if (inp?.checked && !correctSet.has(oi)) el.classList.add('wrong');
+        });
+        document.querySelectorAll(`input[name="ex_q${qi}"]`).forEach(i => i.disabled = true);
+      });
+
+      const total = exercises.filter(q=>q.visible!==false).length;
+      const pct = total ? Math.round((correct/total)*100) : 0;
+      const resultEl = document.getElementById('exResult');
+      resultEl.style.display = 'block';
+      resultEl.innerHTML = `<div style="padding:20px;border-radius:var(--radius-sm);background:${pct>=60?'rgba(26,122,74,0.08)':'rgba(185,45,58,0.08)'};border:1px solid ${pct>=60?'rgba(26,122,74,0.25)':'rgba(185,45,58,0.25)'};text-align:center;">
+        <div style="font-size:2rem;font-weight:bold;color:${pct>=60?'#1a7a4a':'#b92d3a'};">${pct}٪</div>
+        <div style="font-size:0.88rem;color:var(--text-soft);margin-top:6px;">أجبت ${correct} من ${total} إجابة صحيحة</div>
+      </div>`;
+      document.getElementById('exSubmitBtn').style.display = 'none';
+    };
+
+    window.markLessonDone = async function(lessonId) {
+      if (!currentUser) return;
+      const key = 'lesson_' + courseId + '_' + lessonId;
+      userProgress[key] = true;
+      try {
+        await updateDoc(doc(db, 'users', currentUser.uid), { progress: userProgress });
+        buildSidebar();
+        showToast('تم تحديد الدرس كمكتمل ✅', 'success');
+      } catch(e) { showToast('حدث خطأ', 'error'); }
+    };
+
+    function showToast(msg, type='') {
+      let t = document.getElementById('globalToast');
+      if (!t) { t=document.createElement('div'); t.id='globalToast'; t.className='toast'; document.body.appendChild(t); }
+      t.textContent=msg; t.className='toast '+type;
+      setTimeout(()=>t.classList.add('show'),50);
+      setTimeout(()=>t.classList.remove('show'),3200);
+    }
+
+    function initHeader() {
+      const header = document.getElementById('siteHeader');
+      const hamburger = document.getElementById('hamburger');
+      const mobileMenu = document.getElementById('mobileMenu');
+      window.addEventListener('scroll', () => header.classList.toggle('scrolled', window.scrollY > 40));
+      hamburger && hamburger.addEventListener('click', () => mobileMenu.classList.toggle('open'));
+    }
+    window.toggleNotifPanel = function() { const p=document.getElementById('notifPanel'); if(p) p.style.display=p.style.display==='none'?'block':'none'; };
+    window.markAllRead = function() {};
+  </script>
+</body>
+</html>

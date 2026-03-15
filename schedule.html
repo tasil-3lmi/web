@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>الجدول الأسبوعي — معهد التأصيل العلمي</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .schedule-wrapper { overflow-x: auto; }
+    .week-nav { display: flex; align-items: center; gap: 16px; margin-bottom: 32px; flex-wrap: wrap; }
+    .week-nav-btn { padding: 10px 20px; background: var(--white); border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-family: inherit; font-size: 0.88rem; font-weight: bold; color: var(--purple); cursor: pointer; transition: var(--transition); }
+    .week-nav-btn:hover { background: var(--purple); color: white; border-color: var(--purple); }
+    .week-label { font-size: 1rem; font-weight: bold; color: var(--purple); flex: 1; text-align: center; }
+    .today-badge { padding: 4px 12px; background: rgba(212,180,142,0.2); color: var(--gold-dark); border-radius: 100px; font-size: 0.75rem; font-weight: bold; border: 1px solid rgba(212,180,142,0.3); }
+    .schedule-empty { text-align: center; padding: 40px; color: var(--text-soft); font-size: 0.9rem; }
+    .no-lessons { color: rgba(59,27,64,0.3); font-size: 0.8rem; text-align: center; padding: 8px; }
+    .current-day td { background: rgba(212,180,142,0.06) !important; }
+    .schedule-table th.today-col { background: var(--gold-dark) !important; }
+  </style>
+</head>
+<body>
+  <div id="headerPlaceholder"></div>
+  <div class="page-content">
+    <div class="page-hero">
+      <div class="container">
+        <div class="breadcrumb"><a href="index.html">الرئيسية</a><span>/</span><span>الجدول الأسبوعي</span></div>
+        <h1 class="fade-in-up">الجدول الأسبوعي</h1>
+        <p class="fade-in-up delay-1">جدول الدراسة بالتواريخ الميلادية والهجرية</p>
+      </div>
+    </div>
+
+    <section class="section">
+      <div class="container">
+        <div class="week-nav reveal">
+          <button class="week-nav-btn" onclick="changeWeek(-1)">→ الأسبوع السابق</button>
+          <div class="week-label" id="weekLabel">...</div>
+          <button class="week-nav-btn" onclick="changeWeek(1)">الأسبوع القادم ←</button>
+        </div>
+
+        <div class="schedule-wrapper reveal">
+          <div id="scheduleContainer">
+            <div class="schedule-empty">جارٍ تحميل الجدول...</div>
+          </div>
+        </div>
+
+        <div style="margin-top:32px;padding:20px;background:rgba(212,180,142,0.08);border-radius:var(--radius-sm);border:1px solid rgba(212,180,142,0.2);" class="reveal">
+          <p style="font-size:0.82rem;color:var(--text-soft);text-align:center;">
+            📅 التواريخ الهجرية موافقة لتقويم أم القرى &nbsp;|&nbsp; يُعدَّل الجدول من قِبَل المشرفين
+          </p>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div id="footerPlaceholder"></div>
+
+  <script type="module">
+    import { renderHeader, renderFooter } from './components.js';
+    import { auth, db, onAuthStateChanged, doc, getDoc, setDoc } from './firebase.js';
+
+    document.getElementById('headerPlaceholder').innerHTML = renderHeader('schedule.html');
+    document.getElementById('footerPlaceholder').innerHTML = renderFooter();
+    initHeader();
+
+    const DAYS = ['السبت','الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة'];
+    const TIMES = ['الفجر','الصباح','الظهر','العصر','المغرب','العشاء'];
+    let currentWeekStart = getWeekStart(new Date());
+    let scheduleData = {};
+
+    async function loadSchedule(weekKey) {
+      try {
+        const snap = await getDoc(doc(db, 'schedule', weekKey));
+        scheduleData = snap.exists() ? snap.data() : {};
+      } catch(e) { scheduleData = {}; }
+      renderSchedule();
+    }
+
+    function getWeekStart(date) {
+      const d = new Date(date);
+      const day = d.getDay(); // 0=Sun
+      // Adjust to Saturday (6)
+      const diff = (day === 6) ? 0 : (day + 1);
+      d.setDate(d.getDate() - diff);
+      d.setHours(0,0,0,0);
+      return d;
+    }
+
+    function weekKey(date) {
+      return 'week_' + date.toISOString().slice(0,10);
+    }
+
+    function toHijri(date) {
+      return date.toLocaleDateString('ar-SA-u-ca-islamic-umalqura', { year:'numeric', month:'short', day:'numeric' });
+    }
+
+    function renderSchedule() {
+      const wk = weekKey(currentWeekStart);
+      const today = new Date(); today.setHours(0,0,0,0);
+      const end = new Date(currentWeekStart); end.setDate(end.getDate() + 6);
+      document.getElementById('weekLabel').innerHTML =
+        `${formatMiladi(currentWeekStart)} — ${formatMiladi(end)}
+         <br><small style="font-size:0.75rem;color:var(--text-soft);">
+         ${toHijri(currentWeekStart)} — ${toHijri(end)}
+         </small>`;
+
+      const days = DAYS.map((dayName, i) => {
+        const d = new Date(currentWeekStart);
+        d.setDate(d.getDate() + i);
+        return { name: dayName, date: d, isToday: d.getTime() === today.getTime() };
+      });
+
+      const tHead = `<tr>
+        <th style="width:100px;">الوقت</th>
+        ${days.map(d => `<th class="${d.isToday?'today-col':''}">
+          <span class="schedule-day-header">${d.name}</span>
+          <span class="schedule-hijri">${toHijri(d.date)}</span>
+          <span class="schedule-hijri">${formatMiladi(d.date)}</span>
+          ${d.isToday ? '<span class="today-badge" style="display:inline-block;margin-top:4px;">اليوم</span>' : ''}
+        </th>`).join('')}
+      </tr>`;
+
+      const rows = TIMES.map(time => {
+        const cells = days.map(d => {
+          const dateKey = d.date.toISOString().slice(0,10);
+          const lessons = (scheduleData.days && scheduleData.days[dateKey] && scheduleData.days[dateKey][time]) || [];
+          return `<td>
+            ${lessons.length ? lessons.map(l => `
+              <div class="schedule-lesson-item">
+                <span>${l.icon||'📚'}</span>
+                <div>
+                  <div style="font-size:0.82rem;font-weight:bold;color:var(--purple);">${l.title||''}</div>
+                  ${l.time ? `<div class="schedule-time">${l.time}</div>` : ''}
+                  ${l.note ? `<div style="font-size:0.72rem;color:var(--text-soft);">${l.note}</div>` : ''}
+                </div>
+              </div>`).join('')
+            : `<span class="no-lessons">—</span>`}
+          </td>`;
+        }).join('');
+        return `<tr class="${days.some(d=>d.isToday)?'':''}">
+          <td style="font-weight:bold;color:var(--purple);font-size:0.82rem;">${time}</td>
+          ${cells}
+        </tr>`;
+      }).join('');
+
+      document.getElementById('scheduleContainer').innerHTML = `
+        <div class="schedule-wrapper">
+          <table class="schedule-table">
+            <thead>${tHead}</thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+    }
+
+    function formatMiladi(date) {
+      return date.toLocaleDateString('ar', { year:'numeric', month:'short', day:'numeric' });
+    }
+
+    window.changeWeek = function(dir) {
+      currentWeekStart = new Date(currentWeekStart);
+      currentWeekStart.setDate(currentWeekStart.getDate() + (dir * 7));
+      loadSchedule(weekKey(currentWeekStart));
+    };
+
+    loadSchedule(weekKey(currentWeekStart));
+
+    function initHeader() {
+      const header = document.getElementById('siteHeader');
+      const hamburger = document.getElementById('hamburger');
+      const mobileMenu = document.getElementById('mobileMenu');
+      window.addEventListener('scroll', () => header.classList.toggle('scrolled', window.scrollY > 40));
+      hamburger && hamburger.addEventListener('click', () => mobileMenu.classList.toggle('open'));
+    }
+    window.toggleNotifPanel = function() { const p = document.getElementById('notifPanel'); p.style.display = p.style.display==='none'?'block':'none'; };
+    window.markAllRead = function() {};
+    const revealEls = document.querySelectorAll('.reveal');
+    const obs = new IntersectionObserver(entries => entries.forEach(e => { if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target);}}),{threshold:0.08});
+    revealEls.forEach(el => obs.observe(el));
+  </script>
+</body>
+</html>

@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>الاختبار — معهد التأصيل العلمي</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .exam-page { background: #f7f5fa; min-height: 100vh; padding-top: 80px; }
+    .exam-container { max-width: 820px; margin: 0 auto; padding: 40px 24px; }
+    .exam-header-card {
+      background: linear-gradient(135deg, var(--purple), var(--purple-light));
+      border-radius: var(--radius);
+      padding: 32px;
+      margin-bottom: 28px;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .exam-header-card h1 { font-size: 1.4rem; margin-bottom: 6px; }
+    .exam-header-card p { font-size: 0.85rem; color: rgba(255,255,255,0.7); }
+    .exam-meta { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
+    .exam-meta span { font-size: 0.8rem; color: rgba(255,255,255,0.65); display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.08); padding: 4px 12px; border-radius: 100px; }
+    .question-nav {
+      display: flex; gap: 8px; flex-wrap: wrap;
+      background: var(--white); border-radius: var(--radius); padding: 20px;
+      margin-bottom: 24px; border: 1px solid var(--border); box-shadow: var(--shadow);
+    }
+    .q-nav-btn {
+      width: 36px; height: 36px;
+      border: 1.5px solid var(--border);
+      border-radius: 50%;
+      background: none; font-family: inherit;
+      font-size: 0.82rem; font-weight: bold;
+      color: var(--text-soft);
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .q-nav-btn.answered { background: rgba(59,27,64,0.08); color: var(--purple); border-color: var(--purple); }
+    .q-nav-btn.current { background: var(--purple); color: white; border-color: var(--purple); }
+    .nav-between {
+      display: flex; justify-content: space-between;
+      margin-top: 20px; padding-top: 20px;
+      border-top: 1px solid var(--border);
+      flex-wrap: wrap; gap: 12px;
+    }
+    .result-wrapper { background: var(--white); border-radius: var(--radius); padding: 48px 32px; text-align: center; box-shadow: var(--shadow); }
+    .big-score { font-size: 5rem; font-weight: bold; line-height: 1; margin-bottom: 8px; }
+    .big-score.pass { color: #1a7a4a; }
+    .big-score.fail { color: #b92d3a; }
+  </style>
+</head>
+<body>
+  <div id="headerPlaceholder"></div>
+  <div class="exam-page">
+    <div class="exam-container">
+      <div id="loadingState" style="text-align:center;padding:60px;color:var(--text-soft);">
+        <span class="spinner" style="width:32px;height:32px;border-width:3px;border-color:rgba(59,27,64,0.2);border-top-color:var(--purple);"></span>
+        <p style="margin-top:12px;">جارٍ تحميل الاختبار...</p>
+      </div>
+      <div id="examContent" style="display:none;"></div>
+      <div id="resultContent" style="display:none;"></div>
+    </div>
+  </div>
+  <div id="footerPlaceholder"></div>
+
+  <script type="module">
+    import { renderHeader, renderFooter } from './components.js';
+    import { auth, db, onAuthStateChanged, doc, getDoc, setDoc, collection, getDocs } from './firebase.js';
+
+    document.getElementById('headerPlaceholder').innerHTML = renderHeader('courses.html');
+    document.getElementById('footerPlaceholder').innerHTML = renderFooter();
+    initHeader();
+
+    const params = new URLSearchParams(location.search);
+    const courseId = params.get('course') || '';
+    const examId   = params.get('exam') || '';
+
+    let examData = {};
+    let questions = [];
+    let userAnswers = {};
+    let currentQ = 0;
+    let timerInterval = null;
+    let timeLeft = 0;
+    let currentUser = null;
+
+    const letters = ['أ','ب','ج','د','هـ','و','ز','ح','ط','ي'];
+
+    onAuthStateChanged(auth, async user => {
+      if (!user) { window.location.href = 'register.html'; return; }
+      currentUser = user;
+      loadExam();
+    });
+
+    async function loadExam() {
+      try {
+        const snap = await getDoc(doc(db, 'courses', courseId, 'exams', examId));
+        if (snap.exists()) examData = snap.data();
+        const qSnap = await getDocs(collection(db, 'courses', courseId, 'exams', examId, 'questions'));
+        qSnap.forEach(d => questions.push({ id: d.id, ...d.data() }));
+        questions.sort((a,b) => (a.order||0) - (b.order||0));
+      } catch(e) {}
+
+      // Check existing result
+      try {
+        const rSnap = await getDoc(doc(db, 'examResults', currentUser.uid + '_' + examId));
+        if (rSnap.exists()) { showResult(rSnap.data()); return; }
+      } catch(e) {}
+
+      document.getElementById('loadingState').style.display = 'none';
+      if (!questions.length) {
+        document.getElementById('examContent').style.display = '';
+        document.getElementById('examContent').innerHTML = `<div style="text-align:center;padding:60px;color:var(--text-soft);background:white;border-radius:16px;"><div style="font-size:3rem;margin-bottom:16px;">📋</div><p>لا توجد أسئلة في هذا الاختبار بعد</p><a href="course.html?id=${courseId}" class="btn btn-primary" style="margin-top:20px;">العودة للمقرر</a></div>`;
+        return;
+      }
+
+      timeLeft = (examData.timeLimit || 0) * 60;
+      renderExam();
+      if (timeLeft > 0) startTimer();
+    }
+
+    function renderExam() {
+      document.getElementById('examContent').style.display = '';
+      const el = document.getElementById('examContent');
+
+      // Build nav dots
+      const navDots = questions.map((_, i) =>
+        `<button class="q-nav-btn${i===currentQ?' current':''}${userAnswers[i]!==undefined?' answered':''}"
+          id="qnav_${i}" onclick="goToQ(${i})">${i+1}</button>`
+      ).join('');
+
+      el.innerHTML = `
+        <div class="exam-header-card fade-in-up">
+          <div>
+            <div style="font-size:0.78rem;color:rgba(255,255,255,0.55);margin-bottom:6px;">
+              <a href="courses.html" style="color:var(--gold);">المقررات</a> / ${examData.title||'الاختبار'}
+            </div>
+            <h1>📝 ${examData.title||'الاختبار'}</h1>
+            ${examData.desc ? `<p>${examData.desc}</p>` : ''}
+            <div class="exam-meta">
+              <span>❓ ${questions.length} سؤال</span>
+              ${examData.timeLimit ? `<span>⏱ ${examData.timeLimit} دقيقة</span>` : ''}
+              ${examData.passingScore ? `<span>✅ النجاح: ${examData.passingScore}٪</span>` : ''}
+            </div>
+          </div>
+          ${timeLeft > 0 ? `<div class="exam-timer" id="timerDisplay">⏱ ${formatTime(timeLeft)}</div>` : ''}
+        </div>
+
+        <div class="question-nav">
+          <span style="font-size:0.8rem;color:var(--text-soft);width:100%;margin-bottom:8px;">التنقل بين الأسئلة:</span>
+          ${navDots}
+        </div>
+
+        <div id="questionArea"></div>
+      `;
+      renderQuestion(currentQ);
+    }
+
+    function renderQuestion(qi) {
+      const q = questions[qi];
+      const isMulti = (q.correctIndexes||[]).length > 1;
+      const saved = userAnswers[qi] || [];
+      const area = document.getElementById('questionArea');
+
+      area.innerHTML = `
+        <div class="exercise-section fade-in-up" style="animation-duration:0.3s;">
+          <div class="exercise-header">
+            <div>
+              <div class="q-num-badge">سؤال ${qi+1} من ${questions.length} ${isMulti?'<span style="color:var(--gold-dark);font-weight:bold;"> — متعدد الإجابات</span>':''}</div>
+              <div class="q-text" style="margin-top:8px;">${q.question}</div>
+            </div>
+            ${q.points ? `<span class="badge badge-gold">${q.points} نقطة</span>` : ''}
+          </div>
+          <div class="options-list" id="optsList_${qi}">
+            ${(q.options||[]).map((opt, oi) => `
+              <label class="option-item${saved.includes(oi)?' selected':''}" id="opt_${qi}_${oi}" onclick="selectOption(${qi}, ${oi}, ${isMulti})">
+                <input type="${isMulti?'checkbox':'radio'}" name="q${qi}" value="${oi}" ${saved.includes(oi)?'checked':''}>
+                <span class="option-letter">${letters[oi]||oi+1}</span>
+                <span>${opt}</span>
+              </label>`).join('')}
+          </div>
+          <div class="nav-between">
+            <button class="btn btn-outline" onclick="goToQ(${qi-1})" ${qi===0?'disabled':''}>→ السابق</button>
+            <span style="font-size:0.82rem;color:var(--text-soft);align-self:center;">${qi+1} / ${questions.length}</span>
+            ${qi < questions.length-1
+              ? `<button class="btn btn-primary" onclick="goToQ(${qi+1})">التالي ←</button>`
+              : `<button class="btn btn-gold" onclick="confirmSubmit()">تسليم الاختبار ✓</button>`}
+          </div>
+        </div>`;
+    }
+
+    window.selectOption = function(qi, oi, isMulti) {
+      if (!userAnswers[qi]) userAnswers[qi] = [];
+      if (isMulti) {
+        const idx = userAnswers[qi].indexOf(oi);
+        if (idx >= 0) userAnswers[qi].splice(idx, 1);
+        else userAnswers[qi].push(oi);
+      } else {
+        userAnswers[qi] = [oi];
+      }
+      // Update UI
+      const q = questions[qi];
+      (q.options||[]).forEach((_,o) => {
+        document.getElementById(`opt_${qi}_${o}`)?.classList.toggle('selected', userAnswers[qi].includes(o));
+        const inp = document.querySelector(`input[name="q${qi}"][value="${o}"]`);
+        if (inp) inp.checked = userAnswers[qi].includes(o);
+      });
+      // Update nav dot
+      const navDot = document.getElementById('qnav_' + qi);
+      if (navDot) { navDot.classList.add('answered'); navDot.classList.remove('current'); }
+    };
+
+    window.goToQ = function(qi) {
+      if (qi < 0 || qi >= questions.length) return;
+      currentQ = qi;
+      document.querySelectorAll('.q-nav-btn').forEach((b,i) => {
+        b.classList.toggle('current', i === qi);
+      });
+      renderQuestion(qi);
+    };
+
+    window.confirmSubmit = function() {
+      const unanswered = questions.filter((_,i) => !userAnswers[i] || !userAnswers[i].length).length;
+      if (unanswered > 0) {
+        if (!confirm(`لديك ${unanswered} سؤال/أسئلة بدون إجابة. هل تريد التسليم؟`)) return;
+      }
+      submitExam();
+    };
+
+    async function submitExam() {
+      if (timerInterval) clearInterval(timerInterval);
+      let totalPoints = 0, earnedPoints = 0;
+      questions.forEach((q, qi) => {
+        const pts = q.points || 1;
+        totalPoints += pts;
+        const correctSet = new Set(q.correctIndexes || []);
+        const answered = userAnswers[qi] || [];
+        const isCorrect = answered.length === correctSet.size && answered.every(a => correctSet.has(a));
+        if (isCorrect) earnedPoints += pts;
+      });
+      const score = totalPoints ? Math.round((earnedPoints / totalPoints) * 100) : 0;
+      const passing = examData.passingScore || 60;
+      const passed = score >= passing;
+
+      const resultData = {
+        studentId: currentUser.uid,
+        examId, courseId,
+        answers: userAnswers,
+        score, passed,
+        totalPoints, earnedPoints,
+        submittedAt: new Date().toISOString()
+      };
+      try {
+        await setDoc(doc(db, 'examResults', currentUser.uid + '_' + examId), resultData);
+      } catch(e) {}
+
+      showResult(resultData);
+    }
+
+    function showResult(data) {
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('examContent').style.display = 'none';
+      document.getElementById('resultContent').style.display = '';
+      const passing = examData.passingScore || 60;
+      const passed = data.score >= passing;
+      document.getElementById('resultContent').innerHTML = `
+        <div class="result-wrapper fade-in-up">
+          <div style="font-size:4rem;margin-bottom:16px;">${passed?'🏆':'📋'}</div>
+          <div class="big-score ${passed?'pass':'fail'}">${data.score}٪</div>
+          <div style="font-size:1.1rem;font-weight:bold;color:${passed?'#1a7a4a':'#b92d3a'};margin-bottom:8px;">
+            ${passed?'أحسنت! لقد نجحت في الاختبار':'لم تجتز الاختبار هذه المرة'}
+          </div>
+          <p style="color:var(--text-soft);font-size:0.88rem;margin-bottom:32px;">
+            ${data.earnedPoints} من ${data.totalPoints} نقطة — درجة النجاح: ${passing}٪
+          </p>
+          <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+            <a href="course.html?id=${courseId}" class="btn btn-outline">العودة للمقرر</a>
+            <a href="courses.html" class="btn btn-primary">جميع المقررات</a>
+          </div>
+          ${data.submittedAt ? `<p style="font-size:0.72rem;color:var(--text-soft);margin-top:20px;">تاريخ التسليم: ${new Date(data.submittedAt).toLocaleDateString('ar-SA',{year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'})}</p>` : ''}
+        </div>`;
+    }
+
+    function startTimer() {
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        const display = document.getElementById('timerDisplay');
+        if (display) {
+          display.textContent = '⏱ ' + formatTime(timeLeft);
+          if (timeLeft <= 60) display.classList.add('warning');
+        }
+        if (timeLeft <= 0) { clearInterval(timerInterval); submitExam(); }
+      }, 1000);
+    }
+
+    function formatTime(s) {
+      const m = Math.floor(s / 60), sec = s % 60;
+      return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+    }
+
+    function initHeader() {
+      const header = document.getElementById('siteHeader');
+      const hamburger = document.getElementById('hamburger');
+      const mobileMenu = document.getElementById('mobileMenu');
+      window.addEventListener('scroll', () => header.classList.toggle('scrolled', window.scrollY > 40));
+      hamburger && hamburger.addEventListener('click', () => mobileMenu.classList.toggle('open'));
+    }
+    window.toggleNotifPanel = function() { const p=document.getElementById('notifPanel'); if(p) p.style.display=p.style.display==='none'?'block':'none'; };
+    window.markAllRead = function() {};
+  </script>
+</body>
+</html>
