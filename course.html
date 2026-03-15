@@ -7,199 +7,202 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Zain:wght@400;700;800&family=Amiri:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'"/>
 <noscript><link href="https://fonts.googleapis.com/css2?family=Zain:wght@400;700;800&family=Amiri:wght@400;700&display=swap" rel="stylesheet"/></noscript>
-<script src="https://unpkg.com/lucide@0.263.0/dist/umd/lucide.min.js" defer></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js" defer></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js" defer></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js" defer></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
 <script>
 firebase.initializeApp({apiKey:"AIzaSyC1sZ0cJeQMJ6QdnxwFkcfK3AGir0TRuuk",authDomain:"tasil-3lmi.firebaseapp.com",projectId:"tasil-3lmi",storageBucket:"tasil-3lmi.firebasestorage.app",messagingSenderId:"596405733121",appId:"1:596405733121:web:38ebadcc9eef8d8bb77d00"});
-const auth=firebase.auth(); const db=firebase.firestore();
+const auth=firebase.auth(),db=firebase.firestore();
 </script>
 <link rel="stylesheet" href="styles.css"/>
-<script src="shared.js" defer></script>
-<script src="nav.js" defer></script>
+<script src="shared.js"></script>
+<script src="nav.js"></script>
 <style>
-body{margin:0}
-#course-app{display:none}
-/* Layout */
-.course-layout{display:grid;grid-template-columns:280px 1fr;height:calc(100vh - 56px);overflow:hidden}
-/* Sidebar */
-.sidebar{background:#fff;border-left:1px solid rgba(212,180,142,.18);display:flex;flex-direction:column;overflow:hidden}
-.sidebar-header{padding:14px 12px;border-bottom:1px solid rgba(212,180,142,.15);flex-shrink:0}
-.sidebar-course-title{font-family:'Amiri',serif;font-size:15px;font-weight:700;color:var(--purple);margin-bottom:8px;line-height:1.3}
-.progress-bar-wrap{background:rgba(212,180,142,.2);border-radius:10px;height:6px;margin-bottom:5px}
-.progress-bar-fill{height:100%;border-radius:10px;background:linear-gradient(90deg,var(--purple),var(--gold));transition:width .4s}
-.progress-text{font-size:11px;color:var(--muted)}
-.sidebar-list{flex:1;overflow-y:auto;padding:6px}
-/* Lesson row */
-.l-row{display:flex;align-items:center;gap:6px;padding:8px 9px;border-radius:10px;margin-bottom:3px;cursor:pointer;border:1.5px solid transparent;transition:.18s;position:relative}
-.l-row:hover{background:rgba(59,27,64,.05);border-color:rgba(59,27,64,.15)}
-.l-row.active{background:rgba(59,27,64,.08);border-color:var(--purple)}
-.l-row.l-done{border-color:rgba(40,167,69,.3);background:rgba(40,167,69,.04)}
-.l-row.l-locked{opacity:.5;cursor:not-allowed}
-.l-row.l-hidden{opacity:.4}
-.l-row.drag-over{border-color:var(--gold)!important;background:rgba(212,180,142,.1)!important}
-.l-num{width:22px;height:22px;border-radius:50%;background:rgba(212,180,142,.2);color:var(--gold-d);font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.l-num.done-num{background:rgba(40,167,69,.15);color:#28a745}
-.l-info{flex:1;min-width:0}
-.l-title{font-size:12px;font-weight:700;color:var(--purple);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.l-badges{display:flex;gap:3px;margin-top:2px;flex-wrap:wrap}
-.l-badge{font-size:9px;padding:1px 5px;border-radius:6px;font-weight:700}
-.l-actions{display:flex;gap:2px;opacity:0;transition:.15s;flex-shrink:0}
-.l-row:hover .l-actions{opacity:1}
-.l-act-btn{width:20px;height:20px;border-radius:5px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;transition:.15s}
-.drag-handle{cursor:grab;color:var(--muted);opacity:.3;font-size:11px;flex-shrink:0;padding:2px}
+:root{--purple:#3B1B40;--purple-l:#5a2d63;--gold:#D4B48E;--gold-d:#b8965e;--bg:#faf8f5;--muted:#7a6a7e}
+body{margin:0;font-family:'Zain','Segoe UI',sans-serif}
+#app{display:none}
+
+/* ══ MAIN LAYOUT ══ */
+.course-wrap{display:grid;grid-template-columns:1fr 300px;min-height:calc(100vh - 56px);gap:0}
+
+/* ══ LEFT: CONTENT ══ */
+.c-content{overflow-y:auto;background:var(--bg);padding:24px 28px}
+.back-link{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--muted);text-decoration:none;margin-bottom:14px;padding:5px 12px;border-radius:8px;border:1px solid rgba(212,180,142,.25);background:#fff;transition:.2s}
+.back-link:hover{color:var(--purple);border-color:var(--purple)}
+
+/* Course header */
+.course-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;gap:12px;flex-wrap:wrap}
+.course-title{font-family:'Amiri',serif;font-size:26px;font-weight:700;color:var(--purple)}
+.course-desc{font-size:14px;color:var(--muted);margin-top:4px;line-height:1.7}
+.course-author{font-size:13px;color:#4a3a50;margin-top:3px;font-weight:600}
+
+/* Lesson name bar */
+.lesson-name-bar{background:#fff;border-radius:14px;padding:14px 18px;border:1px solid rgba(212,180,142,.2);margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.lesson-name-text{font-family:'Amiri',serif;font-size:18px;font-weight:700;color:var(--purple)}
+.lesson-order-badge{font-size:12px;color:var(--muted);background:rgba(212,180,142,.15);padding:3px 10px;border-radius:10px;font-weight:700}
+
+/* Video box */
+.video-box{background:#fff;border-radius:14px;overflow:hidden;border:2px solid var(--purple);margin-bottom:14px;box-shadow:0 6px 24px rgba(59,27,64,.12)}
+.video-ratio{position:relative;padding-bottom:56.25%;height:0}
+.video-ratio iframe{position:absolute;inset:0;width:100%;height:100%;border:none}
+.video-empty-box{background:linear-gradient(135deg,var(--purple),var(--purple-l));padding:48px 24px;text-align:center;color:rgba(255,255,255,.75);font-size:14px}
+
+/* Action row below video */
+.action-row{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.act-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:10px;border:none;font-family:'Zain',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:.2s}
+.act-btn:hover{filter:brightness(1.06);transform:translateY(-1px)}
+.act-btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold-d));color:var(--purple)}
+.act-btn-green{background:linear-gradient(135deg,#28a745,#218838);color:#fff}
+.act-btn-ghost{background:#fff;color:var(--muted);border:1.5px solid rgba(212,180,142,.35)}
+.act-btn-purple{background:linear-gradient(135deg,var(--purple),var(--purple-l));color:#fff}
+.act-btn-red{background:rgba(220,53,69,.1);color:#dc3545}
+.act-btn-sm{padding:6px 12px;font-size:12px;border-radius:8px}
+
+/* Course info section */
+.info-section{background:#fff;border-radius:14px;padding:18px;border:1px solid rgba(212,180,142,.18);margin-bottom:16px}
+.info-label{font-size:12px;font-weight:800;color:var(--muted);margin-bottom:5px}
+.info-value{font-size:14px;color:#1a0a1e;line-height:1.7}
+
+/* Exercises */
+.exercises-section{margin-top:4px}
+.exercises-title{font-family:'Amiri',serif;font-size:18px;font-weight:700;color:var(--purple);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.exercise-box{background:#fff;border-radius:14px;padding:18px;margin-bottom:12px;border:2px solid var(--purple);box-shadow:0 4px 14px rgba(59,27,64,.08)}
+.ex-question{font-size:15px;font-weight:700;color:var(--purple);margin-bottom:14px;line-height:1.6}
+.ex-multi-tag{font-size:10px;background:rgba(59,27,64,.1);color:var(--purple);padding:2px 7px;border-radius:6px;font-weight:700;margin-right:6px}
+.ex-option{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;border:1.5px solid rgba(212,180,142,.3);margin-bottom:8px;cursor:pointer;font-size:14px;transition:.18s}
+.ex-option:hover:not(.ex-locked){border-color:var(--purple);background:rgba(59,27,64,.04)}
+.ex-option.ex-selected{border-color:var(--purple);background:rgba(59,27,64,.07)}
+.ex-option.ex-correct{border-color:#28a745!important;background:rgba(40,167,69,.09)!important;color:#28a745!important}
+.ex-option.ex-wrong{border-color:#dc3545!important;background:rgba(220,53,69,.08)!important;color:#dc3545!important}
+.ex-option.ex-locked{cursor:not-allowed;opacity:.55}
+.ex-circle{width:20px;height:20px;border-radius:50%;border:1.5px solid rgba(212,180,142,.5);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px}
+.ex-square{width:20px;height:20px;border-radius:4px;border:1.5px solid rgba(212,180,142,.5);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px}
+.admin-bar{background:rgba(59,27,64,.04);border:1px dashed rgba(59,27,64,.18);border-radius:10px;padding:8px 12px;margin-bottom:12px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.admin-bar-label{font-size:11px;font-weight:800;color:var(--purple);opacity:.6;margin-left:4px}
+
+/* ══ RIGHT: SIDEBAR ══ */
+.c-sidebar{background:#fff;border-right:1px solid rgba(212,180,142,.18);overflow-y:auto;position:sticky;top:56px;height:calc(100vh - 56px)}
+.sb-header{padding:14px 14px 10px;border-bottom:1px solid rgba(212,180,142,.14)}
+.sb-course-title{font-family:'Amiri',serif;font-size:14px;font-weight:700;color:var(--purple);margin-bottom:6px;line-height:1.4}
+.sb-prog-wrap{background:rgba(212,180,142,.2);border-radius:8px;height:5px;margin-bottom:4px}
+.sb-prog-fill{height:100%;border-radius:8px;background:linear-gradient(90deg,var(--purple),var(--gold));transition:width .4s}
+.sb-prog-text{font-size:11px;color:var(--muted)}
+.sb-list{padding:8px}
+.sb-row{display:flex;align-items:center;gap:7px;padding:9px 10px;border-radius:10px;margin-bottom:4px;cursor:pointer;border:1.5px solid transparent;transition:.18s;background:var(--bg)}
+.sb-row:hover{border-color:rgba(59,27,64,.18);background:rgba(59,27,64,.04)}
+.sb-row.sb-active{border-color:var(--purple);background:rgba(59,27,64,.08)}
+.sb-row.sb-done{border-color:rgba(40,167,69,.3);background:rgba(40,167,69,.04)}
+.sb-row.sb-locked{opacity:.5;cursor:not-allowed}
+.sb-row.sb-hidden-row{opacity:.45}
+.sb-row.sb-drag-over{border-color:var(--gold)!important;background:rgba(212,180,142,.12)!important}
+.sb-num{width:24px;height:24px;border-radius:50%;background:rgba(212,180,142,.2);color:var(--gold-d);font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sb-num.sb-done-num{background:rgba(40,167,69,.15);color:#28a745}
+.sb-info{flex:1;min-width:0}
+.sb-title{font-size:12px;font-weight:700;color:var(--purple);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-tags{display:flex;gap:3px;margin-top:2px;flex-wrap:wrap}
+.sb-tag{font-size:9px;padding:1px 5px;border-radius:5px;font-weight:700}
+.sb-acts{display:none;gap:2px;flex-shrink:0}
+.sb-row:hover .sb-acts{display:flex}
+.sb-act{width:22px;height:22px;border-radius:6px;border:none;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center}
+.drag-handle{cursor:grab;color:var(--muted);opacity:.3;font-size:12px;flex-shrink:0}
 .drag-handle:hover{opacity:.8}
-/* Test row in sidebar */
-.test-row{display:flex;align-items:center;gap:6px;padding:8px 9px;border-radius:10px;margin-bottom:3px;cursor:pointer;border:1.5px solid rgba(212,180,142,.25);transition:.18s;background:rgba(212,180,142,.06)}
-.test-row:hover{border-color:var(--gold);background:rgba(212,180,142,.12)}
-.test-row.active{border-color:var(--gold-d);background:rgba(212,180,142,.15)}
-.sidebar-divider{margin:8px 6px;border:none;border-top:1px dashed rgba(212,180,142,.3)}
-/* Content area */
-.content{overflow-y:auto;background:var(--bg)}
-.content-inner{padding:24px;max-width:860px}
-/* Video */
-.video-container{position:relative;padding-bottom:56.25%;height:0;border-radius:16px;overflow:hidden;background:#000;box-shadow:0 12px 40px rgba(0,0,0,.25);margin-bottom:20px}
-.video-container iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:none}
-.video-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:linear-gradient(135deg,var(--purple),var(--purple-l));color:rgba(255,255,255,.7);font-size:13px}
-/* Exercise */
-.exercise-card{background:#fff;border-radius:14px;padding:18px;margin-bottom:12px;border:1px solid rgba(212,180,142,.2)}
-.ex-q{font-size:14px;font-weight:700;color:var(--purple);margin-bottom:12px;line-height:1.6}
-.ex-opt{padding:10px 14px;border-radius:10px;border:1.5px solid rgba(212,180,142,.25);margin-bottom:7px;cursor:pointer;font-size:13px;transition:.18s;display:flex;align-items:center;gap:8px}
-.ex-opt:hover:not(.locked){border-color:var(--purple);background:rgba(59,27,64,.04)}
-.ex-opt.selected{border-color:var(--purple);background:rgba(59,27,64,.07)}
-.ex-opt.correct{border-color:#28a745!important;background:rgba(40,167,69,.09)!important;color:#28a745!important}
-.ex-opt.wrong  {border-color:#dc3545!important;background:rgba(220,53,69,.08)!important;color:#dc3545!important}
-.ex-opt.locked {cursor:not-allowed;opacity:.6}
-/* Admin toolbar */
-.admin-toolbar{background:rgba(59,27,64,.04);border:1px dashed rgba(59,27,64,.2);border-radius:12px;padding:10px 14px;margin-bottom:16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.admin-toolbar span{font-size:11px;font-weight:800;color:var(--purple);opacity:.7}
-/* Score display */
-.score-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:700;background:rgba(212,180,142,.15);color:var(--gold-d)}
+.sb-test-row{display:flex;align-items:center;gap:7px;padding:9px 10px;border-radius:10px;margin-bottom:4px;cursor:pointer;border:1.5px solid rgba(212,180,142,.25);background:rgba(212,180,142,.07);transition:.18s}
+.sb-test-row:hover{border-color:var(--gold-d);background:rgba(212,180,142,.14)}
+.sb-test-row.sb-active{border-color:var(--gold-d);background:rgba(212,180,142,.18)}
+.sb-divider{margin:8px 6px;border:none;border-top:1px dashed rgba(212,180,142,.3)}
+.sb-section-label{font-size:11px;font-weight:800;color:var(--muted);padding:3px 8px;margin-bottom:4px}
+
 /* Mobile sidebar toggle */
-.mob-sidebar-toggle{display:none;position:fixed;bottom:20px;right:20px;width:48px;height:48px;border-radius:50%;background:var(--purple);color:#fff;border:none;cursor:pointer;box-shadow:0 6px 20px rgba(59,27,64,.4);z-index:99;align-items:center;justify-content:center;font-size:20px}
+.mob-sb-btn{display:none;position:fixed;bottom:20px;right:16px;width:46px;height:46px;border-radius:50%;background:var(--purple);color:#fff;border:none;cursor:pointer;box-shadow:0 6px 20px rgba(59,27,64,.4);z-index:99;font-size:20px;align-items:center;justify-content:center}
+
+/* Test result card */
+.result-card{background:#fff;border-radius:16px;padding:28px;text-align:center;border:1px solid rgba(212,180,142,.2);margin-bottom:20px}
+
+/* Spinner */
+.spinner-ov{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:14px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin-ring{width:44px;height:44px;border:4px solid rgba(59,27,64,.12);border-top-color:var(--purple);border-radius:50%;animation:spin .7s linear infinite}
+
 @media(max-width:900px){
-  .course-layout{grid-template-columns:1fr;grid-template-rows:1fr}
-  .sidebar{position:fixed;top:56px;right:0;bottom:0;width:280px;z-index:200;transform:translateX(100%);transition:transform .3s;box-shadow:-8px 0 32px rgba(59,27,64,.15)}
-  .sidebar.open{transform:translateX(0)}
-  .mob-sidebar-toggle{display:flex}
-  .content{height:calc(100vh - 56px)}
+  .course-wrap{grid-template-columns:1fr}
+  .c-sidebar{position:fixed;top:56px;right:0;bottom:0;width:280px;z-index:200;transform:translateX(100%);transition:transform .3s;box-shadow:-8px 0 32px rgba(59,27,64,.15)}
+  .c-sidebar.sb-open{transform:translateX(0)}
+  .mob-sb-btn{display:flex}
 }
+@media(max-width:600px){.c-content{padding:16px 14px}}
 </style>
 </head>
 <body>
 
-<!-- Spinner -->
-<div id="spinner" class="spinner-overlay"><div class="spin-ring"></div></div>
+<div id="spinner" class="spinner-ov"><div class="spin-ring"></div></div>
+<div id="app">
+  <div id="nav-ph"></div>
 
-<!-- Nav -->
-<div id="nav-ph"></div>
-
-<div id="course-app">
-  <!-- Course header (above layout) -->
-  <div id="course-header" style="background:#fff;border-bottom:1px solid rgba(212,180,142,.15);padding:10px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-    <a href="courses.html" style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--muted);text-decoration:none;padding:5px 10px;border-radius:8px;border:1px solid rgba(212,180,142,.25)">
-      ← المقررات
-    </a>
-    <div id="course-title-display" style="font-family:'Amiri',serif;font-size:17px;font-weight:700;color:var(--purple);flex:1"></div>
-    <div id="admin-course-controls" style="display:none;gap:6px;display:none">
-      <button onclick="editCourseTitle()" class="btn btn-gold btn-sm">✎ تعديل العنوان</button>
+  <!-- Course top bar -->
+  <div id="course-topbar" style="background:#fff;border-bottom:1px solid rgba(212,180,142,.15);padding:8px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;min-height:44px">
+    <a href="courses.html" class="back-link" style="margin-bottom:0">← المقررات</a>
+    <span id="topbar-title" style="font-family:'Amiri',serif;font-size:16px;font-weight:700;color:var(--purple);flex:1"></span>
+    <div id="admin-topbar-acts" style="display:none;gap:6px">
+      <button onclick="editCourseInfo()" class="act-btn act-btn-gold act-btn-sm">✎ تعديل المقرر</button>
     </div>
   </div>
 
-  <!-- Main layout -->
-  <div class="course-layout">
-    <!-- SIDEBAR -->
-    <div class="sidebar" id="main-sidebar">
-      <div class="sidebar-header">
-        <div class="sidebar-course-title" id="sb-title"></div>
-        <div class="progress-bar-wrap"><div class="progress-bar-fill" id="prog-bar" style="width:0%"></div></div>
-        <div class="progress-text" id="prog-text">0 / 0 درس مكتمل</div>
-      </div>
-      <div class="sidebar-list" id="sidebar-list">
-        <div style="text-align:center;padding:30px;color:var(--muted)">جارٍ التحميل...</div>
+  <div class="course-wrap">
+    <!-- LEFT CONTENT -->
+    <div class="c-content" id="main-content">
+      <div style="text-align:center;padding:80px 20px;color:var(--muted)">
+        <div style="font-size:48px;margin-bottom:12px">📖</div>
+        <div style="font-size:15px;font-weight:600">اختر درساً من القائمة على اليمين</div>
       </div>
     </div>
 
-    <!-- CONTENT -->
-    <div class="content" id="main-content">
-      <div class="content-inner">
-        <div style="text-align:center;padding:80px 20px;color:var(--muted)">
-          <div style="font-size:48px;margin-bottom:12px">📖</div>
-          <div style="font-size:15px">اختر درساً من القائمة</div>
-        </div>
+    <!-- RIGHT SIDEBAR -->
+    <div class="c-sidebar" id="c-sidebar">
+      <div class="sb-header">
+        <div class="sb-course-title" id="sb-title">جارٍ التحميل...</div>
+        <div class="sb-prog-wrap"><div class="sb-prog-fill" id="sb-prog" style="width:0%"></div></div>
+        <div class="sb-prog-text" id="sb-prog-text">0 / 0</div>
+      </div>
+      <div class="sb-list" id="sb-list">
+        <div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">جارٍ التحميل...</div>
       </div>
     </div>
   </div>
 
-  <!-- Mobile sidebar toggle -->
-  <button class="mob-sidebar-toggle" onclick="toggleMobileSidebar()" id="mob-sb-btn">☰</button>
-  <div id="mob-sb-overlay" onclick="closeMobileSidebar()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:199"></div>
+  <!-- Mobile sidebar overlay -->
+  <div id="mob-sb-ov" onclick="closeSidebar()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:199"></div>
+  <button class="mob-sb-btn" onclick="toggleSidebar()">☰</button>
 </div>
 
-<!-- Modal -->
 <div id="modal-container"></div>
 <div id="toast-container"></div>
 
 <script>
-// ═══════════════════════════════════════
+// ══════════════════════════════════════════════
 // STATE
-// ═══════════════════════════════════════
-let currentUser = null;
-let courseData   = null;   // full course object from Firestore
-let courseId     = null;
-let currentItem  = null;   // {type:'lesson'|'test', id}
-let dragSrcId    = null;
-let studentScores = {};    // {lessonId: {score, total, answers[]}}
+// ══════════════════════════════════════════════
+var currentUser=null, courseData=null, courseId=null, currentItem=null, dragSrc=null, studentScores={};
+var testAnswers={};
 
-// ── Read URL param ──
-const params = new URLSearchParams(location.search);
-courseId = params.get('id');
-if(!courseId){ location.href = 'courses.html'; }
+var params=new URLSearchParams(location.search);
+courseId=params.get('id');
+if(!courseId){location.href='courses.html';}
 
-// ═══════════════════════════════════════
-// DEFAULT DATA GENERATORS
-// ═══════════════════════════════════════
-function makeLessons(cid){
-  return Array.from({length:20},(_,i)=>({
-    id:`${cid}-l${i+1}`, order:i+1,
-    title:`الدرس ${i+1}`,
-    visible:true, locked:false,
-    youtube:'', exercises:[]
-  }));
-}
-function makeTests(cid, ctitle){
-  const make = (n, label) => ({
-    id:`${cid}-test${n}`, type:'test', order:20+n,
-    title:`${label} — ${ctitle}`,
-    visible:true, locked:false,
-    questions:[
-      {id:'q1',q:`ما موضوع ${ctitle}؟`,multi:false,options:["دراسة شرعية متخصصة","دراسة لغوية","دراسة تاريخية","دراسة فلسفية"],answers:[0]},
-      {id:'q2',q:"ما أول خطوة في طلب العلم؟",multi:false,options:["الإخلاص لله","شراء الكتب","البحث في الإنترنت","حضور الدروس"],answers:[0]},
-      {id:'q3',q:"ما الهدف من دراسة هذا المقرر؟",multi:false,options:["التعمق في العلم الشرعي","الحصول على شهادة","التفوق على الآخرين","بلا هدف محدد"],answers:[0]},
-      {id:'q4',q:"ما منهج المعهد في التدريس؟",multi:false,options:["منهج أهل السنة والجماعة","المنهج العقلاني","المنهج الفلسفي","منهج المتكلمين"],answers:[0]},
-      {id:'q5',q:"ما ثمرة العلم الشرعي؟",multi:false,options:["خشية الله والعمل به","الشهرة والمال","الجدل والمناظرة","النجاح الدراسي فقط"],answers:[0]},
-    ]
-  });
-  return [make(1,'اختبار الوحدة الأولى'), make(2,'الاختبار النهائي')];
-}
-
-// ═══════════════════════════════════════
-// AUTH
-// ═══════════════════════════════════════
+// ── Instant cache ──
 (function(){
-  const c = localStorage.getItem('ti_user');
-  if(c){ try{ currentUser = JSON.parse(c); }catch(e){} }
+  var c=localStorage.getItem('ti_user');
+  if(c){try{currentUser=JSON.parse(c);}catch(e){}}
 })();
 
-auth.onAuthStateChanged(async user => {
-  if(!user){ location.href='login.html'; return; }
+auth.onAuthStateChanged(async function(user){
+  if(!user){localStorage.removeItem('ti_user');location.href='login.html';return;}
   if(!currentUser){
-    const a = await db.collection('admins').doc(user.uid).get().catch(()=>null);
-    if(a?.exists){ currentUser={uid:user.uid,...a.data(),isAdmin:true}; }
+    var a=await db.collection('admins').doc(user.uid).get().catch(function(){return null;});
+    if(a&&a.exists){currentUser={uid:user.uid,...a.data(),isAdmin:true};}
     else{
-      const u = await db.collection('users').doc(user.uid).get().catch(()=>null);
-      if(!u?.exists){ await auth.signOut(); location.href='login.html'; return; }
+      var u=await db.collection('users').doc(user.uid).get().catch(function(){return null;});
+      if(!u||!u.exists){await auth.signOut();location.href='login.html';return;}
       currentUser={uid:user.uid,...u.data(),isAdmin:false};
     }
     localStorage.setItem('ti_user',JSON.stringify(currentUser));
@@ -208,373 +211,707 @@ auth.onAuthStateChanged(async user => {
   initUI();
 });
 
-// ═══════════════════════════════════════
-// LOAD COURSE
-// ═══════════════════════════════════════
-async function loadCourse(){
-  const snap = await db.collection('courses').doc(courseId).get().catch(()=>null);
-  if(snap?.exists){
-    courseData = snap.data();
-  } else {
-    // Build default from KNOWN_COURSES list
-    const known = KNOWN_COURSES[courseId];
-    if(!known){ toast('المقرر غير موجود','error'); setTimeout(()=>location.href='courses.html',2000); return; }
-    courseData = {
-      id:courseId, title:known.title, color:known.color||'#3B1B40',
-      lessons: makeLessons(courseId),
-      tests:   makeTests(courseId, known.title)
-    };
-    // Save to Firestore
-    db.collection('courses').doc(courseId).set(courseData).catch(e=>console.log('Init course:',e.message));
-  }
-  // Load student scores
-  if(!currentUser.isAdmin){
-    const scSnap = await db.collection('scores').doc(currentUser.uid+'_'+courseId).get().catch(()=>null);
-    if(scSnap?.exists) studentScores = scSnap.data().scores||{};
-  }
-}
-
-// All known courses
-const KNOWN_COURSES = {
-  t1:{title:'كتاب "المدخل إلى طلب العلم"',color:"#b8965e"},
-  t2:{title:'كتاب "تذكرة السامع والمتكلم"',color:"#a07840"},
-  t3:{title:"الجرد القرآني التطبيقي",color:"#8B6914"},
-  m1:{title:"القواعد الأربع",color:"#3B1B40"},
-  m2:{title:"نواقض الإسلام",color:"#4a2250"},
-  m3:{title:"الأصول الثلاثة وأدلتها",color:"#5a2d63"},
-  m4:{title:"كشف الشبهات",color:"#3B1B40"},
-  m5:{title:"متن الآجرومية في النحو",color:"#1a5276"},
-  m6:{title:"التذكرة في علوم الحديث",color:"#1b4f72"},
-  m7:{title:"الأرجوزة الميئية في السيرة",color:"#154360"},
-  m8:{title:"الرسالة اللطيفة في أصول الفقه",color:"#0e3251"},
-  m9:{title:"الأربعون النووية مع زيادات ابن رجب",color:"#1a5276"},
-  m10:{title:"مقدمات التفقه",color:"#117a65"},
-  m11:{title:"متن الأخضري في العبادات",color:"#0e6655"},
-  m12:{title:"متن العشماوية (قراءة سريعة)",color:"#117a65"},
-  m13:{title:"نظم ابن أبي كف في أدلة المذهب",color:"#0d5e4a"},
-  m14:{title:"نظم المرشد المعين لابن عاشر",color:"#117a65"},
-  m15:{title:"منظومة القواعد الفقهية",color:"#0a4d3a"},
-  m16:{title:"مقدمة في أصول التفسير",color:"#6e2f0a"},
-  m17:{title:"كتاب التوحيد",color:"#7d3410"},
-  m18:{title:"القواعد والضوابط السلفية في الأسماء والصفات",color:"#6e2f0a"},
-  m19:{title:"العقيدة الواسطية",color:"#8b3c11"},
-  m20:{title:"منظومة تبصرة القاصد في علم المقاصد",color:"#512e5f"},
-  m21:{title:'كتاب الجامع من "القوانين الفقهية" في الآداب',color:"#5b3068"},
-  m22:{title:"السبل المرضية في السياسة الشرعية",color:"#6c3483"},
-  m23:{title:"الأمر بالمعروف والنهي عن المنكر",color:"#922b21"},
-  m24:{title:"آداب البحث والمناظرة",color:"#a93226"},
-  m25:{title:"متن الرد على المخالف",color:"#922b21"},
-  m26:{title:"متن الحصانة الفكرية",color:"#b03a2e"},
+// ══════════════════════════════════════════════
+// KNOWN COURSES
+// ══════════════════════════════════════════════
+var KNOWN={
+  t1:{title:'كتاب "المدخل إلى طلب العلم"',color:'#b8965e'},
+  t2:{title:'كتاب "تذكرة السامع والمتكلم"',color:'#a07840'},
+  t3:{title:'الجرد القرآني التطبيقي',color:'#8B6914'},
+  m1:{title:'القواعد الأربع',color:'#3B1B40'},
+  m2:{title:'نواقض الإسلام',color:'#4a2250'},
+  m3:{title:'الأصول الثلاثة وأدلتها',color:'#5a2d63'},
+  m4:{title:'كشف الشبهات',color:'#3B1B40'},
+  m5:{title:'متن الآجرومية في النحو',color:'#1a5276'},
+  m6:{title:'التذكرة في علوم الحديث',color:'#1b4f72'},
+  m7:{title:'الأرجوزة الميئية في السيرة',color:'#154360'},
+  m8:{title:'الرسالة اللطيفة في أصول الفقه',color:'#0e3251'},
+  m9:{title:'الأربعون النووية مع زيادات ابن رجب',color:'#1a5276'},
+  m10:{title:'مقدمات التفقه',color:'#117a65'},
+  m11:{title:'متن الأخضري في العبادات',color:'#0e6655'},
+  m12:{title:'متن العشماوية (قراءة سريعة)',color:'#117a65'},
+  m13:{title:'نظم ابن أبي كف في أدلة المذهب',color:'#0d5e4a'},
+  m14:{title:'نظم المرشد المعين لابن عاشر',color:'#117a65'},
+  m15:{title:'منظومة القواعد الفقهية',color:'#0a4d3a'},
+  m16:{title:'مقدمة في أصول التفسير',color:'#6e2f0a'},
+  m17:{title:'كتاب التوحيد',color:'#7d3410'},
+  m18:{title:'القواعد والضوابط السلفية في الأسماء والصفات',color:'#6e2f0a'},
+  m19:{title:'العقيدة الواسطية',color:'#8b3c11'},
+  m20:{title:'منظومة تبصرة القاصد في المقاصد',color:'#512e5f'},
+  m21:{title:'كتاب الجامع في الآداب',color:'#5b3068'},
+  m22:{title:'السبل المرضية في السياسة الشرعية',color:'#6c3483'},
+  m23:{title:'الأمر بالمعروف والنهي عن المنكر',color:'#922b21'},
+  m24:{title:'آداب البحث والمناظرة',color:'#a93226'},
+  m25:{title:'متن الرد على المخالف',color:'#922b21'},
+  m26:{title:'متن الحصانة الفكرية',color:'#b03a2e'}
 };
 
-// ═══════════════════════════════════════
-// INIT UI
-// ═══════════════════════════════════════
+function makeLessons(cid){
+  return Array.from({length:20},function(_,i){
+    return {id:cid+'-l'+(i+1),order:i+1,title:'الدرس '+(i+1),visible:true,locked:false,youtube:'',exercises:[]};
+  });
+}
+function makeTests(cid,ctitle){
+  var qs=[
+    {id:'q1',q:'ما موضوع '+ctitle+'؟',multi:false,options:['دراسة شرعية متخصصة','دراسة لغوية','دراسة تاريخية','دراسة فلسفية'],answers:[0]},
+    {id:'q2',q:'ما أول خطوة في طلب العلم؟',multi:false,options:['الإخلاص لله','شراء الكتب','البحث في الإنترنت','حضور الدروس'],answers:[0]},
+    {id:'q3',q:'ما منهج المعهد في التدريس؟',multi:false,options:['منهج أهل السنة والجماعة','المنهج العقلاني','المنهج الفلسفي','منهج المتكلمين'],answers:[0]},
+    {id:'q4',q:'ما ثمرة العلم الشرعي؟',multi:false,options:['خشية الله والعمل به','الشهرة والمال','الجدل','النجاح الدراسي فقط'],answers:[0]},
+    {id:'q5',q:'ما الهدف من دراسة هذا المقرر؟',multi:false,options:['التعمق في العلم الشرعي','الحصول على شهادة','التفوق','بلا هدف'],answers:[0]}
+  ];
+  return [
+    {id:cid+'-test1',title:'اختبار الوحدة الأولى — '+ctitle,visible:true,locked:false,questions:qs},
+    {id:cid+'-test2',title:'الاختبار النهائي — '+ctitle,visible:true,locked:false,questions:qs.map(function(q){return Object.assign({},q,{id:q.id+'b'});})}
+  ];
+}
+
+// ══════════════════════════════════════════════
+// LOAD COURSE
+// ══════════════════════════════════════════════
+async function loadCourse(){
+  var snap=await db.collection('courses').doc(courseId).get().catch(function(){return null;});
+  if(snap&&snap.exists){
+    courseData=snap.data();
+  } else {
+    var known=KNOWN[courseId];
+    if(!known){showToast('المقرر غير موجود','error');setTimeout(function(){location.href='courses.html';},2e3);return;}
+    courseData={id:courseId,title:known.title,color:known.color||'#3B1B40',desc:'',author:'',
+      lessons:makeLessons(courseId),tests:makeTests(courseId,known.title)};
+    db.collection('courses').doc(courseId).set(courseData).catch(function(e){console.log('init:',e.message);});
+  }
+  if(!courseData.lessons||!courseData.lessons.length) courseData.lessons=makeLessons(courseId);
+  if(!courseData.tests||!courseData.tests.length)     courseData.tests=makeTests(courseId,courseData.title);
+  if(!currentUser.isAdmin){
+    var sc=await db.collection('scores').doc(currentUser.uid+'_'+courseId).get().catch(function(){return null;});
+    if(sc&&sc.exists) studentScores=sc.data().scores||{};
+  }
+}
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
 function initUI(){
   document.getElementById('spinner').style.display='none';
-  document.getElementById('course-app').style.display='';
-  document.getElementById('nav-ph').outerHTML = buildNav('courses',currentUser);
-  if(typeof setNavUser==='function') setNavUser(currentUser);
-  setTimeout(()=>{ if(window.lucide) lucide.createIcons(); },100);
-
-  // Course title
-  document.getElementById('course-title-display').textContent = courseData.title;
-  document.getElementById('sb-title').textContent = courseData.title;
-  document.title = courseData.title + ' — معهد التأصيل العلمي';
-
-  // Admin controls
-  if(currentUser.isAdmin){
-    const ctrl = document.getElementById('admin-course-controls');
-    ctrl.style.display = 'flex';
-  }
-
-  renderSidebar();
+  document.getElementById('app').style.display='';
+  document.getElementById('nav-ph').outerHTML=buildNav('courses',currentUser);
+  if(typeof setNavUser==='function')setNavUser(currentUser);
+  setTimeout(function(){if(window.lucide)lucide.createIcons();},100);
+  document.getElementById('topbar-title').textContent=courseData.title;
+  document.getElementById('sb-title').textContent=courseData.title;
+  document.title=courseData.title+' — معهد التأصيل العلمي';
+  if(currentUser.isAdmin) document.getElementById('admin-topbar-acts').style.display='flex';
+  buildSidebar();
 }
 
-// ═══════════════════════════════════════
+// ══════════════════════════════════════════════
 // SIDEBAR
-// ═══════════════════════════════════════
-function renderSidebar(){
-  const lessons = courseData.lessons||[];
-  const tests   = courseData.tests||[];
-  const isAdm   = currentUser.isAdmin;
-  const done    = (currentUser.completedLessons||[]);
-  const completedCount = lessons.filter(l=>done.includes(l.id)).length;
-  const pct = lessons.length ? Math.round(completedCount/lessons.length*100) : 0;
+// ══════════════════════════════════════════════
+function buildSidebar(){
+  var lessons=courseData.lessons||[];
+  var tests=courseData.tests||[];
+  var isAdm=currentUser.isAdmin;
+  var done=currentUser.completedLessons||[];
+  var doneCount=lessons.filter(function(l){return done.indexOf(l.id)>=0;}).length;
+  var pct=lessons.length?Math.round(doneCount/lessons.length*100):0;
+  document.getElementById('sb-prog').style.width=pct+'%';
+  document.getElementById('sb-prog-text').textContent=doneCount+' / '+lessons.length+' درس مكتمل';
 
-  document.getElementById('prog-bar').style.width = pct+'%';
-  document.getElementById('prog-text').textContent = completedCount+' / '+lessons.length+' درس مكتمل';
-
-  let rows = '';
-
-  // ── Lessons ──
-  const visibleLessons = isAdm ? lessons : lessons.filter(l=>l.visible);
-  visibleLessons.forEach(function(l){
-    const isDone   = done.includes(l.id);
-    const isActive = currentItem && currentItem.type==='lesson' && currentItem.id===l.id;
-    const cls = 'l-row'+(isActive?' active':'')+(isDone?' l-done':'')+(l.locked?' l-locked':'')+((!l.visible)?' l-hidden':'');
-    const clickFn = (l.locked && !isAdm) ? 'showLocked()' : 'openLesson("'+l.id+'")';
-
-    rows += '<div class="'+cls+'" id="lr-'+l.id+'"';
-    rows += ' onclick="'+clickFn+'"';
-    rows += ' draggable="'+(isAdm?'true':'false')+'"';
-    rows += ' ondragstart="dragStart(''+l.id+'')"';
-    rows += ' ondragover="event.preventDefault();this.classList.add('drag-over')"';
-    rows += ' ondragleave="this.classList.remove('drag-over')"';
-    rows += ' ondrop="event.preventDefault();this.classList.remove('drag-over');dropOn(''+l.id+'')">';
-
-    if(isAdm) rows += '<span class="drag-handle" title="اسحب">⋮⋮</span>';
-
-    rows += '<div class="l-num'+(isDone?' done-num':'')+'">'+(isDone?'✓':l.order)+'</div>';
-    rows += '<div class="l-info">';
-    rows += '<div class="l-title">'+l.title+'</div>';
-    rows += '<div class="l-badges">';
-    if(!l.visible) rows += '<span class="l-badge" style="background:rgba(220,53,69,.1);color:#dc3545">مخفي</span>';
-    if(l.locked)   rows += '<span class="l-badge" style="background:rgba(255,193,7,.15);color:#856404">🔒</span>';
-    if(isDone)     rows += '<span class="l-badge" style="background:rgba(40,167,69,.12);color:#28a745">✓</span>';
-    rows += '</div></div>';
-
+  var rows='';
+  var vis=isAdm?lessons:lessons.filter(function(l){return l.visible;});
+  vis.forEach(function(l){
+    var isDone=done.indexOf(l.id)>=0;
+    var isAct=currentItem&&currentItem.type==='lesson'&&currentItem.id===l.id;
+    var cls='sb-row'+(isAct?' sb-active':'')+(isDone?' sb-done':'')+(l.locked&&!isAdm?' sb-locked':'')+((!l.visible&&isAdm)?' sb-hidden-row':'');
+    rows+='<div class="'+cls+'" id="sr-'+l.id+'" ';
+    rows+='onclick="'+(l.locked&&!isAdm?'showLocked()':'openLesson("'+l.id+'")')+'" ';
+    rows+='draggable="'+(isAdm?'true':'false')+'" ';
+    rows+='ondragstart="dragStart(\''+l.id+'\')" ondragover="event.preventDefault();this.classList.add(\'sb-drag-over\')" ';
+    rows+='ondragleave="this.classList.remove(\'sb-drag-over\')" ondrop="event.preventDefault();this.classList.remove(\'sb-drag-over\');dropOn(\''+l.id+'\')">';
+    if(isAdm) rows+='<span class="drag-handle">⋮⋮</span>';
+    rows+='<div class="sb-num'+(isDone?' sb-done-num':'')+'">'+(isDone?'✓':l.order)+'</div>';
+    rows+='<div class="sb-info"><div class="sb-title">'+l.title+'</div>';
+    rows+='<div class="sb-tags">';
+    if(!l.visible) rows+='<span class="sb-tag" style="background:rgba(220,53,69,.1);color:#dc3545">مخفي</span>';
+    if(l.locked)   rows+='<span class="sb-tag" style="background:rgba(255,193,7,.15);color:#856404">🔒</span>';
+    if(isDone)     rows+='<span class="sb-tag" style="background:rgba(40,167,69,.12);color:#28a745">✓</span>';
+    rows+='</div></div>';
     if(isAdm){
-      rows += '<div class="l-actions">';
-      rows += '<button class="l-act-btn" onclick="event.stopPropagation();editLesson(''+l.id+'')" style="background:rgba(212,180,142,.2);color:var(--gold-d)">✎</button>';
-      rows += '<button class="l-act-btn" onclick="event.stopPropagation();toggleLessonProp(''+l.id+'','visible')" style="background:rgba(59,27,64,.08);color:var(--purple)">'+(l.visible?'👁':'🚫')+'</button>';
-      rows += '<button class="l-act-btn" onclick="event.stopPropagation();toggleLessonProp(''+l.id+'','locked')" style="background:rgba(255,193,7,.1);color:#856404">'+(l.locked?'🔓':'🔒')+'</button>';
-      rows += '<button class="l-act-btn" onclick="event.stopPropagation();deleteLesson(''+l.id+'')" style="background:rgba(220,53,69,.1);color:#dc3545">✕</button>';
-      rows += '</div>';
+      rows+='<div class="sb-acts">';
+      rows+='<button class="sb-act" onclick="event.stopPropagation();editLesson(\''+l.id+'\')" style="background:rgba(212,180,142,.2);color:var(--gold-d)" title="تعديل">✎</button>';
+      rows+='<button class="sb-act" onclick="event.stopPropagation();toggleLP(\''+l.id+'\',\'visible\')" style="background:rgba(59,27,64,.08);color:var(--purple)" title="'+(l.visible?'إخفاء':'إظهار')+'">'+(l.visible?'👁':'🚫')+'</button>';
+      rows+='<button class="sb-act" onclick="event.stopPropagation();toggleLP(\''+l.id+'\',\'locked\')" style="background:rgba(255,193,7,.1);color:#856404" title="'+(l.locked?'فتح':'قفل')+'">'+(l.locked?'🔓':'🔒')+'</button>';
+      rows+='<button class="sb-act" onclick="event.stopPropagation();delLesson(\''+l.id+'\')" style="background:rgba(220,53,69,.1);color:#dc3545" title="حذف">✕</button>';
+      rows+='</div>';
     }
-    rows += '</div>';
+    rows+='</div>';
   });
-
-  // ── Add lesson button (admin) ──
-  if(isAdm){
-    rows += '<button onclick="addLesson()" style="display:flex;align-items:center;justify-content:center;gap:5px;width:100%;padding:7px;border-radius:10px;border:1.5px dashed rgba(59,27,64,.2);background:none;cursor:pointer;font-family:Zain,sans-serif;font-size:12px;color:var(--muted);margin-top:4px">+ إضافة درس</button>';
-  }
-
-  // ── Tests divider ──
-  if(tests.length || isAdm){
-    rows += '<hr class="sidebar-divider"/>';
-    rows += '<div style="font-size:11px;font-weight:800;color:var(--muted);padding:4px 8px;margin-bottom:4px">الاختبارات</div>';
-  }
-
-  // ── Test rows ──
-  const visibleTests = isAdm ? tests : tests.filter(t=>t.visible);
-  visibleTests.forEach(function(t){
-    const isActive = currentItem && currentItem.type==='test' && currentItem.id===t.id;
-    const score    = studentScores[t.id];
-    const clickFn  = (t.locked && !isAdm) ? 'showLocked()' : 'openTest("'+t.id+'")';
-
-    rows += '<div class="test-row'+(isActive?' active':'')+'" id="tr-'+t.id+'" onclick="'+clickFn+'">';
-    rows += '<span style="font-size:14px">'+(t.locked?'🔒':'📝')+'</span>';
-    rows += '<div class="l-info">';
-    rows += '<div class="l-title">'+t.title+'</div>';
-    if(score) rows += '<div style="font-size:10px;color:#28a745">✓ '+score.score+'/'+score.total+'</div>';
-    if(!t.visible) rows += '<div style="font-size:10px;color:#dc3545">مخفي</div>';
-    rows += '</div>';
+  if(isAdm) rows+='<button onclick="addLesson()" style="width:100%;padding:7px;border-radius:9px;border:1.5px dashed rgba(59,27,64,.2);background:none;cursor:pointer;font-size:12px;color:var(--muted);font-family:Zain,sans-serif;margin-top:3px">+ إضافة درس</button>';
+  rows+='<hr class="sb-divider"/><div class="sb-section-label">الاختبارات</div>';
+  var visT=isAdm?tests:tests.filter(function(t){return t.visible;});
+  visT.forEach(function(t){
+    var isAct=currentItem&&currentItem.type==='test'&&currentItem.id===t.id;
+    var sc=studentScores[t.id];
+    rows+='<div class="sb-test-row'+(isAct?' sb-active':'')+'" id="str-'+t.id+'" onclick="'+(t.locked&&!isAdm?'showLocked()':'openTest("'+t.id+'")')+'">';
+    rows+='<span style="font-size:14px">'+(t.locked?'🔒':'📝')+'</span>';
+    rows+='<div class="sb-info"><div class="sb-title">'+t.title+'</div>';
+    if(sc) rows+='<div style="font-size:10px;color:#28a745">✓ '+sc.score+'/'+sc.total+'</div>';
+    if(!t.visible) rows+='<div style="font-size:10px;color:#dc3545">مخفي</div>';
+    rows+='</div>';
     if(isAdm){
-      rows += '<div style="display:flex;gap:2px">';
-      rows += '<button class="l-act-btn" onclick="event.stopPropagation();editTest(''+t.id+'')" style="background:rgba(212,180,142,.2);color:var(--gold-d)">✎</button>';
-      rows += '<button class="l-act-btn" onclick="event.stopPropagation();toggleTestProp(''+t.id+'','visible')" style="background:rgba(59,27,64,.08);color:var(--purple)">'+(t.visible?'👁':'🚫')+'</button>';
-      rows += '<button class="l-act-btn" onclick="event.stopPropagation();toggleTestProp(''+t.id+'','locked')" style="background:rgba(255,193,7,.1);color:#856404">'+(t.locked?'🔓':'🔒')+'</button>';
-      rows += '<button class="l-act-btn" onclick="event.stopPropagation();deleteTest(''+t.id+'')" style="background:rgba(220,53,69,.1);color:#dc3545">✕</button>';
-      rows += '</div>';
+      rows+='<div style="display:flex;gap:2px">';
+      rows+='<button class="sb-act" onclick="event.stopPropagation();editTest(\''+t.id+'\')" style="background:rgba(212,180,142,.2);color:var(--gold-d)">✎</button>';
+      rows+='<button class="sb-act" onclick="event.stopPropagation();toggleTP(\''+t.id+'\',\'visible\')" style="background:rgba(59,27,64,.08);color:var(--purple)">'+(t.visible?'👁':'🚫')+'</button>';
+      rows+='<button class="sb-act" onclick="event.stopPropagation();toggleTP(\''+t.id+'\',\'locked\')" style="background:rgba(255,193,7,.1);color:#856404">'+(t.locked?'🔓':'🔒')+'</button>';
+      rows+='<button class="sb-act" onclick="event.stopPropagation();delTest(\''+t.id+'\')" style="background:rgba(220,53,69,.1);color:#dc3545">✕</button>';
+      rows+='</div>';
     }
-    rows += '</div>';
+    rows+='</div>';
   });
-
-  if(isAdm){
-    rows += '<button onclick="addTest()" style="display:flex;align-items:center;justify-content:center;gap:5px;width:100%;padding:7px;border-radius:10px;border:1.5px dashed rgba(212,180,142,.4);background:none;cursor:pointer;font-family:Zain,sans-serif;font-size:12px;color:var(--muted);margin-top:4px">+ إضافة اختبار</button>';
-  }
-
-  document.getElementById('sidebar-list').innerHTML = rows;
-  if(window.lucide) setTimeout(function(){ lucide.createIcons(); },50);
+  if(isAdm) rows+='<button onclick="addTest()" style="width:100%;padding:7px;border-radius:9px;border:1.5px dashed rgba(212,180,142,.4);background:none;cursor:pointer;font-size:12px;color:var(--muted);font-family:Zain,sans-serif;margin-top:3px">+ إضافة اختبار</button>';
+  document.getElementById('sb-list').innerHTML=rows;
 }
 
-// ═══════════════════════════════════════
-// LESSON CONTENT
-// ═══════════════════════════════════════
+// ══════════════════════════════════════════════
+// OPEN LESSON
+// ══════════════════════════════════════════════
 function openLesson(lid){
-  const lesson = courseData.lessons.find(function(l){ return l.id===lid; });
-  if(!lesson) return;
-  currentItem = {type:'lesson', id:lid};
-  renderSidebar();
-  closeMobileSidebar();
+  var l=courseData.lessons.find(function(x){return x.id===lid;});
+  if(!l)return;
+  currentItem={type:'lesson',id:lid};
+  buildSidebar();
+  closeSidebar();
+  var isAdm=currentUser.isAdmin;
+  var isDone=(currentUser.completedLessons||[]).indexOf(lid)>=0;
+  var exs=l.exercises||[];
+  var c='';
 
-  const isAdm   = currentUser.isAdmin;
-  const isDone  = (currentUser.completedLessons||[]).includes(lid);
-  const exercises = lesson.exercises||[];
-
-  // Build content using string concatenation to avoid nested backtick issues
-  let c = '';
-
-  // Breadcrumb
-  c += '<div style="font-size:12px;color:var(--muted);margin-bottom:12px">';
-  c += '<a href="courses.html" style="color:var(--purple-l);font-weight:700;text-decoration:none">المقررات</a>';
-  c += ' ← <a href="course.html?id='+courseId+'" style="color:var(--purple-l);font-weight:700;text-decoration:none">'+courseData.title+'</a>';
-  c += ' ← '+lesson.title+'</div>';
-
-  // Title + badges
-  c += '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap">';
-  c += '<div>';
-  c += '<h1 style="font-family:Amiri,serif;font-size:22px;color:var(--purple);margin-bottom:6px">'+lesson.title+'</h1>';
-  c += '<div style="display:flex;gap:6px;flex-wrap:wrap">';
-  c += '<span class="badge badge-gold">الدرس '+lesson.order+'</span>';
-  if(isDone)         c += '<span class="badge badge-green">✓ مكتمل</span>';
-  if(!lesson.visible) c += '<span class="badge badge-red">مخفي</span>';
-  if(lesson.locked)  c += '<span class="badge badge-yellow">🔒 مقفل</span>';
-  c += '</div></div>';
-  c += '<div style="display:flex;gap:6px;flex-wrap:wrap">';
-  if(isAdm)           c += '<button onclick="editLesson(\''+lid+'\')" class="btn btn-gold btn-sm">✎ تعديل</button>';
-  if(!isDone && !lesson.locked) c += '<button onclick="markDone(\''+lid+'\')" class="btn btn-primary btn-sm">✓ تم الإنجاز</button>';
-  if(isDone)          c += '<button onclick="unmarkDone(\''+lid+'\')" class="btn btn-ghost btn-sm">↩ إلغاء</button>';
-  c += '</div></div>';
+  // Lesson name bar
+  c+='<div class="lesson-name-bar">';
+  c+='<div class="lesson-name-text">'+l.title+'</div>';
+  c+='<div style="display:flex;align-items:center;gap:6px"><span class="lesson-order-badge">الدرس '+l.order+'</span>';
+  if(isDone) c+='<span style="font-size:11px;background:rgba(40,167,69,.12);color:#28a745;padding:3px 10px;border-radius:10px;font-weight:700">✓ مكتمل</span>';
+  c+='</div></div>';
 
   // Video
-  c += '<div class="video-container">';
-  if(lesson.youtube){
-    c += '<iframe src="'+lesson.youtube+'" allowfullscreen allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture"></iframe>';
+  c+='<div class="video-box">';
+  if(l.youtube){
+    c+='<div class="video-ratio"><iframe src="'+l.youtube+'" allowfullscreen allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture"></iframe></div>';
   } else {
-    c += '<div class="video-empty">';
-    c += '<div style="font-size:44px">🎬</div>';
-    c += '<div>'+(isAdm?'انقر "تعديل" لإضافة رابط يوتيوب':'لم يُضَف فيديو بعد')+'</div>';
-    c += '</div>';
+    c+='<div class="video-empty-box"><div style="font-size:40px;margin-bottom:10px">🎬</div><div>'+(isAdm?'انقر "تعديل الدرس" لإضافة رابط يوتيوب':'لم يُضَف فيديو لهذا الدرس بعد')+'</div></div>';
   }
-  c += '</div>';
+  c+='</div>';
 
-  // Exercises header
-  c += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;margin-top:18px">';
-  c += '<h2 style="font-size:16px;font-weight:800;color:var(--purple)">📝 التمارين';
-  if(exercises.length) c += ' <span style="font-size:12px;font-weight:400;color:var(--muted)">('+exercises.length+' سؤال)</span>';
-  c += '</h2>';
-  if(isAdm) c += '<button onclick="addExercise(\''+lid+'\')" class="btn btn-primary btn-sm">+ إضافة سؤال</button>';
-  c += '</div>';
+  // Action buttons row
+  c+='<div class="action-row">';
+  if(isAdm) c+='<button onclick="editLesson(\''+lid+'\')" class="act-btn act-btn-gold">✎ تعديل الدرس</button>';
+  if(!isDone&&!l.locked) c+='<button onclick="markDone(\''+lid+'\')" class="act-btn act-btn-green">✓ تم الإنجاز</button>';
+  if(isDone) c+='<button onclick="unmarkDone(\''+lid+'\')" class="act-btn act-btn-ghost">↩ إلغاء الإنجاز</button>';
+  if(l.audio) c+='<a href="'+l.audio+'" target="_blank" class="act-btn act-btn-ghost">🎵 المرفق الصوتي</a>';
+  if(l.pdf)   c+='<a href="'+l.pdf+'" target="_blank" class="act-btn act-btn-ghost">📄 مرفق PDF</a>';
+  c+='</div>';
 
-  if(!exercises.length){
-    c += '<div style="background:#fff;border-radius:12px;padding:24px;text-align:center;color:var(--muted);border:1px solid rgba(212,180,142,.15)">';
-    c += isAdm ? 'انقر "+ إضافة سؤال" لإضافة تمارين' : 'لم تُضَف تمارين لهذا الدرس بعد';
-    c += '</div>';
+  // Course info (desc + author)
+  if(courseData.desc||courseData.author||isAdm){
+    c+='<div class="info-section">';
+    if(courseData.desc){
+      c+='<div class="info-label">وصف المقرر:</div>';
+      c+='<div class="info-value">'+courseData.desc+'</div>';
+    }
+    if(courseData.author){
+      c+='<div class="info-label" style="margin-top:10px">اسم المؤلف:</div>';
+      c+='<div class="info-value">'+courseData.author+'</div>';
+    }
+    if(isAdm&&!courseData.desc&&!courseData.author){
+      c+='<div style="text-align:center;color:var(--muted);font-size:12px;padding:8px">انقر "تعديل المقرر" لإضافة الوصف واسم المؤلف</div>';
+    }
+    c+='</div>';
+  }
+
+  // Exercises
+  c+='<div class="exercises-section">';
+  c+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">';
+  c+='<div class="exercises-title">📝 التمارين';
+  if(exs.length) c+=' <span style="font-size:12px;font-weight:400;color:var(--muted)">('+exs.length+' سؤال)</span>';
+  c+='</div>';
+  if(isAdm) c+='<button onclick="addExercise(\''+lid+'\')" class="act-btn act-btn-purple act-btn-sm">+ إضافة سؤال</button>';
+  c+='</div>';
+
+  if(!exs.length){
+    c+='<div style="background:#fff;border-radius:12px;padding:24px;text-align:center;color:var(--muted);border:1px solid rgba(212,180,142,.15);">'+(isAdm?'انقر "+ إضافة سؤال" لإضافة تمارين':'لم تُضَف تمارين لهذا الدرس بعد')+'</div>';
   } else {
-    exercises.forEach(function(ex, ei){
-      if(ex.visible===false && !isAdm) return;
-      const exScore = studentScores[lid+'_ex_'+ex.id];
-
-      c += '<div class="exercise-card" id="exc-'+ex.id+'">';
+    exs.forEach(function(ex,ei){
+      if(ex.visible===false&&!isAdm)return;
+      var exSc=studentScores[lid+'_ex_'+ex.id];
+      c+='<div class="exercise-box" id="exc-'+ex.id+'">';
       if(isAdm){
-        c += '<div class="admin-toolbar">';
-        c += '<span>🛠 المشرف</span>';
-        c += '<button onclick="editExercise(\''+lid+'\',\''+ex.id+'\')" class="btn btn-xs btn-gold">✎</button>';
-        c += '<button onclick="toggleExProp(\''+lid+'\',\''+ex.id+'\',\'locked\')" class="btn btn-xs btn-ghost">'+(ex.locked?'🔓 فتح':'🔒 قفل')+'</button>';
-        c += '<button onclick="toggleExProp(\''+lid+'\',\''+ex.id+'\',\'visible\')" class="btn btn-xs btn-ghost">'+(ex.visible===false?'👁 إظهار':'🚫 إخفاء')+'</button>';
-        c += '<button onclick="deleteExercise(\''+lid+'\',\''+ex.id+'\')" class="btn btn-xs btn-danger">✕</button>';
-        c += '</div>';
+        c+='<div class="admin-bar"><span class="admin-bar-label">🛠</span>';
+        c+='<button onclick="editExercise(\''+lid+'\',\''+ex.id+'\')" class="act-btn act-btn-gold act-btn-sm">✎ تعديل</button>';
+        c+='<button onclick="toggleEP(\''+lid+'\',\''+ex.id+'\',\'locked\')" class="act-btn act-btn-ghost act-btn-sm">'+(ex.locked?'🔓 فتح':'🔒 قفل')+'</button>';
+        c+='<button onclick="toggleEP(\''+lid+'\',\''+ex.id+'\',\'visible\')" class="act-btn act-btn-ghost act-btn-sm">'+(ex.visible===false?'👁 إظهار':'🚫 إخفاء')+'</button>';
+        c+='<button onclick="delExercise(\''+lid+'\',\''+ex.id+'\')" class="act-btn act-btn-red act-btn-sm">✕ حذف</button>';
+        c+='</div>';
       }
-
-      c += '<div class="ex-q">'+(ei+1)+'. '+ex.q;
-      if(ex.multi) c += ' <span style="font-size:10px;background:rgba(59,27,64,.1);color:var(--purple);padding:2px 6px;border-radius:6px">متعددة</span>';
-      c += '</div>';
-
-      c += '<div id="opts-'+ex.id+'">';
-      const shape = ex.multi ? '4px' : '50%';
+      c+='<div class="ex-question">'+(ei+1)+'. '+ex.q;
+      if(ex.multi) c+='<span class="ex-multi-tag">متعددة</span>';
+      c+='</div>';
+      c+='<div id="opts-'+ex.id+'">';
+      var shape=ex.multi?'ex-square':'ex-circle';
       (ex.options||[]).forEach(function(opt,oi){
-        const clickFn = ex.locked && !isAdm ? '' : ex.multi
-          ? 'toggleMulti(\''+lid+'\',\''+ex.id+'\','+oi+')'
-          : 'answerSingle(\''+lid+'\',\''+ex.id+'\','+oi+')';
-        c += '<div class="ex-opt'+(ex.locked&&!isAdm?' locked':'')+'" id="opt-'+ex.id+'-'+oi+'" onclick="'+clickFn+'">';
-        c += '<span style="width:20px;height:20px;border-radius:'+shape+';border:1.5px solid rgba(212,180,142,.4);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px" id="chk-'+ex.id+'-'+oi+'"></span>';
-        c += opt+'</div>';
+        var fn=ex.locked&&!isAdm?'':ex.multi?'togM(\''+lid+'\',\''+ex.id+'\','+oi+')':'ansS(\''+lid+'\',\''+ex.id+'\','+oi+')';
+        c+='<div class="ex-option'+(ex.locked&&!isAdm?' ex-locked':'')+'" id="opt-'+ex.id+'-'+oi+'" onclick="'+fn+'">';
+        c+='<div class="'+shape+'" id="chk-'+ex.id+'-'+oi+'"></div>';
+        c+=opt+'</div>';
       });
-      c += '</div>';
-
-      if(ex.multi) c += '<button onclick="submitMulti(\''+lid+'\',\''+ex.id+'\')" class="btn btn-primary btn-sm" style="margin-top:8px" id="submit-'+ex.id+'">تأكيد الإجابة</button>';
-      if(exScore)  c += '<div class="score-chip" style="margin-top:8px">✓ '+(exScore.correct?'إجابة صحيحة':'إجابة خاطئة')+'</div>';
-      c += '</div>';
+      c+='</div>';
+      if(ex.multi) c+='<button onclick="subM(\''+lid+'\',\''+ex.id+'\')" class="act-btn act-btn-purple act-btn-sm" style="margin-top:8px" id="sbtn-'+ex.id+'">تأكيد الإجابة</button>';
+      if(exSc) c+='<div style="margin-top:8px;font-size:12px;font-weight:700;color:'+(exSc.correct?'#28a745':'#dc3545')+';">'+(exSc.correct?'✓ إجابة صحيحة':'✕ إجابة خاطئة')+'</div>';
+      c+='</div>';
     });
   }
+  c+='</div>';
 
-  document.getElementById('main-content').innerHTML = '<div class="content-inner">'+c+'</div>';
-  if(window.lucide) setTimeout(function(){ lucide.createIcons(); },50);
+  // Next lesson button
+  var lessons=courseData.lessons||[];
+  var idx=lessons.findIndex(function(x){return x.id===lid;});
+  if(idx>=0&&idx<lessons.length-1){
+    var next=lessons[idx+1];
+    if(next.visible||isAdm){
+      c+='<div style="margin-top:20px;text-align:center"><button onclick="openLesson(\''+next.id+'\')" class="act-btn act-btn-purple" style="padding:10px 28px">الدرس التالي: '+next.title+' ←</button></div>';
+    }
+  }
+
+  document.getElementById('main-content').innerHTML='<div style="padding:20px 24px;max-width:820px">'+c+'</div>';
   restoreAnswers(lid);
 }
 
+// ══════════════════════════════════════════════
+// OPEN TEST
+// ══════════════════════════════════════════════
 function openTest(tid){
-  const test = courseData.tests.find(function(t){ return t.id===tid; });
-  if(!test) return;
-  currentItem = {type:'test', id:tid};
-  renderSidebar();
-  closeMobileSidebar();
+  var test=courseData.tests.find(function(t){return t.id===tid;});
+  if(!test)return;
+  currentItem={type:'test',id:tid};
+  testAnswers={};
+  buildSidebar();
+  closeSidebar();
+  var isAdm=currentUser.isAdmin;
+  var prev=studentScores[tid];
+  var qs=test.questions||[];
+  var c='';
 
-  const isAdm    = currentUser.isAdmin;
-  const prevScore = studentScores[tid];
-  const qs       = test.questions||[];
-  testAnswers    = {};
+  // Test name bar
+  c+='<div class="lesson-name-bar"><div class="lesson-name-text">📝 '+test.title+'</div>';
+  if(prev) c+='<div style="font-size:12px;font-weight:700;color:var(--gold-d)">نتيجتك: '+prev.score+'/'+prev.total+' ('+Math.round(prev.score/prev.total*100)+'%)</div>';
+  c+='</div>';
 
-  let c = '';
-
-  // Breadcrumb
-  c += '<div style="font-size:12px;color:var(--muted);margin-bottom:12px">';
-  c += '<a href="courses.html" style="color:var(--purple-l);font-weight:700;text-decoration:none">المقررات</a>';
-  c += ' ← <a href="course.html?id='+courseId+'" style="color:var(--purple-l);font-weight:700;text-decoration:none">'+courseData.title+'</a>';
-  c += ' ← '+test.title+'</div>';
-
-  // Header
-  c += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">';
-  c += '<h1 style="font-family:Amiri,serif;font-size:20px;color:var(--purple)">'+test.title+'</h1>';
-  c += '<div style="display:flex;gap:6px;flex-wrap:wrap">';
+  // Admin controls
   if(isAdm){
-    c += '<button onclick="editTest(\''+tid+'\')" class="btn btn-gold btn-sm">✎ تعديل</button>';
-    c += '<button onclick="addTestQuestion(\''+tid+'\')" class="btn btn-primary btn-sm">+ إضافة سؤال</button>';
+    c+='<div class="action-row">';
+    c+='<button onclick="editTest(\''+tid+'\')" class="act-btn act-btn-gold">✎ تعديل الاختبار</button>';
+    c+='<button onclick="addTQ(\''+tid+'\')" class="act-btn act-btn-purple">+ إضافة سؤال</button>';
+    c+='</div>';
   }
-  if(prevScore) c += '<span class="score-chip">نتيجتك: '+prevScore.score+'/'+prevScore.total+' ('+Math.round(prevScore.score/prevScore.total*100)+'%)</span>';
-  c += '</div></div>';
 
   // Previous result
-  if(prevScore && !isAdm){
-    const pct = Math.round(prevScore.score/prevScore.total*100);
-    c += '<div style="background:#fff;border-radius:16px;padding:24px;border:1px solid rgba(212,180,142,.2);text-align:center;margin-bottom:20px">';
-    c += '<div style="font-size:48px;margin-bottom:10px">'+(pct>=70?'🎉':'📚')+'</div>';
-    c += '<div style="font-family:Amiri,serif;font-size:28px;font-weight:700;color:var(--purple)">'+prevScore.score+' / '+prevScore.total+'</div>';
-    c += '<div style="font-size:14px;color:var(--muted);margin-top:4px">'+pct+'% — '+(pct>=70?'أحسنت! لقد اجتزت الاختبار':'راجع الدروس وحاول مجدداً')+'</div>';
-    c += '<button onclick="retakeTest(\''+tid+'\')" class="btn btn-ghost btn-sm" style="margin-top:14px">↩ إعادة الاختبار</button>';
-    c += '</div>';
+  if(prev&&!isAdm){
+    var pct=Math.round(prev.score/prev.total*100);
+    c+='<div class="result-card">';
+    c+='<div style="font-size:52px;margin-bottom:12px">'+(pct>=70?'🎉':'📚')+'</div>';
+    c+='<div style="font-family:Amiri,serif;font-size:30px;font-weight:900;color:var(--purple)">'+prev.score+' / '+prev.total+'</div>';
+    c+='<div style="font-size:15px;color:var(--muted);margin:8px 0">';
+    c+=pct+'% — '+(pct>=70?'أحسنت! لقد اجتزت الاختبار':'راجع الدروس وحاول مجدداً');
+    c+='</div>';
+    c+='<button onclick="retakeTest(\''+tid+'\')" class="act-btn act-btn-ghost act-btn-sm">↩ إعادة الاختبار</button>';
+    c+='</div>';
   }
 
-  // No questions
   if(!qs.length){
-    c += '<div style="background:#fff;border-radius:12px;padding:30px;text-align:center;color:var(--muted);border:1px solid rgba(212,180,142,.15)">';
-    c += isAdm ? 'انقر "+ إضافة سؤال" لإضافة أسئلة الاختبار' : 'لم تُضَف أسئلة بعد';
-    c += '</div>';
-  } else if(!prevScore || isAdm){
-    // Show questions
+    c+='<div style="background:#fff;border-radius:12px;padding:30px;text-align:center;color:var(--muted);border:1px solid rgba(212,180,142,.15)">'+(isAdm?'انقر "+ إضافة سؤال" لإضافة أسئلة':'لم تُضَف أسئلة بعد')+'</div>';
+  } else if(!prev||isAdm){
     qs.forEach(function(q,qi){
-      c += '<div class="exercise-card" id="tq-'+q.id+'">';
+      c+='<div class="exercise-box" id="tq-'+q.id+'">';
       if(isAdm){
-        c += '<div class="admin-toolbar"><span>🛠 المشرف</span>';
-        c += '<button onclick="editTestQuestion(\''+tid+'\',\''+q.id+'\')" class="btn btn-xs btn-gold">✎</button>';
-        c += '<button onclick="deleteTestQuestion(\''+tid+'\',\''+q.id+'\')" class="btn btn-xs btn-danger">✕</button>';
-        c += '</div>';
+        c+='<div class="admin-bar"><span class="admin-bar-label">🛠</span>';
+        c+='<button onclick="editTQ(\''+tid+'\',\''+q.id+'\')" class="act-btn act-btn-gold act-btn-sm">✎</button>';
+        c+='<button onclick="delTQ(\''+tid+'\',\''+q.id+'\')" class="act-btn act-btn-red act-btn-sm">✕</button>';
+        c+='</div>';
       }
-      c += '<div class="ex-q">'+(qi+1)+'. '+q.q;
-      if(q.multi) c += ' <span style="font-size:10px;background:rgba(59,27,64,.1);color:var(--purple);padding:2px 6px;border-radius:6px">متعددة</span>';
-      c += '</div>';
-      c += '<div id="topts-'+q.id+'">';
-      const shape = q.multi?'4px':'50%';
+      c+='<div class="ex-question">'+(qi+1)+'. '+q.q;
+      if(q.multi) c+='<span class="ex-multi-tag">متعددة</span>';
+      c+='</div>';
+      c+='<div id="topts-'+q.id+'">';
+      var shape=q.multi?'ex-square':'ex-circle';
       (q.options||[]).forEach(function(opt,oi){
-        const fn = q.multi
-          ? 'toggleTMulti(\''+tid+'\',\''+q.id+'\','+oi+')'
-          : 'selectTOpt(\''+tid+'\',\''+q.id+'\','+oi+')';
-        c += '<div class="ex-opt" id="topt-'+q.id+'-'+oi+'" onclick="'+fn+'">';
-        c += '<span style="width:20px;height:20px;border-radius:'+shape+';border:1.5px solid rgba(212,180,142,.4);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px" id="tchk-'+q.id+'-'+oi+'"></span>';
-        c += opt+'</div>';
+        var fn=q.multi?'togTM(\''+tid+'\',\''+q.id+'\','+oi+')':'selTO(\''+tid+'\',\''+q.id+'\','+oi+')';
+        c+='<div class="ex-option" id="topt-'+q.id+'-'+oi+'" onclick="'+fn+'">';
+        c+='<div class="'+shape+'" id="tchk-'+q.id+'-'+oi+'"></div>';
+        c+=opt+'</div>';
       });
-      c += '</div>';
-      c += '</div>';
+      c+='</div></div>';
     });
-    if(!prevScore){
-      c += '<div style="text-align:center;margin-top:20px">';
-      c += '<button onclick="submitTest(\''+tid+'\')" class="btn btn-primary" style="padding:12px 36px;font-size:15px">تسليم الاختبار</button>';
-      c += '</div>';
+    if(!prev){
+      c+='<div style="text-align:center;margin-top:24px"><button onclick="submitTest(\''+tid+'\')" class="act-btn act-btn-purple" style="padding:13px 40px;font-size:15px">تسليم الاختبار</button></div>';
     }
   }
 
-  document.getElementById('main-content').innerHTML = '<div class="content-inner">'+c+'</div>';
-  if(window.lucide) setTimeout(function(){ lucide.createIcons(); },50);
+  document.getElementById('main-content').innerHTML='<div style="padding:20px 24px;max-width:820px">'+c+'</div>';
 }
+
+// ══════════════════════════════════════════════
+// EXERCISE ANSWERS
+// ══════════════════════════════════════════════
+var pendingMulti={};
+function ansS(lid,exId,oi){
+  var l=courseData.lessons.find(function(x){return x.id===lid;});if(!l)return;
+  var ex=l.exercises.find(function(e){return e.id===exId;});if(!ex)return;
+  if(studentScores[lid+'_ex_'+exId])return;
+  var ok=ex.answers.indexOf(oi)>=0;
+  var opts=document.getElementById('opts-'+exId);if(!opts)return;
+  opts.querySelectorAll('.ex-option').forEach(function(el,i){
+    el.onclick=null;
+    if(ex.answers.indexOf(i)>=0)el.classList.add('ex-correct');
+    else if(i===oi)el.classList.add('ex-wrong');
+  });
+  studentScores[lid+'_ex_'+exId]={correct:ok,chosen:oi,exId:exId};
+  saveScores();
+}
+function togM(lid,exId,oi){
+  if(!pendingMulti[exId])pendingMulti[exId]=new Set();
+  var s=pendingMulti[exId];
+  if(s.has(oi)){s.delete(oi);document.getElementById('chk-'+exId+'-'+oi).textContent='';document.getElementById('opt-'+exId+'-'+oi).classList.remove('ex-selected');}
+  else{s.add(oi);document.getElementById('chk-'+exId+'-'+oi).textContent='✓';document.getElementById('opt-'+exId+'-'+oi).classList.add('ex-selected');}
+}
+function subM(lid,exId){
+  var l=courseData.lessons.find(function(x){return x.id===lid;});if(!l)return;
+  var ex=l.exercises.find(function(e){return e.id===exId;});if(!ex)return;
+  var chosen=Array.from(pendingMulti[exId]||[]);
+  if(!chosen.length){showToast('اختر إجابة','warn');return;}
+  var ok=JSON.stringify(chosen.sort()+'')===JSON.stringify([...ex.answers].sort()+'');
+  document.querySelectorAll('#opts-'+exId+' .ex-option').forEach(function(el,i){
+    el.onclick=null;
+    if(ex.answers.indexOf(i)>=0)el.classList.add('ex-correct');
+    else if(chosen.indexOf(i)>=0)el.classList.add('ex-wrong');
+  });
+  var btn=document.getElementById('sbtn-'+exId);if(btn)btn.style.display='none';
+  studentScores[lid+'_ex_'+exId]={correct:ok,chosen:chosen,exId:exId};
+  saveScores();
+}
+function restoreAnswers(lid){
+  var l=courseData.lessons.find(function(x){return x.id===lid;});if(!l)return;
+  (l.exercises||[]).forEach(function(ex){
+    var sc=studentScores[lid+'_ex_'+ex.id];if(!sc)return;
+    var opts=document.getElementById('opts-'+ex.id);if(!opts)return;
+    opts.querySelectorAll('.ex-option').forEach(function(el,i){
+      el.onclick=null;
+      if(ex.answers.indexOf(i)>=0)el.classList.add('ex-correct');
+      else{var ch=Array.isArray(sc.chosen)?sc.chosen:[sc.chosen];if(ch.indexOf(i)>=0)el.classList.add('ex-wrong');}
+    });
+    var btn=document.getElementById('sbtn-'+ex.id);if(btn)btn.style.display='none';
+  });
+}
+
+// ══════════════════════════════════════════════
+// TEST ANSWERS
+// ══════════════════════════════════════════════
+function selTO(tid,qId,oi){
+  var test=courseData.tests.find(function(t){return t.id===tid;});if(!test)return;
+  if(!testAnswers[qId])testAnswers[qId]=[];
+  testAnswers[qId]=[oi];
+  var q=test.questions.find(function(x){return x.id===qId;});
+  (q.options||[]).forEach(function(_,i){
+    var el=document.getElementById('topt-'+qId+'-'+i);
+    var chk=document.getElementById('tchk-'+qId+'-'+i);
+    if(el)el.classList.toggle('ex-selected',i===oi);
+    if(chk)chk.textContent=i===oi?'●':'';
+  });
+}
+function togTM(tid,qId,oi){
+  if(!testAnswers[qId])testAnswers[qId]=[];
+  var arr=testAnswers[qId],idx=arr.indexOf(oi);
+  if(idx>=0){arr.splice(idx,1);document.getElementById('topt-'+qId+'-'+oi).classList.remove('ex-selected');document.getElementById('tchk-'+qId+'-'+oi).textContent='';}
+  else{arr.push(oi);document.getElementById('topt-'+qId+'-'+oi).classList.add('ex-selected');document.getElementById('tchk-'+qId+'-'+oi).textContent='✓';}
+}
+async function submitTest(tid){
+  var test=courseData.tests.find(function(t){return t.id===tid;});if(!test)return;
+  var qs=test.questions||[];if(!qs.length){showToast('لا توجد أسئلة','warn');return;}
+  var score=0;
+  qs.forEach(function(q){
+    var chosen=testAnswers[q.id]||[];
+    if(JSON.stringify(chosen.sort()+'')===JSON.stringify([...(q.answers||[])].sort()+''))score++;
+  });
+  studentScores[tid]={score:score,total:qs.length,answers:testAnswers,date:new Date().toISOString()};
+  await saveScores();
+  openTest(tid);
+  showToast('نتيجتك: '+score+'/'+qs.length,score/qs.length>=0.7?'success':'warn',5000);
+}
+async function retakeTest(tid){delete studentScores[tid];testAnswers={};await saveScores();openTest(tid);}
+
+// ══════════════════════════════════════════════
+// DONE / SCORES
+// ══════════════════════════════════════════════
+async function markDone(lid){
+  var list=[...(currentUser.completedLessons||[])];
+  if(list.indexOf(lid)<0)list.push(lid);
+  currentUser.completedLessons=list;
+  localStorage.setItem('ti_user',JSON.stringify(currentUser));
+  try{await db.collection('users').doc(currentUser.uid).update({completedLessons:list});}catch(e){}
+  showToast('✓ تم تسجيل الإنجاز','success');
+  buildSidebar();openLesson(lid);
+}
+async function unmarkDone(lid){
+  var list=(currentUser.completedLessons||[]).filter(function(x){return x!==lid;});
+  currentUser.completedLessons=list;
+  localStorage.setItem('ti_user',JSON.stringify(currentUser));
+  try{await db.collection('users').doc(currentUser.uid).update({completedLessons:list});}catch(e){}
+  buildSidebar();openLesson(lid);
+}
+async function saveScores(){
+  if(currentUser.isAdmin)return;
+  try{await db.collection('scores').doc(currentUser.uid+'_'+courseId).set({uid:currentUser.uid,courseId:courseId,scores:studentScores,updatedAt:new Date().toISOString()});}
+  catch(e){console.log('saveScores:',e.message);}
+}
+
+// ══════════════════════════════════════════════
+// DRAG & DROP
+// ══════════════════════════════════════════════
+function dragStart(id){dragSrc=id;}
+async function dropOn(targetId){
+  if(!dragSrc||dragSrc===targetId)return;
+  var ls=courseData.lessons,si=ls.findIndex(function(l){return l.id===dragSrc;}),ti=ls.findIndex(function(l){return l.id===targetId;});
+  var moved=ls.splice(si,1)[0];ls.splice(ti,0,moved);
+  ls.forEach(function(l,i){l.order=i+1;});
+  dragSrc=null;await saveCourse();buildSidebar();showToast('✓ تم إعادة الترتيب','info');
+}
+
+// ══════════════════════════════════════════════
+// ADMIN: COURSE INFO
+// ══════════════════════════════════════════════
+function editCourseInfo(){
+  openModal('<div class="field"><label>عنوان المقرر</label><input type="text" id="ci-title" value="'+courseData.title+'"/></div>'
+    +'<div class="field"><label>وصف المقرر</label><textarea id="ci-desc" rows="3">'+( courseData.desc||'')+'</textarea></div>'
+    +'<div class="field"><label>اسم المؤلف</label><input type="text" id="ci-author" value="'+(courseData.author||'')+'"/></div>'
+    +'<div class="field"><label>رابط يوتيوب (للمقرر بشكل عام — اختياري)</label><input type="url" id="ci-yt" value="'+(courseData.youtube||'')+'"/></div>'
+    +'<div style="display:flex;gap:8px;margin-top:14px"><button onclick="saveCourseInfo()" class="btn btn-primary" style="flex:1">حفظ</button><button onclick="closeModal()" class="btn btn-ghost">إلغاء</button></div>'
+    ,'تعديل معلومات المقرر');
+}
+async function saveCourseInfo(){
+  courseData.title =document.getElementById('ci-title').value.trim()||courseData.title;
+  courseData.desc  =document.getElementById('ci-desc').value.trim();
+  courseData.author=document.getElementById('ci-author').value.trim();
+  courseData.youtube=toYtEmbed(document.getElementById('ci-yt').value.trim());
+  document.getElementById('topbar-title').textContent=courseData.title;
+  document.getElementById('sb-title').textContent=courseData.title;
+  document.title=courseData.title+' — معهد التأصيل العلمي';
+  await saveCourse();closeModal();showToast('✅ تم الحفظ','success');
+  if(currentItem)openLesson(currentItem.id);
+}
+
+// ══════════════════════════════════════════════
+// ADMIN: LESSON CRUD
+// ══════════════════════════════════════════════
+function editLesson(lid){
+  var l=courseData.lessons.find(function(x){return x.id===lid;});if(!l)return;
+  openModal('<div class="field"><label>عنوان الدرس</label><input type="text" id="el-title" value="'+l.title+'"/></div>'
+    +'<div class="field"><label>رابط يوتيوب</label><input type="url" id="el-yt" value="'+(l.youtube||'')+'" placeholder="https://youtube.com/watch?v=..."/></div>'
+    +'<div class="field"><label>رابط المرفق الصوتي</label><input type="url" id="el-audio" value="'+(l.audio||'')+'" placeholder="https://..."/></div>'
+    +'<div class="field"><label>رابط PDF</label><input type="url" id="el-pdf" value="'+(l.pdf||'')+'" placeholder="https://..."/></div>'
+    +'<div style="display:flex;gap:16px;margin-bottom:14px">'
+    +'<label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--purple);cursor:pointer"><input type="checkbox" id="el-vis" '+(l.visible?'checked':'')+' style="width:15px;height:15px;accent-color:var(--purple)"/> ظاهر للطلاب</label>'
+    +'<label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--purple);cursor:pointer"><input type="checkbox" id="el-lock" '+(l.locked?'checked':'')+' style="width:15px;height:15px;accent-color:var(--purple)"/> مقفل</label>'
+    +'</div>'
+    +'<div style="display:flex;gap:8px"><button onclick="saveLessonEdit(\''+lid+'\')" class="btn btn-primary" style="flex:1">حفظ</button><button onclick="closeModal()" class="btn btn-ghost">إلغاء</button></div>'
+    ,'تعديل الدرس');
+}
+async function saveLessonEdit(lid){
+  var l=courseData.lessons.find(function(x){return x.id===lid;});if(!l)return;
+  l.title  =document.getElementById('el-title').value.trim()||l.title;
+  l.youtube=toYtEmbed(document.getElementById('el-yt').value.trim());
+  l.audio  =document.getElementById('el-audio').value.trim();
+  l.pdf    =document.getElementById('el-pdf').value.trim();
+  l.visible=document.getElementById('el-vis').checked;
+  l.locked =document.getElementById('el-lock').checked;
+  await saveCourse();closeModal();showToast('✅ تم حفظ الدرس','success');
+  buildSidebar();if(currentItem&&currentItem.id===lid)openLesson(lid);
+}
+async function addLesson(){
+  var ls=courseData.lessons,newId=courseId+'-l'+(ls.length+1)+'-'+Date.now().toString(36);
+  ls.push({id:newId,order:ls.length+1,title:'الدرس '+(ls.length+1),visible:true,locked:false,youtube:'',exercises:[]});
+  await saveCourse();buildSidebar();showToast('تم إضافة درس','success');
+}
+async function toggleLP(lid,prop){
+  var l=courseData.lessons.find(function(x){return x.id===lid;});if(!l)return;
+  l[prop]=!l[prop];await saveCourse();buildSidebar();if(currentItem&&currentItem.id===lid)openLesson(lid);
+}
+async function delLesson(lid){
+  if(!confirm('حذف هذا الدرس نهائياً؟'))return;
+  courseData.lessons=courseData.lessons.filter(function(x){return x.id!==lid;});
+  courseData.lessons.forEach(function(l,i){l.order=i+1;});
+  await saveCourse();buildSidebar();showToast('تم الحذف','success');
+  if(currentItem&&currentItem.id===lid){currentItem=null;document.getElementById('main-content').innerHTML='<div style="text-align:center;padding:80px;color:var(--muted)">اختر درساً</div>';}
+}
+
+// ══════════════════════════════════════════════
+// ADMIN: EXERCISE CRUD
+// ══════════════════════════════════════════════
+function addExercise(lid){
+  openModal('<div class="field"><label>نص السؤال</label><textarea id="exq" rows="2" placeholder="اكتب السؤال..."></textarea></div>'
+    +'<div class="field"><label>الخيارات (خيار في كل سطر)</label><textarea id="exo" rows="4" placeholder="الخيار الأول&#10;الخيار الثاني&#10;الخيار الثالث&#10;الخيار الرابع"></textarea></div>'
+    +'<div class="field"><label>الإجابات الصحيحة (أرقام مفصولة بفاصلة، تبدأ من 0)</label><input type="text" id="exa" placeholder="0 أو 0,2"/></div>'
+    +'<label style="display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:var(--purple);margin-bottom:14px;cursor:pointer"><input type="checkbox" id="exm" style="width:15px;height:15px;accent-color:var(--purple)"/> إجابات متعددة</label>'
+    +'<div style="display:flex;gap:8px"><button onclick="saveNewEx(\''+lid+'\')" class="btn btn-primary" style="flex:1">إضافة</button><button onclick="closeModal()" class="btn btn-ghost">إلغاء</button></div>'
+    ,'إضافة تمرين');
+}
+async function saveNewEx(lid){
+  var q=document.getElementById('exq').value.trim();if(!q){showToast('يرجى كتابة السؤال','warn');return;}
+  var opts=document.getElementById('exo').value.split('\n').map(function(x){return x.trim();}).filter(Boolean);
+  if(opts.length<2){showToast('أدخل خيارَين على الأقل','warn');return;}
+  var ans=document.getElementById('exa').value.split(',').map(function(x){return parseInt(x.trim());}).filter(function(x){return!isNaN(x);});
+  var multi=document.getElementById('exm').checked;
+  var l=courseData.lessons.find(function(x){return x.id===lid;});if(!l)return;
+  if(!l.exercises)l.exercises=[];
+  l.exercises.push({id:'ex-'+Date.now().toString(36),q:q,options:opts,answers:ans,multi:multi,visible:true,locked:false});
+  await saveCourse();closeModal();showToast('✅ تم إضافة التمرين','success');openLesson(lid);
+}
+function editExercise(lid,exId){
+  var l=courseData.lessons.find(function(x){return x.id===lid;});if(!l)return;
+  var ex=l.exercises.find(function(e){return e.id===exId;});if(!ex)return;
+  openModal('<div class="field"><label>نص السؤال</label><textarea id="eeq" rows="2">'+ex.q+'</textarea></div>'
+    +'<div class="field"><label>الخيارات</label><textarea id="eeo" rows="4">'+(ex.options||[]).join('\n')+'</textarea></div>'
+    +'<div class="field"><label>الإجابات الصحيحة</label><input type="text" id="eea" value="'+(ex.answers||[]).join(',')+'"/></div>'
+    +'<label style="display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:var(--purple);margin-bottom:14px;cursor:pointer"><input type="checkbox" id="eem" '+(ex.multi?'checked':'')+' style="width:15px;height:15px;accent-color:var(--purple)"/> متعددة</label>'
+    +'<div style="display:flex;gap:8px"><button onclick="saveExEdit(\''+lid+'\',\''+exId+'\')" class="btn btn-primary" style="flex:1">حفظ</button><button onclick="closeModal()" class="btn btn-ghost">إلغاء</button></div>'
+    ,'تعديل التمرين');
+}
+async function saveExEdit(lid,exId){
+  var l=courseData.lessons.find(function(x){return x.id===lid;});if(!l)return;
+  var ex=l.exercises.find(function(e){return e.id===exId;});if(!ex)return;
+  ex.q     =document.getElementById('eeq').value.trim()||ex.q;
+  ex.options=document.getElementById('eeo').value.split('\n').map(function(x){return x.trim();}).filter(Boolean);
+  ex.answers=document.getElementById('eea').value.split(',').map(function(x){return parseInt(x.trim());}).filter(function(x){return!isNaN(x);});
+  ex.multi =document.getElementById('eem').checked;
+  await saveCourse();closeModal();showToast('✅ تم التعديل','success');openLesson(lid);
+}
+async function toggleEP(lid,exId,prop){
+  var l=courseData.lessons.find(function(x){return x.id===lid;});if(!l)return;
+  var ex=l.exercises.find(function(e){return e.id===exId;});if(!ex)return;
+  ex[prop]=!ex[prop];await saveCourse();openLesson(lid);
+}
+async function delExercise(lid,exId){
+  if(!confirm('حذف هذا التمرين؟'))return;
+  var l=courseData.lessons.find(function(x){return x.id===lid;});if(!l)return;
+  l.exercises=l.exercises.filter(function(e){return e.id!==exId;});
+  await saveCourse();showToast('تم الحذف','success');openLesson(lid);
+}
+
+// ══════════════════════════════════════════════
+// ADMIN: TEST CRUD
+// ══════════════════════════════════════════════
+function editTest(tid){
+  var t=courseData.tests.find(function(x){return x.id===tid;});if(!t)return;
+  openModal('<div class="field"><label>عنوان الاختبار</label><input type="text" id="et-t" value="'+t.title+'"/></div>'
+    +'<div style="display:flex;gap:14px;margin-bottom:14px">'
+    +'<label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--purple);cursor:pointer"><input type="checkbox" id="et-vis" '+(t.visible?'checked':'')+' style="width:15px;height:15px;accent-color:var(--purple)"/> ظاهر</label>'
+    +'<label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--purple);cursor:pointer"><input type="checkbox" id="et-lock" '+(t.locked?'checked':'')+' style="width:15px;height:15px;accent-color:var(--purple)"/> مقفل</label>'
+    +'</div>'
+    +'<div style="display:flex;gap:8px"><button onclick="saveTestEdit(\''+tid+'\')" class="btn btn-primary" style="flex:1">حفظ</button><button onclick="closeModal()" class="btn btn-ghost">إلغاء</button></div>'
+    ,'تعديل الاختبار');
+}
+async function saveTestEdit(tid){
+  var t=courseData.tests.find(function(x){return x.id===tid;});if(!t)return;
+  t.title  =document.getElementById('et-t').value.trim()||t.title;
+  t.visible=document.getElementById('et-vis').checked;
+  t.locked =document.getElementById('et-lock').checked;
+  await saveCourse();closeModal();showToast('✅ تم الحفظ','success');
+  buildSidebar();if(currentItem&&currentItem.id===tid)openTest(tid);
+}
+async function addTest(){
+  var title=prompt('عنوان الاختبار الجديد:');if(!title)return;
+  var newId=courseId+'-test-'+Date.now().toString(36);
+  courseData.tests.push({id:newId,title:title,visible:true,locked:false,questions:[]});
+  await saveCourse();buildSidebar();showToast('تم إضافة اختبار','success');
+}
+async function toggleTP(tid,prop){
+  var t=courseData.tests.find(function(x){return x.id===tid;});if(!t)return;
+  t[prop]=!t[prop];await saveCourse();buildSidebar();if(currentItem&&currentItem.id===tid)openTest(tid);
+}
+async function delTest(tid){
+  if(!confirm('حذف هذا الاختبار نهائياً؟'))return;
+  courseData.tests=courseData.tests.filter(function(x){return x.id!==tid;});
+  await saveCourse();buildSidebar();showToast('تم الحذف','success');
+  if(currentItem&&currentItem.id===tid){currentItem=null;document.getElementById('main-content').innerHTML='<div style="text-align:center;padding:80px;color:var(--muted)">اختر درساً</div>';}
+}
+function addTQ(tid){
+  openModal('<div class="field"><label>نص السؤال</label><textarea id="tqq" rows="2"></textarea></div>'
+    +'<div class="field"><label>الخيارات (خيار في كل سطر)</label><textarea id="tqo" rows="4" placeholder="الخيار الأول&#10;الخيار الثاني&#10;الخيار الثالث&#10;الخيار الرابع"></textarea></div>'
+    +'<div class="field"><label>الإجابات الصحيحة (تبدأ من 0)</label><input type="text" id="tqa" placeholder="0 أو 0,2"/></div>'
+    +'<label style="display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:var(--purple);margin-bottom:14px;cursor:pointer"><input type="checkbox" id="tqm" style="width:15px;height:15px;accent-color:var(--purple)"/> متعددة</label>'
+    +'<div style="display:flex;gap:8px"><button onclick="saveTQ(\''+tid+'\')" class="btn btn-primary" style="flex:1">إضافة</button><button onclick="closeModal()" class="btn btn-ghost">إلغاء</button></div>'
+    ,'إضافة سؤال للاختبار');
+}
+async function saveTQ(tid){
+  var q=document.getElementById('tqq').value.trim();if(!q){showToast('يرجى كتابة السؤال','warn');return;}
+  var opts=document.getElementById('tqo').value.split('\n').map(function(x){return x.trim();}).filter(Boolean);
+  if(opts.length<2){showToast('أدخل خيارَين على الأقل','warn');return;}
+  var ans=document.getElementById('tqa').value.split(',').map(function(x){return parseInt(x.trim());}).filter(function(x){return!isNaN(x);});
+  var multi=document.getElementById('tqm').checked;
+  var test=courseData.tests.find(function(t){return t.id===tid;});if(!test)return;
+  if(!test.questions)test.questions=[];
+  test.questions.push({id:'tq-'+Date.now().toString(36),q:q,options:opts,answers:ans,multi:multi});
+  await saveCourse();closeModal();showToast('✅ تم إضافة السؤال','success');openTest(tid);
+}
+function editTQ(tid,qid){
+  var test=courseData.tests.find(function(t){return t.id===tid;});if(!test)return;
+  var q=test.questions.find(function(x){return x.id===qid;});if(!q)return;
+  openModal('<div class="field"><label>نص السؤال</label><textarea id="etqq" rows="2">'+q.q+'</textarea></div>'
+    +'<div class="field"><label>الخيارات</label><textarea id="etqo" rows="4">'+(q.options||[]).join('\n')+'</textarea></div>'
+    +'<div class="field"><label>الإجابات الصحيحة</label><input type="text" id="etqa" value="'+(q.answers||[]).join(',')+'"/></div>'
+    +'<label style="display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:var(--purple);margin-bottom:14px;cursor:pointer"><input type="checkbox" id="etqm" '+(q.multi?'checked':'')+' style="width:15px;height:15px;accent-color:var(--purple)"/> متعددة</label>'
+    +'<div style="display:flex;gap:8px"><button onclick="saveETQ(\''+tid+'\',\''+qid+'\')" class="btn btn-primary" style="flex:1">حفظ</button><button onclick="closeModal()" class="btn btn-ghost">إلغاء</button></div>'
+    ,'تعديل السؤال');
+}
+async function saveETQ(tid,qid){
+  var test=courseData.tests.find(function(t){return t.id===tid;});if(!test)return;
+  var q=test.questions.find(function(x){return x.id===qid;});if(!q)return;
+  q.q=document.getElementById('etqq').value.trim()||q.q;
+  q.options=document.getElementById('etqo').value.split('\n').map(function(x){return x.trim();}).filter(Boolean);
+  q.answers=document.getElementById('etqa').value.split(',').map(function(x){return parseInt(x.trim());}).filter(function(x){return!isNaN(x);});
+  q.multi=document.getElementById('etqm').checked;
+  await saveCourse();closeModal();showToast('✅ تم التعديل','success');openTest(tid);
+}
+async function delTQ(tid,qid){
+  if(!confirm('حذف هذا السؤال؟'))return;
+  var test=courseData.tests.find(function(t){return t.id===tid;});if(!test)return;
+  test.questions=test.questions.filter(function(x){return x.id!==qid;});
+  await saveCourse();openTest(tid);
+}
+
+// ══════════════════════════════════════════════
+// SAVE / HELPERS
+// ══════════════════════════════════════════════
+async function saveCourse(){
+  try{await db.collection('courses').doc(courseId).set(courseData,{merge:true});}
+  catch(e){showToast('خطأ في الحفظ: '+e.message,'error');console.log('save:',e.message);}
+}
+function showLocked(){showToast('🔒 هذا الدرس مقفل من قِبل المشرف','warn');}
+function toYtEmbed(url){
+  if(!url)return'';
+  if(url.includes('/embed/'))return url;
+  var s=url.match(/youtu\.be\/([^?&\s]+)/);if(s)return'https://www.youtube.com/embed/'+s[1]+'?rel=0';
+  var w=url.match(/[?&]v=([^&\s]+)/);if(w)return'https://www.youtube.com/embed/'+w[1]+'?rel=0';
+  return url;
+}
+function toggleSidebar(){
+  var sb=document.getElementById('c-sidebar'),ov=document.getElementById('mob-sb-ov');
+  var open=sb.classList.contains('sb-open');
+  sb.classList.toggle('sb-open',!open);ov.style.display=open?'none':'';
+}
+function closeSidebar(){
+  document.getElementById('c-sidebar').classList.remove('sb-open');
+  document.getElementById('mob-sb-ov').style.display='none';
+}
+function logout(){auth.signOut().then(function(){localStorage.removeItem('ti_user');location.href='index.html';});}
+function toast(m,t,d){showToast(m,t,d);}
+function btn(){return'<button style="flex:1" class="btn btn-ghost" onclick="closeModal()">إلغاء</button>';}
+</script>
+</body>
+</html>
