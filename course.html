@@ -136,7 +136,7 @@ body{margin:0;font-family:'Zain','Segoe UI',sans-serif}
 <body>
 
 <div id="spinner" class="spinner-ov"><div class="spin-ring"></div></div>
-<div id="app">
+<div id="app" style="display:none">
   <div id="nav-ph"></div>
 
   <!-- Course top bar -->
@@ -192,7 +192,13 @@ if(!courseId){location.href='courses.html';}
 // ── Instant cache ──
 (function(){
   var c=localStorage.getItem('ti_user');
-  if(c){try{currentUser=JSON.parse(c);}catch(e){}}
+  if(c){
+    try{
+      currentUser=JSON.parse(c);
+      // Don't call initUI yet - wait for loadCourse to complete
+      // Just keep spinner visible; onAuthStateChanged will be fast
+    }catch(e){}
+  }
 })();
 
 auth.onAuthStateChanged(async function(user){
@@ -281,6 +287,9 @@ async function loadCourse(){
   }
   if(!courseData.lessons||!courseData.lessons.length) courseData.lessons=makeLessons(courseId);
   if(!courseData.tests||!courseData.tests.length)     courseData.tests=makeTests(courseId,courseData.title);
+  // Ensure lessons have exercises array
+  courseData.lessons.forEach(function(l){ if(!l.exercises) l.exercises=[]; });
+  console.log('✅ Course loaded:', courseData.title, '| lessons:', courseData.lessons.length);
   if(!currentUser.isAdmin){
     var sc=await db.collection('scores').doc(currentUser.uid+'_'+courseId).get().catch(function(){return null;});
     if(sc&&sc.exists) studentScores=sc.data().scores||{};
