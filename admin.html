@@ -3,503 +3,121 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>الإدارة — معهد التأصيل العلمي</title>
-<link href="https://fonts.googleapis.com/css2?family=Zain:wght@300;400;700;800;900&family=Amiri:wght@400;700&display=swap" rel="stylesheet"/>
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<title>الرئيسية — معهد التأصيل العلمي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Zain:wght@400;700;800&family=Amiri:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'"/>
+<noscript><link href="https://fonts.googleapis.com/css2?family=Zain:wght@400;700;800&family=Amiri:wght@400;700&display=swap" rel="stylesheet"/></noscript>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
-<script>
-firebase.initializeApp({
-  apiKey:"AIzaSyC1sZ0cJeQMJ6QdnxwFkcfK3AGir0TRuuk",
-  authDomain:"tasil-3lmi.firebaseapp.com",
-  projectId:"tasil-3lmi",
-  storageBucket:"tasil-3lmi.firebasestorage.app",
-  messagingSenderId:"596405733121",
-  appId:"1:596405733121:web:38ebadcc9eef8d8bb77d00"
-});
-const auth = firebase.auth();
-const db   = firebase.firestore();
-</script>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-:root{--purple:#3B1B40;--purple-l:#5a2d63;--gold:#D4B48E;--gold-d:#b8965e;--bg:#faf8f5;--white:#fff;--muted:#7a6a7e}
-body{font-family:'Zain',sans-serif;background:var(--bg);color:#1a0a1e;direction:rtl}
-nav{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.96);backdrop-filter:blur(18px);border-bottom:1px solid rgba(212,180,142,.2);padding:10px 24px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 16px rgba(59,27,64,.06)}
-.nav-logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;color:var(--purple);font-family:'Amiri',serif}
-.nav-logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--purple),var(--purple-l));border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--gold);font-family:'Amiri',serif;font-size:16px;font-weight:900}
-.nav-links{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
-.nav-btn{display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:10px;border:none;cursor:pointer;font-family:'Zain',sans-serif;font-size:12px;font-weight:700;transition:.2s;background:transparent;color:var(--muted);text-decoration:none}
-.nav-btn:hover,.nav-btn.active{background:linear-gradient(135deg,var(--purple),var(--purple-l));color:#fff}
-.btn-logout{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:10px;border:none;cursor:pointer;font-family:'Zain',sans-serif;font-size:12px;font-weight:700;background:rgba(220,53,69,.1);color:#dc3545;transition:.2s}
-.btn-logout:hover{background:#dc3545;color:#fff}
-main{max-width:1100px;margin:0 auto;padding:24px}
-/* Tabs */
-.admin-tabs{display:flex;gap:6px;margin-bottom:22px;flex-wrap:wrap}
-.admin-tab{padding:9px 18px;border-radius:10px;border:none;cursor:pointer;font-family:'Zain',sans-serif;font-size:13px;font-weight:700;transition:.2s;background:var(--white);color:var(--muted);border:1px solid rgba(212,180,142,.2)}
-.admin-tab.active{background:linear-gradient(135deg,var(--purple),var(--purple-l));color:#fff;border-color:transparent}
-/* Card */
-.card{background:var(--white);border-radius:16px;padding:22px;border:1px solid rgba(212,180,142,.2);box-shadow:0 4px 20px rgba(59,27,64,.06);margin-bottom:16px}
-.card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid rgba(212,180,142,.15)}
-.card-header h2{font-size:17px;font-weight:800;color:var(--purple);display:flex;align-items:center;gap:8px}
-/* Buttons */
-.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:10px;border:none;font-family:'Zain',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:.22s}
-.btn:hover{filter:brightness(1.06);transform:translateY(-1px)}
-.btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
-.btn-primary{background:linear-gradient(135deg,var(--purple),var(--purple-l));color:#fff}
-.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold-d));color:var(--purple)}
-.btn-green{background:linear-gradient(135deg,#28a745,#20863a);color:#fff}
-.btn-danger{background:linear-gradient(135deg,#dc3545,#c82333);color:#fff}
-.btn-sm{padding:6px 12px;font-size:12px;border-radius:8px}
-/* Table */
-table{width:100%;border-collapse:collapse}
-th{background:var(--purple);color:#fff;padding:10px 14px;font-size:12px;font-weight:700;text-align:right}
-th:first-child{border-radius:0 8px 0 0}th:last-child{border-radius:8px 0 0 0}
-td{padding:10px 14px;font-size:13px;border-bottom:1px solid rgba(212,180,142,.12)}
-tr:hover td{background:rgba(212,180,142,.05)}
-/* Badge */
-.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700}
-.badge-green{background:rgba(40,167,69,.12);color:#28a745}
-.badge-yellow{background:rgba(255,193,7,.15);color:#856404}
-.badge-red{background:rgba(220,53,69,.1);color:#dc3545}
-/* Form */
-.field{margin-bottom:12px}
-.field label{display:block;font-size:13px;font-weight:700;color:var(--purple);margin-bottom:4px}
-.field input,.field select,.field textarea{width:100%;padding:10px 13px;border-radius:10px;border:1.5px solid rgba(212,180,142,.4);font-size:13px;font-family:'Zain',sans-serif;background:var(--bg);outline:none;transition:.2s}
-.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--gold)}
-.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-/* Modal */
-.overlay{position:fixed;inset:0;background:rgba(42,18,48,.6);backdrop-filter:blur(8px);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px}
-.modal{background:var(--white);border-radius:20px;padding:26px;max-width:520px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(59,27,64,.25)}
-.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
-.modal-title{font-size:16px;font-weight:800;color:var(--purple)}
-.modal-close{background:var(--bg);border:none;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px;color:var(--muted)}
-/* Spinner */
-#spinner{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:16px}
-@keyframes spin{to{transform:rotate(360deg)}}
-.spin-ring{width:44px;height:44px;border:4px solid rgba(59,27,64,.12);border-top-color:var(--purple);border-radius:50%;animation:spin .7s linear infinite}
-@media(max-width:768px){nav{padding:10px 16px}.nav-links .nav-btn span{display:none}main{padding:16px}.field-row{grid-template-columns:1fr}}
-</style>
+<script>firebase.initializeApp({apiKey:"AIzaSyC1sZ0cJeQMJ6QdnxwFkcfK3AGir0TRuuk",authDomain:"tasil-3lmi.firebaseapp.com",projectId:"tasil-3lmi",storageBucket:"tasil-3lmi.firebasestorage.app",messagingSenderId:"596405733121",appId:"1:596405733121:web:38ebadcc9eef8d8bb77d00"});
+const auth=firebase.auth(); const db=firebase.firestore();</script>
+<link rel="stylesheet" href="styles.css"/>
+<script src="shared.js"></script>
+<script src="nav.js"></script>
 </head>
 <body>
-
-<div id="spinner">
-  <div class="spin-ring"></div>
-  <div style="font-size:14px;color:var(--muted);font-weight:600">جارٍ التحقق...</div>
-</div>
-
+<div id="spinner" class="spinner-overlay"><div class="spin-ring"></div></div>
 <div id="app" style="display:none">
-  <nav>
-    <div class="nav-logo"><div class="nav-logo-icon">ت</div><span>معهد التأصيل</span></div>
-    <div class="nav-links">
-      <a href="dashboard.html" class="nav-btn"><i data-lucide="home"></i><span>الرئيسية</span></a>
-      <a href="courses.html" class="nav-btn"><i data-lucide="book-open"></i><span>المقررات</span></a>
-      <a href="tests.html" class="nav-btn"><i data-lucide="clipboard-check"></i><span>الاختبارات</span></a>
-      <a href="qa.html" class="nav-btn"><i data-lucide="message-circle"></i><span>الأسئلة</span></a>
-      <a href="admin.html" class="nav-btn active"><i data-lucide="settings"></i><span>الإدارة</span></a>
-      <button class="btn-logout" onclick="logout()"><i data-lucide="log-out" style="width:14px;height:14px"></i>خروج</button>
-    </div>
-  </nav>
+  <div id="nav-ph"></div>
+  <main style="max-width:1100px;margin:0 auto;padding:24px">
+    
+<div style="margin-bottom:20px;background:linear-gradient(135deg,var(--purple),var(--purple-l));border-radius:18px;padding:24px;color:#fff;position:relative;overflow:hidden">
+  <div style="position:absolute;left:-20px;bottom:-30px;font-family:'Amiri',serif;font-size:110px;opacity:.05;pointer-events:none">العلم</div>
+  <h2 id="welcome-msg" style="font-family:'Amiri',serif;font-size:22px;margin-bottom:6px">أهلاً!</h2>
+  <p id="welcome-sub" style="opacity:.8;font-size:14px"></p>
+</div>
+<div id="stats-row" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px"></div>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+  <div style="font-family:'Amiri',serif;font-size:18px;font-weight:700;color:var(--purple)">📚 المقررات الأخيرة</div>
+  <a href="courses.html" style="font-size:13px;font-weight:700;color:var(--gold-d);text-decoration:none">عرض الكل ←</a>
+</div>
+<div id="courses-preview" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px"></div>
 
-  <main>
-    <div class="admin-tabs">
-      <button class="admin-tab active" onclick="showTab('users')">👥 المستخدمون</button>
-      <button class="admin-tab" onclick="showTab('courses')">📚 المقررات</button>
-      <button class="admin-tab" onclick="showTab('tests')">📝 الاختبارات</button>
-      <button class="admin-tab" onclick="showTab('qa')">💬 الأسئلة</button>
-    </div>
-
-    <!-- USERS TAB -->
-    <div id="tab-users">
-      <div class="card">
-        <div class="card-header">
-          <h2><i data-lucide="users" style="width:18px;height:18px;color:var(--gold-d)"></i> إدارة المستخدمين</h2>
-          <button class="btn btn-primary btn-sm" onclick="loadUsers()">
-            <i data-lucide="refresh-cw" style="width:13px;height:13px"></i> تحديث
-          </button>
-        </div>
-        <div id="users-table">جارٍ التحميل...</div>
-      </div>
-    </div>
-
-    <!-- COURSES TAB -->
-    <div id="tab-courses" style="display:none">
-      <div class="card">
-        <div class="card-header">
-          <h2><i data-lucide="book-open" style="width:18px;height:18px;color:var(--gold-d)"></i> إدارة المقررات</h2>
-          <button class="btn btn-primary btn-sm" onclick="openCourseForm()">
-            <i data-lucide="plus" style="width:13px;height:13px"></i> مقرر جديد
-          </button>
-        </div>
-        <div id="courses-table">جارٍ التحميل...</div>
-      </div>
-    </div>
-
-    <!-- TESTS TAB -->
-    <div id="tab-tests" style="display:none">
-      <div class="card">
-        <div class="card-header">
-          <h2><i data-lucide="clipboard-check" style="width:18px;height:18px;color:var(--gold-d)"></i> إدارة الاختبارات</h2>
-          <button class="btn btn-primary btn-sm" onclick="openTestForm()">
-            <i data-lucide="plus" style="width:13px;height:13px"></i> اختبار جديد
-          </button>
-        </div>
-        <div id="tests-table">جارٍ التحميل...</div>
-      </div>
-    </div>
-
-    <!-- QA TAB -->
-    <div id="tab-qa" style="display:none">
-      <div class="card">
-        <div class="card-header">
-          <h2><i data-lucide="message-circle" style="width:18px;height:18px;color:var(--gold-d)"></i> الأسئلة والاستفسارات</h2>
-          <button class="btn btn-primary btn-sm" onclick="loadQA()">
-            <i data-lucide="refresh-cw" style="width:13px;height:13px"></i> تحديث
-          </button>
-        </div>
-        <div id="qa-list">جارٍ التحميل...</div>
-      </div>
-    </div>
+<!-- Study Plan quick view -->
+<div style="margin-top:28px">
+  <div style="font-family:'Amiri',serif;font-size:18px;font-weight:700;color:var(--purple);margin-bottom:14px">📋 الخطة الدراسية</div>
+  <div id="plan-quick"></div>
+</div>
   </main>
 </div>
-
 <div id="modal-container"></div>
-
+<div id="toast-container"></div>
 <script>
-let currentUser = null;
-let allUsers = [], allCourses = [], allTests = [], allQA = [];
+const PAGE_ID='dashboard';
 
-// ── Auth ──
-auth.onAuthStateChanged(async user => {
-  if(!user){ window.location.href='login.html'; return; }
-
-  const adminSnap = await db.collection('admins').doc(user.uid).get().catch(()=>null);
-  if(!adminSnap?.exists){
-    alert('ليس لديك صلاحية الوصول لهذه الصفحة');
-    window.location.href='dashboard.html';
-    return;
+// Cache-first auth
+let currentUser=null;
+(function(){ const c=localStorage.getItem('ti_user'); if(c){ try{ currentUser=JSON.parse(c); showApp(); }catch(e){} }})();
+auth.onAuthStateChanged(async user=>{
+  if(!user){ localStorage.removeItem('ti_user'); location.href='login.html'; return; }
+  if(!currentUser){
+    const a=await db.collection('admins').doc(user.uid).get().catch(()=>null);
+    if(a?.exists){ currentUser={uid:user.uid,...a.data(),isAdmin:true}; }
+    else{ const u=await db.collection('users').doc(user.uid).get().catch(()=>null); if(!u?.exists){ await auth.signOut(); location.href='login.html'; return; } currentUser={uid:user.uid,...u.data(),isAdmin:false}; }
+    localStorage.setItem('ti_user',JSON.stringify(currentUser));
+    showApp();
   }
-
-  currentUser = { uid:user.uid, ...adminSnap.data(), isAdmin:true };
+});
+function showApp(){
   document.getElementById('spinner').style.display='none';
   document.getElementById('app').style.display='';
-  lucide.createIcons();
-  loadUsers();
-});
-
-async function logout(){
-  localStorage.removeItem('ti_rm');
-  await auth.signOut();
-  window.location.href='index.html';
+  document.getElementById('nav-ph').outerHTML=buildNav(PAGE_ID,currentUser);
+  setTimeout(()=>{ if(window.lucide) lucide.createIcons(); },80);
+  if(typeof onReady==='function') onReady();
 }
+async function logout(){ localStorage.removeItem('ti_user'); try{await auth.signOut();}catch(e){} location.href='index.html'; }
 
-// ── Tabs ──
-function showTab(name){
-  ['users','courses','tests','qa'].forEach(t=>{
-    document.getElementById(`tab-${t}`).style.display = t===name ? '' : 'none';
-  });
-  document.querySelectorAll('.admin-tab').forEach((btn,i)=>{
-    btn.classList.toggle('active', ['users','courses','tests','qa'][i]===name);
-  });
-  if(name==='users')   loadUsers();
-  if(name==='courses') loadCourses();
-  if(name==='tests')   loadTests();
-  if(name==='qa')      loadQA();
-}
+const PLAN_QUICK = [
+  {title:"المرحلة التمهيدية",color:"#b8965e",books:['المدخل إلى طلب العلم','تذكرة السامع والمتكلم','الجرد القرآني']},
+  {title:"المستوى الأول — المرحلة الأولى (العقيدة)",color:"#3B1B40",books:["القواعد الأربع","نواقض الإسلام","الأصول الثلاثة","كشف الشبهات"]},
+  {title:"المستوى الأول — المرحلة الثانية (الآلة والسنة)",color:"#1a5276",books:["الآجرومية","التذكرة في علوم الحديث","الأرجوزة الميئية","الرسالة اللطيفة","الأربعون النووية"]},
+  {title:"المستوى الأول — المرحلة الثالثة (الفقه المالكي)",color:"#117a65",books:["مقدمات التفقه","الأخضري","العشماوية","نظم ابن أبي كف","المرشد المعين","القواعد الفقهية"]},
+  {title:"المستوى الأول — المرحلة الرابعة (التفسير والعقيدة)",color:"#6e2f0a",books:["أصول التفسير","كتاب التوحيد","القواعد السلفية","الواسطية"]},
+  {title:"المستوى الأول — المرحلة الخامسة (المقاصد والآداب)",color:"#512e5f",books:["تبصرة القاصد","الجامع في الآداب","السبل المرضية"]},
+  {title:"المستوى الأول — المرحلة السادسة (الدعوة والمناظرة)",color:"#922b21",books:["الأمر بالمعروف","آداب المناظرة","الرد على المخالف","الحصانة الفكرية"]},
+];
 
-// ══════════════════════════════════════════
-// USERS
-// ══════════════════════════════════════════
-async function loadUsers(){
-  document.getElementById('users-table').innerHTML='<p style="text-align:center;padding:20px;color:var(--muted)">جارٍ التحميل...</p>';
-  const snap = await db.collection('users').get().catch(e=>{ console.log('loadUsers error:',e.message); return null; });
-  if(!snap){ document.getElementById('users-table').innerHTML='<p style="color:#dc3545;padding:16px">خطأ في التحميل</p>'; return; }
+async function onReady(){
+  document.getElementById('welcome-msg').textContent="أهلاً، "+(currentUser.name||currentUser.fullName||'طالب')+"! 👋";
+  document.getElementById('welcome-sub').textContent=currentUser.isAdmin?('دورك: '+(currentUser.adminRole==='super'?'المشرف العام':'مشرف')):'مرحباً بك في معهد التأصيل العلمي';
 
-  allUsers = snap.docs.map(d=>({id:d.id,...d.data()}));
-
-  if(!allUsers.length){
-    document.getElementById('users-table').innerHTML='<p style="text-align:center;padding:30px;color:var(--muted)">لا يوجد مستخدمون بعد</p>';
-    return;
-  }
-
-  const statusBadge = s => s==='approved' ? '<span class="badge badge-green">مقبول</span>' :
-                            s==='rejected' ? '<span class="badge badge-red">مرفوض</span>' :
-                            '<span class="badge badge-yellow">معلّق</span>';
-
-  document.getElementById('users-table').innerHTML = `
-    <table>
-      <thead><tr><th>الاسم</th><th>البريد</th><th>الحالة</th><th>التاريخ</th><th>الإجراءات</th></tr></thead>
-      <tbody>
-        ${allUsers.map(u=>`
-          <tr>
-            <td style="font-weight:700">${u.name||'—'}</td>
-            <td style="direction:ltr">${u.email||'—'}</td>
-            <td>${statusBadge(u.status)}</td>
-            <td style="font-size:11px;color:var(--muted)">${u.createdAt?new Date(u.createdAt).toLocaleDateString('ar'):'—'}</td>
-            <td>
-              <div style="display:flex;gap:6px;flex-wrap:wrap">
-                ${u.status!=='approved' ? `<button class="btn btn-green btn-sm" onclick="updateUserStatus('${u.id}','approved')"><i data-lucide="check" style="width:12px;height:12px"></i>قبول</button>` : ''}
-                ${u.status!=='rejected' ? `<button class="btn btn-danger btn-sm" onclick="updateUserStatus('${u.id}','rejected')"><i data-lucide="x" style="width:12px;height:12px"></i>رفض</button>` : ''}
-                <button class="btn btn-sm" style="background:rgba(220,53,69,.1);color:#dc3545" onclick="deleteUser('${u.id}','${u.name||''}')">
-                  <i data-lucide="trash-2" style="width:12px;height:12px"></i>حذف
-                </button>
-              </div>
-            </td>
-          </tr>
-        `).join('')}
-      </tbody>
-    </table>
-  `;
-  lucide.createIcons();
-}
-
-async function updateUserStatus(userId, status){
-  try{
-    await db.collection('users').doc(userId).update({status});
-    console.log('✅ Updated user', userId, 'to', status);
-    loadUsers();
-  }catch(e){
-    console.log('❌ updateUserStatus error:', e.message);
-    alert('خطأ: ' + e.message);
-  }
-}
-
-async function deleteUser(userId, name){
-  if(!confirm(`هل تريد حذف المستخدم "${name}"؟`)) return;
-  try{
-    await db.collection('users').doc(userId).delete();
-    loadUsers();
-  }catch(e){ alert('خطأ: ' + e.message); }
-}
-
-// ══════════════════════════════════════════
-// COURSES
-// ══════════════════════════════════════════
-async function loadCourses(){
-  const snap = await db.collection('courses').orderBy('_order','asc').get().catch(()=>null);
-  allCourses = snap ? snap.docs.map(d=>({fsId:d.id,...d.data()})) : [];
-
-  if(!allCourses.length){
-    document.getElementById('courses-table').innerHTML='<p style="text-align:center;padding:30px;color:var(--muted)">لا توجد مقررات</p>';
-    return;
-  }
-
-  document.getElementById('courses-table').innerHTML = `
-    <table>
-      <thead><tr><th>العنوان</th><th>الوصف</th><th>الدروس</th><th>الإجراءات</th></tr></thead>
-      <tbody>
-        ${allCourses.map(c=>`
-          <tr>
-            <td style="font-weight:700">
-              <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${c.color||'#3B1B40'};margin-left:8px"></span>
-              ${c.title}
-            </td>
-            <td style="font-size:12px;color:var(--muted);max-width:200px">${c.desc||''}</td>
-            <td>${(c.lessons||[]).length}</td>
-            <td>
-              <div style="display:flex;gap:6px">
-                <button class="btn btn-gold btn-sm" onclick="editCourse('${c.fsId}')">
-                  <i data-lucide="edit-2" style="width:12px;height:12px"></i>تعديل
-                </button>
-                <button class="btn btn-danger btn-sm" onclick="deleteCourse('${c.fsId}','${c.title}')">
-                  <i data-lucide="trash-2" style="width:12px;height:12px"></i>حذف
-                </button>
-              </div>
-            </td>
-          </tr>
-        `).join('')}
-      </tbody>
-    </table>
-  `;
-  lucide.createIcons();
-}
-
-function openCourseForm(fsId){
-  const c = fsId ? allCourses.find(x=>x.fsId===fsId) : null;
-  showModal(`
-    <div class="field"><label>عنوان المقرر</label><input type="text" id="cf-title" value="${c?.title||''}"/></div>
-    <div class="field"><label>الوصف</label><textarea id="cf-desc" rows="2">${c?.desc||''}</textarea></div>
-    <div class="field"><label>اللون</label><input type="color" id="cf-color" value="${c?.color||'#3B1B40'}" style="height:38px;padding:3px"/></div>
-    <div style="display:flex;gap:10px;margin-top:16px">
-      <button class="btn btn-primary" style="flex:1" onclick="saveCourse('${fsId||''}')">
-        <i data-lucide="save" style="width:14px;height:14px"></i> حفظ
-      </button>
-      <button class="btn" style="background:var(--bg);color:var(--muted)" onclick="closeModal()">إلغاء</button>
+  // Quick stats
+  const snap=await db.collection('courses').get().catch(()=>null);
+  const courses=snap?snap.docs.map(d=>d.data()):[];
+  const done=(currentUser.completedLessons||[]).length;
+  document.getElementById('stats-row').innerHTML=[
+    {icon:'book-open',label:'المقررات',val:courses.length||26,color:'var(--purple)',bg:'rgba(59,27,64,.08)'},
+    {icon:'check-circle',label:'الدروس المكتملة',val:done,color:'#28a745',bg:'rgba(40,167,69,.08)'},
+    {icon:'clipboard-check',label:'الاختبارات',val:(courses.length||26)*2,color:'var(--gold-d)',bg:'rgba(212,180,142,.12)'},
+  ].map(s=>`<div style="background:#fff;border-radius:14px;padding:18px;border:1px solid rgba(212,180,142,.18);display:flex;align-items:center;gap:12px">
+    <div style="width:44px;height:44px;border-radius:11px;background:${s.bg};color:${s.color};display:flex;align-items:center;justify-content:center;font-size:20px">
+      <i data-lucide="${s.icon}" style="width:20px;height:20px"></i>
     </div>
-  `, c ? 'تعديل المقرر' : 'مقرر جديد');
-}
+    <div><div style="font-size:26px;font-weight:900;color:${s.color}">${s.val}</div><div style="font-size:12px;color:var(--muted);font-weight:700">${s.label}</div></div>
+  </div>`).join('');
 
-async function saveCourse(fsId){
-  const title = document.getElementById('cf-title').value.trim();
-  const desc  = document.getElementById('cf-desc').value.trim();
-  const color = document.getElementById('cf-color').value;
-  if(!title){ alert('يرجى إدخال العنوان'); return; }
+  // Courses preview
+  document.getElementById('courses-preview').innerHTML=(courses.slice(0,6).length?courses.slice(0,6):[{id:'t1',title:'المدخل إلى طلب العلم',color:'#b8965e'},{id:'m1',title:'القواعد الأربع',color:'#3B1B40'},{id:'m5',title:'الآجرومية',color:'#1a5276'}]).map(c=>`
+    <a href="courses.html?id=${c.id}" style="background:#fff;border-radius:12px;padding:14px;border:1px solid rgba(212,180,142,.18);text-decoration:none;display:block;transition:.2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+      <div style="height:3px;border-radius:2px;background:${c.color||'#3B1B40'};margin-bottom:10px"></div>
+      <div style="font-size:13px;font-weight:800;color:var(--purple)">${c.title}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:5px">${(c.lessons||[]).length||20} درساً</div>
+    </a>`).join('');
 
-  try{
-    if(fsId){
-      await db.collection('courses').doc(fsId).update({title,desc,color});
-    } else {
-      const newId = Date.now();
-      await db.collection('courses').doc(String(newId)).set({
-        id:newId, title, desc, color, _order:allCourses.length,
-        lessons:[], visible:true, createdAt:new Date().toISOString()
-      });
-    }
-    closeModal();
-    loadCourses();
-  }catch(e){ alert('خطأ: ' + e.message); }
-}
-
-function editCourse(fsId){ openCourseForm(fsId); }
-
-async function deleteCourse(fsId, title){
-  if(!confirm(`حذف المقرر "${title}"؟`)) return;
-  try{ await db.collection('courses').doc(fsId).delete(); loadCourses(); }
-  catch(e){ alert('خطأ: ' + e.message); }
-}
-
-// ══════════════════════════════════════════
-// TESTS
-// ══════════════════════════════════════════
-async function loadTests(){
-  const snap = await db.collection('tests').get().catch(()=>null);
-  allTests = snap ? snap.docs.map(d=>({fsId:d.id,...d.data()})) : [];
-
-  if(!allTests.length){
-    document.getElementById('tests-table').innerHTML='<p style="text-align:center;padding:30px;color:var(--muted)">لا توجد اختبارات</p>';
-    return;
-  }
-
-  document.getElementById('tests-table').innerHTML = `
-    <table>
-      <thead><tr><th>العنوان</th><th>عدد الأسئلة</th><th>الإجراءات</th></tr></thead>
-      <tbody>
-        ${allTests.map(t=>`
-          <tr>
-            <td style="font-weight:700">${t.title||'اختبار'}</td>
-            <td>${(t.questions||[]).length} سؤال</td>
-            <td>
-              <div style="display:flex;gap:6px">
-                <button class="btn btn-gold btn-sm" onclick="editTest('${t.fsId}')">
-                  <i data-lucide="edit-2" style="width:12px;height:12px"></i>تعديل
-                </button>
-                <button class="btn btn-danger btn-sm" onclick="deleteTest('${t.fsId}','${t.title||''}')">
-                  <i data-lucide="trash-2" style="width:12px;height:12px"></i>حذف
-                </button>
-              </div>
-            </td>
-          </tr>
-        `).join('')}
-      </tbody>
-    </table>
-  `;
-  lucide.createIcons();
-}
-
-function openTestForm(fsId){
-  const t = fsId ? allTests.find(x=>x.fsId===fsId) : null;
-  showModal(`
-    <div class="field"><label>عنوان الاختبار</label><input type="text" id="tf-title" value="${t?.title||''}"/></div>
-    <div style="display:flex;gap:10px;margin-top:16px">
-      <button class="btn btn-primary" style="flex:1" onclick="saveTest('${fsId||''}')">
-        <i data-lucide="save" style="width:14px;height:14px"></i> حفظ
-      </button>
-      <button class="btn" style="background:var(--bg);color:var(--muted)" onclick="closeModal()">إلغاء</button>
-    </div>
-  `, t ? 'تعديل الاختبار' : 'اختبار جديد');
-}
-
-async function saveTest(fsId){
-  const title = document.getElementById('tf-title').value.trim();
-  if(!title){ alert('يرجى إدخال العنوان'); return; }
-  try{
-    if(fsId){ await db.collection('tests').doc(fsId).update({title}); }
-    else{
-      const newId = Date.now();
-      await db.collection('tests').doc(String(newId)).set({
-        id:newId, title, questions:[], visible:true, createdAt:new Date().toISOString()
-      });
-    }
-    closeModal(); loadTests();
-  }catch(e){ alert('خطأ: ' + e.message); }
-}
-
-function editTest(fsId){ openTestForm(fsId); }
-
-async function deleteTest(fsId, title){
-  if(!confirm(`حذف الاختبار "${title}"؟`)) return;
-  try{ await db.collection('tests').doc(fsId).delete(); loadTests(); }
-  catch(e){ alert('خطأ: ' + e.message); }
-}
-
-// ══════════════════════════════════════════
-// QA
-// ══════════════════════════════════════════
-async function loadQA(){
-  const snap = await db.collection('questions').orderBy('createdAt','desc').get().catch(()=>null);
-  allQA = snap ? snap.docs.map(d=>({fsId:d.id,...d.data()})) : [];
-
-  if(!allQA.length){
-    document.getElementById('qa-list').innerHTML='<p style="text-align:center;padding:30px;color:var(--muted)">لا توجد أسئلة</p>';
-    return;
-  }
-
-  document.getElementById('qa-list').innerHTML = allQA.map(q=>`
-    <div style="background:var(--bg);border-radius:12px;padding:16px;margin-bottom:10px;border:1px solid rgba(212,180,142,.2)">
-      <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px">
-        <div style="font-weight:700;font-size:14px">${q.question||''}</div>
-        <button class="btn btn-danger btn-sm" onclick="deleteQuestion('${q.fsId}')">
-          <i data-lucide="trash-2" style="width:11px;height:11px"></i>
-        </button>
+  // Plan quick
+  document.getElementById('plan-quick').innerHTML=PLAN_QUICK.map(s=>`
+    <div style="background:#fff;border-radius:12px;margin-bottom:10px;border:1px solid rgba(212,180,142,.15);overflow:hidden">
+      <div style="background:${s.color};padding:10px 14px">
+        <span style="font-family:'Amiri',serif;font-size:13px;font-weight:700;color:#fff">${s.title}</span>
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:10px">${q.name||'مجهول'} — ${q.createdAt?new Date(q.createdAt).toLocaleDateString('ar'):'—'}</div>
-      ${q.answer
-        ? `<div style="background:rgba(212,180,142,.1);border-right:3px solid var(--gold);padding:10px;border-radius:8px;font-size:13px;margin-bottom:8px">${q.answer}</div>`
-        : ''
-      }
-      <div style="display:flex;gap:8px">
-        <textarea id="ans-${q.fsId}" placeholder="اكتب الإجابة..." rows="2" style="flex:1;padding:8px;border-radius:8px;border:1.5px solid rgba(212,180,142,.4);font-family:'Zain',sans-serif;font-size:13px;resize:none">${q.answer||''}</textarea>
-        <button class="btn btn-primary btn-sm" onclick="saveAnswer('${q.fsId}')">
-          <i data-lucide="send" style="width:12px;height:12px"></i>إجابة
-        </button>
+      <div style="padding:8px 14px 10px;display:flex;flex-wrap:wrap;gap:6px">
+        ${s.books.map(b=>`<span style="background:rgba(212,180,142,.12);color:var(--purple-l);padding:3px 10px;border-radius:10px;font-size:12px;font-weight:700">${b}</span>`).join('')}
       </div>
-    </div>
-  `).join('');
-  lucide.createIcons();
+    </div>`).join('');
+  if(window.lucide) lucide.createIcons();
 }
-
-async function saveAnswer(fsId){
-  const answer = document.getElementById(`ans-${fsId}`).value.trim();
-  if(!answer){ alert('يرجى كتابة الإجابة'); return; }
-  try{
-    await db.collection('questions').doc(fsId).update({answer, answeredBy:currentUser.uid, answeredAt:new Date().toISOString()});
-    loadQA();
-  }catch(e){ alert('خطأ: ' + e.message); }
-}
-
-async function deleteQuestion(fsId){
-  if(!confirm('حذف هذا السؤال؟')) return;
-  try{ await db.collection('questions').doc(fsId).delete(); loadQA(); }
-  catch(e){ alert('خطأ: ' + e.message); }
-}
-
-// ══════════════════════════════════════════
-// MODAL
-// ══════════════════════════════════════════
-function showModal(content, title=''){
-  document.getElementById('modal-container').innerHTML=`
-    <div class="overlay" onclick="closeModal()">
-      <div class="modal" onclick="event.stopPropagation()">
-        <div class="modal-header">
-          <span class="modal-title">${title}</span>
-          <button class="modal-close" onclick="closeModal()">✕</button>
-        </div>
-        ${content}
-      </div>
-    </div>`;
-  lucide.createIcons();
-}
-function closeModal(){ document.getElementById('modal-container').innerHTML=''; }
 </script>
 </body>
 </html>
