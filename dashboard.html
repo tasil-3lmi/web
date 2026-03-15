@@ -401,14 +401,22 @@
       if (!user) { window.location.href = 'index.html'; return; }
 
       // ── جلب بيانات المستخدم والاتصال معاً (متوازي) ──
-      const [userDoc, contactSnap] = await Promise.all([
+      const [userDocFirst, contactSnap] = await Promise.all([
         getDoc(doc(db, 'users', user.uid)),
         getDoc(doc(db, 'contactInfo', 'main')).catch(() => null),
       ]);
 
-      if (!userDoc.exists()) { window.location.href = 'index.html'; return; }
+      // ── حماية من race condition عند التسجيل الجديد:
+      //    dashboard قد يصل قبل اكتمال setDoc في register.html
+      //    الحل: انتظر 1.2 ثانية وأعد المحاولة مرة واحدة ──
+      let finalDoc = userDocFirst;
+      if (!userDocFirst.exists()) {
+        await new Promise(r => setTimeout(r, 1200));
+        finalDoc = await getDoc(doc(db, 'users', user.uid));
+        if (!finalDoc.exists()) { window.location.href = 'index.html'; return; }
+      }
 
-      const userData = userDoc.data();
+      const userData = finalDoc.data();
       userProgress   = userData.progress || {};
       currentUser    = user;
       currentUserData = userData;
