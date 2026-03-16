@@ -625,8 +625,13 @@
     initSharedBehavior();
 
     // ── فحص الجلسة وتحميل بيانات التواصل بالتوازي ──
+    // Timeout 8 ثوانٍ للجوال — إذا لم يرد Firebase نعامل المستخدم كزائر
+    const authTimeout = new Promise(resolve => setTimeout(() => resolve(null), 8000));
     const [authUser, contactSnap] = await Promise.all([
-      new Promise(resolve => onAuthStateChanged(auth, resolve, () => resolve(null))),
+      Promise.race([
+        new Promise(resolve => onAuthStateChanged(auth, resolve, () => resolve(null))),
+        authTimeout,
+      ]),
       getDoc(doc(db, 'contactInfo', 'main')).catch(() => null),
     ]);
 
