@@ -245,9 +245,9 @@
   <script type="module">
     // ── كل الـ imports أولاً (ES modules تتطلب ذلك) ──
     import { renderHeader, renderFooter, initSharedBehavior } from './components.js';
-    import { auth, db, onAuthStateChanged, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs, addDoc, query, orderBy } from './firebase.js';
-    import { createUserWithEmailAndPassword, getAuth } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { auth, db, onAuthStateChanged, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs, addDoc, createUserWithEmailAndPassword } from './firebase.js';
+    import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const TOTAL_ITEMS = 23;
     const CAT_MAP = { inquiry:'استفسار', scientific:'سؤال علمي', complaint:'شكوى', suggestion:'اقتراح' };
@@ -265,7 +265,7 @@
 
     let currentAdmin = null, isSuperAdmin = false;
     let allQuestions = [], allStudents = [], allSupervisors = [];
-    let adminWeekStart = getWeekStart(new Date());
+    let adminWeekStart;  // سيُهيَّئ بعد تعريف getWeekStart
     let scheduleData = {};
     let activeTab = 'questions';
 
@@ -463,10 +463,12 @@
     };
 
     // ===== SCHEDULE =====
+    // تهيئة adminWeekStart هنا بعد تعريف الدالة
     function getWeekStart(date) {
       const d=new Date(date); const day=d.getDay();
       const diff=day===6?0:day+1; d.setDate(d.getDate()-diff); d.setHours(0,0,0,0); return d;
     }
+    adminWeekStart = getWeekStart(new Date());
     function weekKey(d) { return 'week_'+d.toISOString().slice(0,10); }
     function toHijri(date) { return date.toLocaleDateString('ar-SA-u-ca-islamic-umalqura',{month:'short',day:'numeric'}); }
 
