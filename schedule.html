@@ -54,12 +54,40 @@
   <div id="footerPlaceholder"></div>
 
   <script type="module">
-    import { renderHeader, renderFooter } from './components.js';
-    import { auth, db, onAuthStateChanged, doc, getDoc, setDoc } from './firebase.js';
+    import { renderHeader, renderFooter, initSharedBehavior } from './components.js';
+    import { auth, db, onAuthStateChanged, doc, getDoc, setDoc, collection, getDocs } from './firebase.js';
 
-    document.getElementById('headerPlaceholder').innerHTML = renderHeader('schedule.html');
-    document.getElementById('footerPlaceholder').innerHTML = renderFooter();
-    initHeader();
+    // ── رسم رأس الزائر فوراً ثم تحديثه بعد التحقق من الجلسة ──
+    document.getElementById('headerPlaceholder').innerHTML = renderHeader('schedule.html', null);
+    document.getElementById('footerPlaceholder').innerHTML = renderFooter(null);
+    initSharedBehavior();
+
+    // جلب بيانات المستخدم وتحديث الرأس
+    (async () => {
+      try {
+        const [authUser, contactSnap] = await Promise.all([
+          new Promise(resolve => onAuthStateChanged(auth, resolve, () => resolve(null))),
+          getDoc(doc(db, 'contactInfo', 'main')).catch(() => null),
+        ]);
+        if (authUser) {
+          const userSnap = await getDoc(doc(db, 'users', authUser.uid));
+          const userData = userSnap.exists() ? userSnap.data() : null;
+          let contactData = null;
+          if (contactSnap?.exists()) {
+            contactData = contactSnap.data();
+            getDocs(collection(db, 'contactInfo', 'main', 'channels')).then(ch => {
+              const channels = []; ch.forEach(d => channels.push(d.data()));
+              contactData.channels = channels.sort((a,b) => (a.order||0)-(b.order||0));
+              document.getElementById('footerPlaceholder').innerHTML = renderFooter(contactData);
+            }).catch(() => {});
+          }
+          document.getElementById('headerPlaceholder').innerHTML = renderHeader('schedule.html', userData);
+          document.getElementById('footerPlaceholder').innerHTML = renderFooter(contactData);
+          initSharedBehavior();
+        }
+      } catch(e) {}
+    })();
+
 
     const DAYS = ['السبت','الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة'];
     const TIMES = ['الفجر','الصباح','الظهر','العصر','المغرب','العشاء'];
@@ -161,16 +189,6 @@
     };
 
     loadSchedule(weekKey(currentWeekStart));
-
-    function initHeader() {
-      const header = document.getElementById('siteHeader');
-      const hamburger = document.getElementById('hamburger');
-      const mobileMenu = document.getElementById('mobileMenu');
-      window.addEventListener('scroll', () => header.classList.toggle('scrolled', window.scrollY > 40));
-      hamburger && hamburger.addEventListener('click', () => mobileMenu.classList.toggle('open'));
-    }
-    window.toggleNotifPanel = function() { const p = document.getElementById('notifPanel'); p.style.display = p.style.display==='none'?'block':'none'; };
-    window.markAllRead = function() {};
     const revealEls = document.querySelectorAll('.reveal');
     const obs = new IntersectionObserver(entries => entries.forEach(e => { if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target);}}),{threshold:0.08});
     revealEls.forEach(el => obs.observe(el));
