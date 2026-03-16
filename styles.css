@@ -160,6 +160,7 @@ ul { list-style: none; }
   border: none;
   padding: 8px;
   cursor: pointer;
+  z-index: 10;
 }
 .hamburger span {
   display: block;
@@ -168,14 +169,31 @@ ul { list-style: none; }
   background: var(--purple);
   border-radius: 2px;
   transition: var(--transition);
+  transform-origin: center;
 }
 .site-header.scrolled .hamburger span { background: var(--white); }
+
+/* تحويل الـ 3 شرطات إلى X عند الفتح */
+.mobile-menu.open ~ * .hamburger span:nth-child(1),
+.hamburger.open span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+.hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+.hamburger.open span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
 .mobile-menu {
   display: none;
   flex-direction: column;
   background: var(--purple);
   padding: 16px 32px 24px;
   gap: 4px;
+  animation: slideDown 0.22s ease;
+}
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 .mobile-menu .nav-link { color: var(--white); padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
 .mobile-menu .nav-link::after { display: none; }
@@ -581,6 +599,10 @@ select.form-control { appearance: none; background-image: url("data:image/svg+xm
   .footer-inner { grid-template-columns: 1fr; gap: 32px; padding: 0 20px; }
   .footer-bottom { padding: 20px 20px 0; flex-direction: column; text-align: center; }
   .tabs-nav { overflow-x: auto; }
+  /* في الجوال: أخفِ اسم المستخدم وأبقِ الجرس + زر القائمة */
+  .user-menu-name { display: none; }
+  .user-menu-btn { padding: 4px 8px; border-radius: 50%; }
+  .user-menu-arrow { display: none; }
 }
 
 .notif-bell {
