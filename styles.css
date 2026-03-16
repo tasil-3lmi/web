@@ -592,17 +592,34 @@ select.form-control { appearance: none; background-image: url("data:image/svg+xm
 @media (max-width: 768px) {
   .main-nav { display: none; }
   .hamburger { display: flex; }
-  .header-inner { padding: 0 20px; }
-  .container { padding: 0 20px; }
-  .container-sm { padding: 0 20px; }
+  .header-inner { padding: 0 16px; }
+  .container { padding: 0 16px; }
+  .container-sm { padding: 0 16px; }
   .section { padding: 56px 0; }
-  .footer-inner { grid-template-columns: 1fr; gap: 32px; padding: 0 20px; }
-  .footer-bottom { padding: 20px 20px 0; flex-direction: column; text-align: center; }
+  .footer-inner { grid-template-columns: 1fr; gap: 32px; padding: 0 16px; }
+  .footer-bottom { padding: 20px 16px 0; flex-direction: column; text-align: center; }
   .tabs-nav { overflow-x: auto; }
+
   /* في الجوال: أخفِ اسم المستخدم وأبقِ الجرس + زر القائمة */
   .user-menu-name { display: none; }
   .user-menu-btn { padding: 4px 8px; border-radius: 50%; }
   .user-menu-arrow { display: none; }
+
+  /* لوحة الإشعارات على عرض كامل في الجوال */
+  .notif-panel {
+    position: fixed;
+    top: 72px; right: 0; left: 0; width: 100%;
+    border-radius: 0 0 var(--radius) var(--radius);
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+
+  /* قائمة المستخدم المنسدلة على عرض مناسب */
+  .user-dropdown {
+    position: fixed;
+    top: 72px; right: 8px; left: 8px;
+    min-width: unset;
+  }
 }
 
 .notif-bell {
