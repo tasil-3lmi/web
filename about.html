@@ -449,6 +449,13 @@
     <script type="module">
     import { renderHeader, renderFooter, initSharedBehavior } from './components.js';
     import { auth, db, onAuthStateChanged, doc, getDoc, collection, getDocs } from './firebase.js';
+
+    // ── رسم الرأس فوراً كزائر حتى لا ينتظر المستخدم Firebase ──
+    document.getElementById('headerPlaceholder').innerHTML = renderHeader('about.html', null);
+    document.getElementById('footerPlaceholder').innerHTML = renderFooter(null);
+    initSharedBehavior();
+
+    // ── تحديث الرأس بعد معرفة حالة المستخدم ──
     onAuthStateChanged(auth, async user => {
       let userData = null, contactData = null;
       if (user) { try { const s=await getDoc(doc(db,'users',user.uid)); userData=s.data(); } catch(e){} }
