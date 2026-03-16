@@ -34,12 +34,40 @@
   <div id="footerPlaceholder"></div>
 
   <script type="module">
-    import { renderHeader, renderFooter } from './components.js';
+    import { renderHeader, renderFooter, initSharedBehavior } from './components.js';
     import { auth, db, onAuthStateChanged, collection, getDocs, doc, getDoc } from './firebase.js';
 
-    document.getElementById('headerPlaceholder').innerHTML = renderHeader('courses.html');
-    document.getElementById('footerPlaceholder').innerHTML = renderFooter();
-    initHeader();
+    // ── رسم رأس الزائر فوراً ثم تحديثه بعد التحقق من الجلسة ──
+    document.getElementById('headerPlaceholder').innerHTML = renderHeader('courses.html', null);
+    document.getElementById('footerPlaceholder').innerHTML = renderFooter(null);
+    initSharedBehavior();
+
+    // جلب بيانات المستخدم وتحديث الرأس
+    (async () => {
+      try {
+        const [authUser, contactSnap] = await Promise.all([
+          new Promise(resolve => onAuthStateChanged(auth, resolve, () => resolve(null))),
+          getDoc(doc(db, 'contactInfo', 'main')).catch(() => null),
+        ]);
+        if (authUser) {
+          const userSnap = await getDoc(doc(db, 'users', authUser.uid));
+          const userData = userSnap.exists() ? userSnap.data() : null;
+          let contactData = null;
+          if (contactSnap?.exists()) {
+            contactData = contactSnap.data();
+            getDocs(collection(db, 'contactInfo', 'main', 'channels')).then(ch => {
+              const channels = []; ch.forEach(d => channels.push(d.data()));
+              contactData.channels = channels.sort((a,b) => (a.order||0)-(b.order||0));
+              document.getElementById('footerPlaceholder').innerHTML = renderFooter(contactData);
+            }).catch(() => {});
+          }
+          document.getElementById('headerPlaceholder').innerHTML = renderHeader('courses.html', userData);
+          document.getElementById('footerPlaceholder').innerHTML = renderFooter(contactData);
+          initSharedBehavior();
+        }
+      } catch(e) {}
+    })();
+
 
     // Default courses from curriculum
     const DEFAULT_COURSES = [
