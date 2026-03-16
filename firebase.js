@@ -10,6 +10,7 @@ import {
   signOut,
   onAuthStateChanged,
   browserLocalPersistence,
+  browserSessionPersistence,
   setPersistence
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import {
@@ -38,9 +39,12 @@ const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getFirestore(app);
 
-// ── تعيين الاستمرارية مرة واحدة عند تهيئة التطبيق ──
-// هذا يُغني عن استدعاء setPersistence قبل كل عملية دخول
-setPersistence(auth, browserLocalPersistence).catch(() => {});
+// ── تعيين الاستمرارية — يرجع لـ Session إذا رفض الجوال localStorage ──
+// Safari iOS في الوضع الخاص يرفض browserLocalPersistence بصمت
+setPersistence(auth, browserLocalPersistence).catch(() => {
+  // الرجوع لـ Session Persistence إذا فشل Local (Safari private mode)
+  setPersistence(auth, browserSessionPersistence).catch(() => {});
+});
 
 // ── Analytics تُحمَّل في الخلفية فقط — لا تعيق التحميل ──
 if ('requestIdleCallback' in window) {
