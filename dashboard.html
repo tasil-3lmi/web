@@ -471,8 +471,8 @@
           setTimeout(() => reject(new Error('timeout')), ms)
         );
         const [userDocFirst, contactSnap] = await Promise.all([
-          Promise.race([getDoc(doc(db, 'users', user.uid)), firestoreTimeout(10000)]),
-          Promise.race([getDoc(doc(db, 'contactInfo', 'main')), firestoreTimeout(10000)]).catch(() => null),
+          Promise.race([getDoc(doc(db, 'users', user.uid)), firestoreTimeout(30000)]),
+          Promise.race([getDoc(doc(db, 'contactInfo', 'main')), firestoreTimeout(30000)]).catch(() => null),
         ]);
 
         // ── حماية من race condition عند التسجيل الجديد:
@@ -537,19 +537,27 @@
         loadNotifications(user.uid);
 
       } catch (err) {
-        // ── في حالة أي خطأ: أخفِ شاشة التحميل وأظهر رسالة واضحة ──
+        // ── خطأ في Firestore: استخدم بيانات Firebase Auth المتاحة بدل null ──
+        // هذا يضمن ظهور الرأس الصحيح (مسجّل) حتى لو تأخر Firestore
         console.error('خطأ في تحميل بيانات المستخدم:', err);
-        document.getElementById('loadingScreen').classList.add('hidden');
-        document.getElementById('dashWrapper').style.display = '';
-        document.getElementById('headerPlaceholder').innerHTML = renderHeader('dashboard.html', null);
+        const fallbackUserData = {
+          fullName: user.displayName || user.email?.split('@')[0] || 'مستخدم',
+          email: user.email || '',
+          role: 'student'  // افتراضي آمن — سيتحدث عند إعادة تحميل الصفحة
+        };
+        document.getElementById('headerPlaceholder').innerHTML = renderHeader('dashboard.html', fallbackUserData);
         document.getElementById('footerPlaceholder').innerHTML = renderFooter(null);
         initSharedBehavior();
-        // أظهر إشعار خطأ للمستخدم
+        document.getElementById('loadingScreen').classList.add('hidden');
+        document.getElementById('dashWrapper').style.display = '';
+        // رسالة خطأ خفيفة للمستخدم
         const errDiv = document.createElement('div');
-        errDiv.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#c0392b;color:#fff;padding:14px 24px;border-radius:10px;z-index:9999;font-size:0.95rem;box-shadow:0 4px 20px rgba(0,0,0,0.2);';
-        errDiv.textContent = 'حدث خطأ في تحميل البيانات. تحقق من الاتصال بالإنترنت وأعد المحاولة.';
+        errDiv.style.cssText = 'position:fixed;top:90px;left:50%;transform:translateX(-50%);background:rgba(59,27,64,0.92);color:#fff;padding:12px 24px;border-radius:10px;z-index:9999;font-size:0.88rem;box-shadow:0 4px 20px rgba(0,0,0,0.25);white-space:nowrap;';
+        errDiv.textContent = 'تعذّر تحميل البيانات، حاول تحديث الصفحة.';
         document.body.appendChild(errDiv);
-        setTimeout(() => errDiv.remove(), 6000);
+        setTimeout(() => errDiv.remove(), 5000);
+        // إعادة المحاولة تلقائياً بعد 3 ثوانٍ
+        setTimeout(() => window.location.reload(), 8000);
       }
     });
 
