@@ -355,9 +355,20 @@
     // قبل اكتمال setDoc → تحويل مبكر → dashboard لا تجد بيانات المستخدم
     let isRegistering = false;
 
-    // ── إذا كان مسجّلاً مسبقاً → حوّله فوراً ──
-    onAuthStateChanged(auth, user => {
-      if (user && !isRegistering) window.location.href = 'dashboard.html';
+    // ── إذا كان مسجّلاً مسبقاً → تحقق من الموافقة ثم حوّله ──
+    onAuthStateChanged(auth, async user => {
+      if (user && !isRegistering) {
+        try {
+          const snap = await getDoc(doc(db, 'users', user.uid));
+          const data = snap.data() || {};
+          // منع الوصول للوحة التحكم إذا الحساب pending أو rejected
+          if (data.status === 'pending' || data.status === 'rejected') {
+            await auth.signOut().catch(() => {});
+            return; // يبقى على صفحة التسجيل
+          }
+        } catch(e) { /* إذا فشل الفحص نسمح له بالمتابعة */ }
+        window.location.href = 'dashboard.html';
+      }
     });
 
     // ── تحميل components.js (الشعار) في الخلفية بعد رسم الصفحة ──
@@ -475,7 +486,41 @@
       try {
         const email = await emailFromIdentifier(identifier);
         // setPersistence مُعيَّن مسبقاً في firebase.js — لا نحتاجه هنا
-        await signInWithEmailAndPassword(auth, email, password);
+        const cred  = await signInWithEmailAndPassword(auth, email, password);
+
+        // ── فحص حالة الموافقة ──
+        const snap  = await getDoc(doc(db, 'users', cred.user.uid));
+        const data  = snap.data() || {};
+        if (data.status === 'pending') {
+          // حساب بانتظار الموافقة → أخرجه فوراً
+          await auth.signOut().catch(() => {});
+          errEl.innerHTML = `
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <strong>🕐 حسابك قيد المراجعة</strong>
+              <span style="font-size:0.85rem;font-weight:normal;">
+                طلبك لم يُوافَق عليه بعد. سيتم إخطارك عند قبولك من قِبَل إدارة المعهد.
+              </span>
+            </div>`;
+          errEl.classList.add('show');
+          btn.disabled = false;
+          btnText.textContent = 'تسجيل الدخول';
+          return;
+        }
+        if (data.status === 'rejected') {
+          await auth.signOut().catch(() => {});
+          errEl.innerHTML = `
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <strong>❌ تم رفض طلبك</strong>
+              <span style="font-size:0.85rem;font-weight:normal;">
+                عُذراً، تم رفض طلب تسجيلك. للاستفسار تواصل مع إدارة المعهد.
+              </span>
+            </div>`;
+          errEl.classList.add('show');
+          btn.disabled = false;
+          btnText.textContent = 'تسجيل الدخول';
+          return;
+        }
+
         window.location.href = 'dashboard.html';
       } catch (err) {
         errEl.textContent = 'بيانات غير صحيحة، تحقق من البريد وكلمة المرور.';
