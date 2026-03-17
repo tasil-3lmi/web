@@ -142,18 +142,11 @@ export function renderFooter(contactData = null) {
         <a href="mailto:${email}"><span class="icon">✉️</span><span>${email}</span></a>
         ${channelLinks}
       </div>
-      <div class="footer-col">
-        <h4>روابط سريعة</h4>
-        <a href="index.html"><span>الرئيسية</span></a>
-        <a href="courses.html"><span>المقررات</span></a>
-        <a href="schedule.html"><span>الجدول</span></a>
-        <a href="questions.html"><span>الأسئلة</span></a>
-        <a href="register.html"><span>سجّل الآن</span></a>
-      </div>
+
     </div>
     <div class="footer-bottom container">
       <p>© جميع الحقوق محفوظة لمعهد التأصيل العلمي</p>
-      <a href="register.html" class="footer-register-btn"><span>سجّل الآن</span><span>←</span></a>
+
     </div>
   </footer>`;
 }
