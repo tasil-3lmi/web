@@ -285,6 +285,38 @@
                 <div class="switch-link">
                   ليس لديك حساب؟ <a onclick="switchStudentTab('new')">سجّل الآن</a>
                 </div>
+                <div style="text-align:center;margin-top:10px;">
+                  <a onclick="showForgotPassword()" style="font-size:0.82rem;color:var(--text-soft);cursor:pointer;text-decoration:underline;">
+                    🔑 نسيت كلمة المرور؟
+                  </a>
+                </div>
+
+                <!-- Forgot Password Form (مخفي افتراضياً) -->
+                <div id="forgotPasswordBox" style="display:none;margin-top:20px;padding:20px;background:rgba(59,27,64,0.04);border:1px solid var(--border);border-radius:12px;">
+                  <p style="font-size:0.88rem;font-weight:bold;color:var(--purple);margin-bottom:12px;">
+                    🔑 إعادة تعيين كلمة المرور
+                  </p>
+                  <p style="font-size:0.82rem;color:var(--text-soft);margin-bottom:14px;line-height:1.7;">
+                    أدخل بريدك الإلكتروني وسنرسل لك رابطاً لإعادة تعيين كلمة المرور.
+                  </p>
+                  <div class="form-group">
+                    <label class="form-label">البريد الإلكتروني</label>
+                    <input type="email" class="form-control" id="forgot_email" placeholder="example@mail.com">
+                  </div>
+                  <div class="form-error"  id="forgot_error"></div>
+                  <div class="form-success" id="forgot_success"
+                    style="display:none;color:#1a7a4a;font-size:0.85rem;padding:10px 14px;background:rgba(26,122,74,0.08);border-radius:8px;margin-bottom:12px;"></div>
+                  <div style="display:flex;gap:10px;">
+                    <button type="button" class="btn" onclick="hideForgotPassword()"
+                      style="flex:1;background:#f0f0f0;color:#555;border:none;padding:12px;">
+                      إلغاء
+                    </button>
+                    <button type="button" class="submit-btn" onclick="sendResetEmail()" id="resetBtn"
+                      style="flex:2;margin-top:0;">
+                      <span id="resetBtnText">إرسال رابط الاسترداد</span>
+                    </button>
+                  </div>
+                </div>
               </form>
             </div>
           </div>
@@ -337,6 +369,9 @@
       doc, setDoc, getDoc, collection, getDocs
     } from './firebase.js';
 
+    import { sendPasswordResetEmail }
+      from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+
     // ── رسم الهيدر الأساسي فوراً بدون انتظار الشعار ──
     document.getElementById('headerPlaceholder').innerHTML = `
       <header class="site-header" id="siteHeader">
@@ -355,20 +390,9 @@
     // قبل اكتمال setDoc → تحويل مبكر → dashboard لا تجد بيانات المستخدم
     let isRegistering = false;
 
-    // ── إذا كان مسجّلاً مسبقاً → تحقق من الموافقة ثم حوّله ──
-    onAuthStateChanged(auth, async user => {
-      if (user && !isRegistering) {
-        try {
-          const snap = await getDoc(doc(db, 'users', user.uid));
-          const data = snap.data() || {};
-          // منع الوصول للوحة التحكم إذا الحساب pending أو rejected
-          if (data.status === 'pending' || data.status === 'rejected') {
-            await auth.signOut().catch(() => {});
-            return; // يبقى على صفحة التسجيل
-          }
-        } catch(e) { /* إذا فشل الفحص نسمح له بالمتابعة */ }
-        window.location.href = 'dashboard.html';
-      }
+    // ── إذا كان مسجّلاً مسبقاً → حوّله فوراً ──
+    onAuthStateChanged(auth, user => {
+      if (user && !isRegistering) window.location.href = 'dashboard.html';
     });
 
     // ── تحميل components.js (الشعار) في الخلفية بعد رسم الصفحة ──
@@ -486,41 +510,7 @@
       try {
         const email = await emailFromIdentifier(identifier);
         // setPersistence مُعيَّن مسبقاً في firebase.js — لا نحتاجه هنا
-        const cred  = await signInWithEmailAndPassword(auth, email, password);
-
-        // ── فحص حالة الموافقة ──
-        const snap  = await getDoc(doc(db, 'users', cred.user.uid));
-        const data  = snap.data() || {};
-        if (data.status === 'pending') {
-          // حساب بانتظار الموافقة → أخرجه فوراً
-          await auth.signOut().catch(() => {});
-          errEl.innerHTML = `
-            <div style="display:flex;flex-direction:column;gap:6px;">
-              <strong>🕐 حسابك قيد المراجعة</strong>
-              <span style="font-size:0.85rem;font-weight:normal;">
-                طلبك لم يُوافَق عليه بعد. سيتم إخطارك عند قبولك من قِبَل إدارة المعهد.
-              </span>
-            </div>`;
-          errEl.classList.add('show');
-          btn.disabled = false;
-          btnText.textContent = 'تسجيل الدخول';
-          return;
-        }
-        if (data.status === 'rejected') {
-          await auth.signOut().catch(() => {});
-          errEl.innerHTML = `
-            <div style="display:flex;flex-direction:column;gap:6px;">
-              <strong>❌ تم رفض طلبك</strong>
-              <span style="font-size:0.85rem;font-weight:normal;">
-                عُذراً، تم رفض طلب تسجيلك. للاستفسار تواصل مع إدارة المعهد.
-              </span>
-            </div>`;
-          errEl.classList.add('show');
-          btn.disabled = false;
-          btnText.textContent = 'تسجيل الدخول';
-          return;
-        }
-
+        await signInWithEmailAndPassword(auth, email, password);
         window.location.href = 'dashboard.html';
       } catch (err) {
         errEl.textContent = 'بيانات غير صحيحة، تحقق من البريد وكلمة المرور.';
@@ -558,6 +548,59 @@
         errEl.classList.add('show');
         btn.disabled = false;
         btnText.textContent = 'دخول المشرف';
+      }
+    };
+    // ============ FORGOT PASSWORD ============
+    window.showForgotPassword = function() {
+      document.getElementById('forgotPasswordBox').style.display = '';
+      document.getElementById('forgot_error').classList.remove('show');
+      document.getElementById('forgot_success').style.display = 'none';
+      document.getElementById('forgot_email').value = document.getElementById('login_identifier').value || '';
+      document.getElementById('forgot_email').focus();
+    };
+
+    window.hideForgotPassword = function() {
+      document.getElementById('forgotPasswordBox').style.display = 'none';
+    };
+
+    window.sendResetEmail = async function() {
+      const email  = document.getElementById('forgot_email').value.trim();
+      const errEl  = document.getElementById('forgot_error');
+      const sucEl  = document.getElementById('forgot_success');
+      const btn    = document.getElementById('resetBtn');
+      const btnTxt = document.getElementById('resetBtnText');
+      errEl.classList.remove('show');
+      sucEl.style.display = 'none';
+
+      if (!email) {
+        errEl.textContent = 'يرجاء إدخال البريد الإلكتروني';
+        errEl.classList.add('show');
+        return;
+      }
+
+      btn.disabled     = true;
+      btnTxt.innerHTML = '<span class="spinner"></span> جارٍ الإرسال...';
+
+      try {
+        await sendPasswordResetEmail(auth, email);
+        sucEl.textContent   = '✅ تم إرسال رابط الاسترداد! تحقق من بريدك الإلكتروني (وتحقق من مجلد الرسائل غير المرغوب فيها).';
+        sucEl.style.display = '';
+        btnTxt.textContent  = 'تم الإرسال ✅';
+        setTimeout(() => {
+          btn.disabled         = false;
+          btnTxt.textContent   = 'إرسال رابط الاسترداد';
+        }, 5000);
+      } catch(e) {
+        const msgs = {
+          'auth/user-not-found':      'لا يوجد حساب مرتبط بهذا البريد الإلكتروني',
+          'auth/invalid-email':       'صيغة البريد الإلكتروني غير صحيحة',
+          'auth/too-many-requests':   'محاولات كثيرة، انتظر قليلاً ثم حاول مجدداً',
+          'auth/network-request-failed': 'تحقق من اتصالك بالإنترنت',
+        };
+        errEl.textContent = msgs[e.code] || ('خطأ: ' + e.message);
+        errEl.classList.add('show');
+        btn.disabled   = false;
+        btnTxt.textContent = 'إرسال رابط الاسترداد';
       }
     };
   </script>
