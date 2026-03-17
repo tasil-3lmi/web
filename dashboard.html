@@ -431,6 +431,8 @@
   <div id="footerPlaceholder"></div>
 
     <script type="module">
+    console.log("Dashboard Script Loaded ✅");
+
     import { renderHeader, renderFooter, initSharedBehavior } from './components.js';
     import {
       auth, db,
@@ -522,6 +524,7 @@
     }, 15000);
 
     onAuthStateChanged(auth, async (user) => {
+      try {
       clearTimeout(authFallback);
       if (!user) { window.location.href = 'index.html'; return; }
 
@@ -600,6 +603,13 @@
           // Firestore فشل نهائياً — الصفحة تعمل بالبيانات المبدئية
           console.error('Firestore error:', err);
         });
+      } catch (err) {
+        console.error('Dashboard auth error:', err);
+        // أخفِ شاشة التحميل حتى لا تتجمد الصفحة
+        const screen = document.getElementById('loadingScreen');
+        if (screen) screen.classList.add('hidden');
+        const wrapper = document.getElementById('dashWrapper');
+        if (wrapper) wrapper.style.display = '';
       }
     });
 
