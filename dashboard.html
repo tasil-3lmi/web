@@ -513,8 +513,7 @@
         document.getElementById('headerPlaceholder').innerHTML = renderHeader('dashboard.html', userData);
         initSharedBehavior();
 
-        // تحديث Sidebar
-        const isAdmin = userData.role === 'superAdmin' || userData.role === 'supervisor';
+        // تحديث Sidebar  (isAdmin معرَّفة أعلاه — لا نُعيد تعريفها)
         document.getElementById('sideUserName').textContent  = userData.fullName || 'مستخدم';
         document.getElementById('sideRoleBadge').textContent = isAdmin ? 'مشرف' : 'طالب';
         document.getElementById('sideRoleBadge').className   = 'user-role-badge ' + (isAdmin ? 'role-admin' : 'role-student');
