@@ -217,7 +217,10 @@
           </div>
           <div id="supervisorNav" style="display:none;">
             <button class="sidebar-nav-item active" onclick="showPanel('supWelcome',event)"><span class="ico">🏠</span> الرئيسية</button>
-            <button class="sidebar-nav-item" onclick="showPanel('supStudents',event)"><span class="ico">👥</span> الطلاب</button>
+            <button class="sidebar-nav-item" onclick="showPanel('supStudents',event)">
+              <span class="ico">👥</span> الطلاب
+              <span id="pendingBadge" style="margin-right:auto;background:#e07000;color:white;border-radius:100px;padding:2px 7px;font-size:0.7rem;display:none;align-items:center;justify-content:center;">0</span>
+            </button>
           </div>
         </nav>
         <div class="sidebar-logout">
@@ -315,7 +318,7 @@
             <h3>الطلاب المسجلون</h3>
             <div style="overflow-x:auto;">
               <table class="students-table">
-                <thead><tr><th>الاسم</th><th>البريد</th><th>المرحلة</th><th>نسبة الإنجاز</th></tr></thead>
+                <thead><tr><th>الاسم</th><th>المرحلة</th><th>الهاتف</th><th>نسبة الإنجاز</th><th>الإجراءات</th></tr></thead>
                 <tbody id="studentsTableBody">
                   <tr><td colspan="4" style="text-align:center;padding:24px;">جارٍ التحميل...</td></tr>
                 </tbody>
@@ -474,9 +477,38 @@
         const userData  = snap.data();
         userProgress    = userData.progress || {};
         currentUserData = userData;
-        console.log('🟢 [7] Firestore data loaded, role:', userData.role);
+        console.log('🟢 [7] Firestore data loaded, role:', userData.role, '| status:', userData.status);
 
-        // 4. إعادة رسم الهيدر بالبيانات الكاملة — نفس الـ id "headerPlaceholder"
+        // ── حارس الموافقة: منع الطلاب غير المقبولين من رؤية اللوحة ──
+        const isAdmin = userData.role === 'superAdmin' || userData.role === 'supervisor';
+        if (!isAdmin && userData.status !== 'approved') {
+          await signOut(auth);
+          // أظهر شاشة الانتظار بدل لوحة التحكم
+          document.getElementById('dashWrapper').style.display = 'none';
+          document.getElementById('loadingScreen').classList.remove('hidden');
+          document.getElementById('loadingScreen').innerHTML = `
+            <div style="text-align:center;padding:32px;max-width:400px;">
+              ${userData.status === 'rejected'
+                ? `<div style="font-size:3.5rem;margin-bottom:16px;">❌</div>
+                   <h2 style="color:#b92d3a;font-size:1.3rem;margin-bottom:10px;">تم رفض طلبك</h2>
+                   <p style="color:#666;font-size:0.9rem;line-height:1.8;margin-bottom:24px;">
+                     عُذراً، تم رفض طلب تسجيلك في المعهد.<br>
+                     للاستفسار تواصل مع إدارة المعهد.
+                   </p>`
+                : `<div style="font-size:3.5rem;margin-bottom:16px;">🕐</div>
+                   <h2 style="color:#3b1b40;font-size:1.3rem;margin-bottom:10px;">حسابك قيد المراجعة</h2>
+                   <p style="color:#666;font-size:0.9rem;line-height:1.8;margin-bottom:24px;">
+                     طلبك وصلنا وهو بانتظار موافقة الإدارة.<br>
+                     ستتمكن من الدخول فور قبول طلبك.
+                   </p>`}
+              <a href="index.html"
+                style="display:inline-block;background:#3b1b40;color:white;padding:12px 32px;
+                       border-radius:100px;text-decoration:none;font-size:0.92rem;font-weight:bold;">
+                العودة للرئيسية
+              </a>
+            </div>`;
+          return;
+        }
         console.log('🟢 [7b] re-rendering header with full userData...');
         document.getElementById('headerPlaceholder').innerHTML = renderHeader('dashboard.html', userData);
         initSharedBehavior();
@@ -617,29 +649,155 @@
       if (!tbody) return;
       try {
         const snapshot = await getDocs(collection(db, 'users'));
-        const students = [];
-        snapshot.forEach(d => { if (d.data().role === 'student') students.push(d.data()); });
+        const allStudents = [];
+        snapshot.forEach(d => {
+          if (d.data().role === 'student') allStudents.push({ uid: d.id, ...d.data() });
+        });
+
+        // إحصائيات
+        const pending  = allStudents.filter(s => s.status === 'pending');
+        const approved = allStudents.filter(s => s.status === 'approved');
+        const rejected = allStudents.filter(s => s.status === 'rejected');
+
         const supStat = document.getElementById('sup-stat-students');
-        if (supStat) supStat.textContent = students.length;
-        if (!students.length) {
-          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;">لا يوجد طلاب مسجلون بعد</td></tr>';
-          return;
+        if (supStat) supStat.textContent = approved.length;
+
+        // شارة الطلاب المنتظرين على زر الـ sidebar
+        const pendingBadgeEl = document.getElementById('pendingBadge');
+        if (pendingBadgeEl) {
+          pendingBadgeEl.textContent = pending.length;
+          pendingBadgeEl.style.display = pending.length > 0 ? 'inline-flex' : 'none';
         }
-        const lvl = {primary:'ابتدائي',middle:'متوسط',high:'ثانوي',bachelor:'بكالوريوس',master:'ماجستير',phd:'دكتوراه',work:'وظيفة'};
-        tbody.innerHTML = students.map(s => {
-          const done = Object.values(s.progress||{}).filter(Boolean).length;
-          const pct  = Math.round((done/TOTAL_ITEMS)*100);
-          return `<tr>
-            <td><strong>${s.fullName||'—'}</strong></td>
-            <td>${s.email||'—'}</td>
-            <td>${lvl[s.level]||'—'}</td>
-            <td>
-              <span style="font-weight:bold;color:#3b1b40;margin-left:8px;">${pct}٪</span>
-              <div class="prog-mini" style="display:inline-block;"><div class="prog-mini-fill" style="width:${pct}%"></div></div>
-            </td></tr>`;
-        }).join('');
+
+        // تبويبات الحالة
+        const container = document.getElementById('studentsTableBody').closest('.sup-table-card') ||
+                          document.getElementById('studentsTableBody').parentElement;
+
+        // أضف التبويبات إذا لم تكن موجودة
+        let tabsEl = document.getElementById('studentsTabs');
+        if (!tabsEl) {
+          tabsEl = document.createElement('div');
+          tabsEl.id = 'studentsTabs';
+          tabsEl.style.cssText = 'display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;';
+          tabsEl.innerHTML = `
+            <button onclick="window.filterStudents('pending')"  id="tab-pending"
+              style="padding:8px 18px;border-radius:100px;border:none;font-family:inherit;font-size:0.82rem;font-weight:bold;cursor:pointer;background:rgba(212,140,0,0.12);color:#a07000;">
+              🕐 بانتظار الموافقة <span id="cnt-pending">(${pending.length})</span>
+            </button>
+            <button onclick="window.filterStudents('approved')" id="tab-approved"
+              style="padding:8px 18px;border-radius:100px;border:none;font-family:inherit;font-size:0.82rem;font-weight:bold;cursor:pointer;background:rgba(26,122,74,0.1);color:#1a7a4a;">
+              ✅ مقبولون <span id="cnt-approved">(${approved.length})</span>
+            </button>
+            <button onclick="window.filterStudents('rejected')" id="tab-rejected"
+              style="padding:8px 18px;border-radius:100px;border:none;font-family:inherit;font-size:0.82rem;font-weight:bold;cursor:pointer;background:rgba(185,45,58,0.08);color:#b92d3a;">
+              ❌ مرفوضون <span id="cnt-rejected">(${rejected.length})</span>
+            </button>`;
+          tbody.parentElement.parentElement.insertBefore(tabsEl, tbody.parentElement);
+        } else {
+          document.getElementById('cnt-pending').textContent  = `(${pending.length})`;
+          document.getElementById('cnt-approved').textContent = `(${approved.length})`;
+          document.getElementById('cnt-rejected').textContent = `(${rejected.length})`;
+        }
+
+        // حفظ الكل في window لإعادة الاستخدام عند الفلترة
+        window._allStudents = allStudents;
+        window._TOTAL_ITEMS = TOTAL_ITEMS;
+
+        // عرض الطلاب المنتظرين أولاً إذا يوجد، وإلا المقبولون
+        renderStudentsTable(pending.length > 0 ? 'pending' : 'approved');
+
       } catch(e) { console.error('loadStudentsList error:', e); }
     }
+
+    function renderStudentsTable(filter) {
+      const tbody  = document.getElementById('studentsTableBody');
+      const all    = window._allStudents || [];
+      const total  = window._TOTAL_ITEMS || TOTAL_ITEMS;
+      const list   = all.filter(s => (s.status || 'pending') === filter);
+      const lvl    = {primary:'ابتدائي',middle:'متوسط',high:'ثانوي',bachelor:'بكالوريوس',master:'ماجستير',phd:'دكتوراه',work:'وظيفة'};
+
+      // تفعيل التبويب المحدد
+      ['pending','approved','rejected'].forEach(f => {
+        const btn = document.getElementById('tab-' + f);
+        if (btn) btn.style.outline = f === filter ? '2px solid currentColor' : 'none';
+      });
+
+      if (!list.length) {
+        const msgs = { pending:'لا يوجد طلاب بانتظار الموافقة', approved:'لا يوجد طلاب مقبولون بعد', rejected:'لا يوجد طلاب مرفوضون' };
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#888;padding:28px;">${msgs[filter] || '—'}</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = list.map(s => {
+        const done = Object.values(s.progress||{}).filter(Boolean).length;
+        const pct  = Math.round((done / total) * 100);
+        const actionBtns = filter === 'pending' ? `
+          <button onclick="window.approveStudent('${s.uid}')"
+            style="background:#1a7a4a;color:white;border:none;padding:6px 14px;border-radius:100px;font-size:0.78rem;font-weight:bold;cursor:pointer;margin-left:6px;">
+            ✅ قبول
+          </button>
+          <button onclick="window.rejectStudent('${s.uid}')"
+            style="background:#b92d3a;color:white;border:none;padding:6px 14px;border-radius:100px;font-size:0.78rem;font-weight:bold;cursor:pointer;">
+            ❌ رفض
+          </button>` : filter === 'rejected' ? `
+          <button onclick="window.approveStudent('${s.uid}')"
+            style="background:#1a7a4a;color:white;border:none;padding:6px 14px;border-radius:100px;font-size:0.78rem;font-weight:bold;cursor:pointer;">
+            ✅ قبول
+          </button>` : `
+          <button onclick="window.rejectStudent('${s.uid}')"
+            style="background:rgba(185,45,58,0.1);color:#b92d3a;border:1px solid rgba(185,45,58,0.3);padding:6px 14px;border-radius:100px;font-size:0.78rem;font-weight:bold;cursor:pointer;">
+            إلغاء القبول
+          </button>`;
+
+        return `<tr>
+          <td><strong>${s.fullName||'—'}</strong><br><span style="font-size:0.75rem;color:#888;">${s.email||''}</span></td>
+          <td>${lvl[s.level]||'—'}</td>
+          <td>${s.phone||'—'}</td>
+          <td>
+            <span style="font-weight:bold;color:#3b1b40;margin-left:8px;">${pct}٪</span>
+            <div class="prog-mini" style="display:inline-block;"><div class="prog-mini-fill" style="width:${pct}%"></div></div>
+          </td>
+          <td style="white-space:nowrap;">${actionBtns}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    window.filterStudents = function(filter) { renderStudentsTable(filter); };
+
+    window.approveStudent = async function(uid) {
+      try {
+        await updateDoc(doc(db, 'users', uid), { status: 'approved' });
+        // تحديث الـ cache محلياً
+        const s = (window._allStudents||[]).find(x => x.uid === uid);
+        if (s) s.status = 'approved';
+        const pending  = (window._allStudents||[]).filter(x => x.status === 'pending').length;
+        const approved = (window._allStudents||[]).filter(x => x.status === 'approved').length;
+        const rejected = (window._allStudents||[]).filter(x => x.status === 'rejected').length;
+        document.getElementById('cnt-pending').textContent  = `(${pending})`;
+        document.getElementById('cnt-approved').textContent = `(${approved})`;
+        document.getElementById('cnt-rejected').textContent = `(${rejected})`;
+        const badge = document.getElementById('pendingBadge');
+        if (badge) { badge.textContent = pending; badge.style.display = pending > 0 ? 'inline-flex' : 'none'; }
+        renderStudentsTable('pending');
+      } catch(e) { console.error('approveStudent error:', e); }
+    };
+
+    window.rejectStudent = async function(uid) {
+      try {
+        await updateDoc(doc(db, 'users', uid), { status: 'rejected' });
+        const s = (window._allStudents||[]).find(x => x.uid === uid);
+        if (s) s.status = 'rejected';
+        const pending  = (window._allStudents||[]).filter(x => x.status === 'pending').length;
+        const approved = (window._allStudents||[]).filter(x => x.status === 'approved').length;
+        const rejected = (window._allStudents||[]).filter(x => x.status === 'rejected').length;
+        document.getElementById('cnt-pending').textContent  = `(${pending})`;
+        document.getElementById('cnt-approved').textContent = `(${approved})`;
+        document.getElementById('cnt-rejected').textContent = `(${rejected})`;
+        const badge = document.getElementById('pendingBadge');
+        if (badge) { badge.textContent = pending; badge.style.display = pending > 0 ? 'inline-flex' : 'none'; }
+        renderStudentsTable('pending');
+      } catch(e) { console.error('rejectStudent error:', e); }
+    };
 
     // ── LOGOUT ──
     window.handleLogout = async function() {
