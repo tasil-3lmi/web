@@ -5,264 +5,169 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>الرئيسية — معهد التأصيل العلمي</title>
   <link rel="stylesheet" href="styles.css">
-  <style>
-    body { background: #f7f5fa; }
 
-    /* ===== LOADING ===== */
+  <!-- ============================================================
+       1. window.onerror — يُظهر أي خطأ برمجي في alert واضح
+       ============================================================ -->
+  <script>
+    window.onerror = function(message, source, lineno, colno, error) {
+      var msg = '🚨 خطأ برمجي:\n\n'
+        + 'الرسالة: ' + message + '\n'
+        + 'الملف: '   + source  + '\n'
+        + 'السطر: '   + lineno  + ':' + colno + '\n\n'
+        + (error && error.stack ? error.stack : '');
+      alert(msg);
+      console.error('window.onerror:', message, source, lineno, colno, error);
+      return false;
+    };
+    window.onunhandledrejection = function(event) {
+      var msg = '🚨 Promise مرفوض:\n\n' + (event.reason && event.reason.stack ? event.reason.stack : event.reason);
+      alert(msg);
+      console.error('unhandledrejection:', event.reason);
+    };
+    console.log('🟢 [1] onerror handler set');
+  </script>
+
+  <style>
+    body { background: #f7f5fa; margin: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+
+    /* LOADING */
     .loading-screen {
-      position: fixed; inset: 0;
-      background: var(--white);
+      position: fixed; inset: 0; background: #fff;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      z-index: 9999; gap: 16px;
-      transition: opacity 0.4s;
+      z-index: 9999; gap: 16px; transition: opacity 0.4s;
     }
     .loading-screen.hidden { opacity: 0; pointer-events: none; }
-    .loading-screen img { width: 80px; height: 80px; object-fit: contain; animation: float 2s ease-in-out infinite; }
-    .loading-screen p { font-size: 0.9rem; color: var(--text-soft); }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ===== DASHBOARD LAYOUT ===== */
+    /* TEMP HEADER */
+    .temp-header {
+      background: #3b1b40; color: white; padding: 0 32px;
+      height: 70px; display: flex; align-items: center; justify-content: space-between;
+      position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+    }
+    .temp-header .site-title { font-size: 1.05rem; font-weight: bold; }
+    .temp-header .logout-link {
+      background: rgba(255,255,255,0.15); border: none; color: white;
+      padding: 8px 18px; border-radius: 100px; cursor: pointer; font-size: 0.82rem; font-family: inherit;
+    }
+    .temp-header .logout-link:hover { background: rgba(255,255,255,0.25); }
+
+    /* DASHBOARD LAYOUT */
     .dash-wrapper {
-      display: grid;
-      grid-template-columns: 260px 1fr;
-      min-height: 100vh;
-      padding-top: 80px;
+      display: grid; grid-template-columns: 260px 1fr;
+      min-height: 100vh; padding-top: 70px;
     }
 
     /* SIDEBAR */
     .dash-sidebar {
-      background: var(--white);
-      border-left: 1px solid var(--border);
-      padding: 32px 0;
-      position: sticky;
-      top: 80px;
-      height: calc(100vh - 80px);
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
+      background: #fff; border-left: 1px solid #eee;
+      padding: 32px 0; position: sticky; top: 70px;
+      height: calc(100vh - 70px); overflow-y: auto; display: flex; flex-direction: column;
     }
-    .sidebar-user {
-      padding: 0 24px 24px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 16px;
-    }
+    .sidebar-user { padding: 0 24px 24px; border-bottom: 1px solid #eee; margin-bottom: 16px; }
     .user-avatar {
       width: 56px; height: 56px;
-      background: linear-gradient(135deg, var(--purple), var(--purple-light));
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.4rem; color: white;
-      margin-bottom: 12px;
+      background: linear-gradient(135deg, #3b1b40, #6b3070);
+      border-radius: 50%; display: flex; align-items: center;
+      justify-content: center; font-size: 1.4rem; color: white; margin-bottom: 12px;
     }
-    .user-name { font-size: 0.95rem; font-weight: bold; color: var(--purple); margin-bottom: 4px; }
+    .user-name { font-size: 0.95rem; font-weight: bold; color: #3b1b40; margin-bottom: 4px; }
     .user-role-badge { display: inline-block; padding: 3px 10px; border-radius: 100px; font-size: 0.72rem; font-weight: bold; }
-    .role-student { background: rgba(59,27,64,0.08); color: var(--purple); }
-    .role-admin { background: rgba(212,180,142,0.2); color: var(--gold-dark); }
-
+    .role-student { background: rgba(59,27,64,0.08); color: #3b1b40; }
+    .role-admin { background: rgba(212,180,142,0.2); color: #a07840; }
     .sidebar-nav { padding: 0 12px; flex: 1; }
     .sidebar-nav-item {
-      display: flex; align-items: center; gap: 12px;
-      padding: 12px 16px;
-      border-radius: var(--radius-sm);
-      font-size: 0.9rem;
-      color: var(--text-soft);
-      cursor: pointer;
-      transition: var(--transition);
-      border: none; background: none; width: 100%;
+      display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+      border-radius: 8px; font-size: 0.9rem; color: #888; cursor: pointer;
+      transition: all .2s; border: none; background: none; width: 100%;
       text-align: right; font-family: inherit;
     }
-    .sidebar-nav-item:hover, .sidebar-nav-item.active {
-      background: rgba(59,27,64,0.07);
-      color: var(--purple);
-      font-weight: bold;
-    }
+    .sidebar-nav-item:hover, .sidebar-nav-item.active { background: rgba(59,27,64,0.07); color: #3b1b40; font-weight: bold; }
     .sidebar-nav-item .ico { font-size: 1.1rem; flex-shrink: 0; }
-
-    .sidebar-logout {
-      padding: 16px 24px 0;
-      border-top: 1px solid var(--border);
-      margin-top: auto;
-    }
+    .sidebar-logout { padding: 16px 24px 0; border-top: 1px solid #eee; margin-top: auto; }
     .logout-btn {
-      width: 100%; padding: 12px; border-radius: var(--radius-sm);
-      border: 1.5px solid rgba(185,45,58,0.2);
-      background: rgba(185,45,58,0.05);
-      color: #b92d3a;
-      font-family: inherit; font-size: 0.88rem; font-weight: bold;
-      cursor: pointer; transition: var(--transition);
-      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%; padding: 12px; border-radius: 8px;
+      border: 1.5px solid rgba(185,45,58,0.2); background: rgba(185,45,58,0.05);
+      color: #b92d3a; font-family: inherit; font-size: 0.88rem; font-weight: bold;
+      cursor: pointer; transition: all .2s; display: flex; align-items: center; justify-content: center; gap: 8px;
     }
     .logout-btn:hover { background: #b92d3a; color: white; }
 
-    /* MAIN CONTENT */
-    .dash-main {
-      padding: 40px;
-      max-width: 960px;
-    }
+    /* MAIN */
+    .dash-main { padding: 40px; max-width: 960px; }
 
-    /* WELCOME */
+    /* WELCOME BANNER */
     .welcome-banner {
-      background: linear-gradient(135deg, var(--purple), var(--purple-light));
-      border-radius: 20px;
-      padding: 36px 40px;
-      margin-bottom: 32px;
-      position: relative;
-      overflow: hidden;
-    }
-    .welcome-banner::after {
-      content: '';
-      position: absolute;
-      top: -60px; left: -60px;
-      width: 280px; height: 280px;
-      background: radial-gradient(circle, rgba(255,255,255,0.06), transparent 70%);
-      border-radius: 50%;
+      background: linear-gradient(135deg, #3b1b40, #6b3070);
+      border-radius: 20px; padding: 36px 40px; margin-bottom: 32px;
     }
     .welcome-banner .greeting { font-size: 0.85rem; color: rgba(255,255,255,0.65); margin-bottom: 6px; }
-    .welcome-banner h2 { font-size: 1.6rem; color: var(--white); margin-bottom: 6px; }
-    .welcome-banner h2 span { color: var(--gold); }
-    .welcome-banner p { font-size: 0.88rem; color: rgba(255,255,255,0.6); }
+    .welcome-banner h2 { font-size: 1.6rem; color: #fff; margin-bottom: 6px; }
+    .welcome-banner h2 span { color: #d4b48e; }
+    .welcome-banner p { font-size: 0.88rem; color: rgba(255,255,255,0.6); margin: 0; }
 
-    /* STATS ROW */
-    .student-stats {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 16px;
-      margin-bottom: 32px;
-    }
-    .stat-box {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 22px 20px;
-      box-shadow: 0 2px 12px rgba(59,27,64,0.06);
-    }
-    .stat-box .s-num { font-size: 2rem; font-weight: bold; color: var(--purple); display: block; line-height: 1; margin-bottom: 6px; }
-    .stat-box .s-lbl { font-size: 0.78rem; color: var(--text-soft); }
+    /* STATS */
+    .student-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; margin-bottom: 32px; }
+    .stat-box { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 22px 20px; box-shadow: 0 2px 12px rgba(59,27,64,0.06); }
+    .stat-box .s-num { font-size: 2rem; font-weight: bold; color: #3b1b40; display: block; line-height: 1; margin-bottom: 6px; }
+    .stat-box .s-lbl { font-size: 0.78rem; color: #888; }
 
     /* PROGRESS CARD */
-    .progress-card {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 28px;
-      margin-bottom: 24px;
-      box-shadow: 0 2px 12px rgba(59,27,64,0.06);
-    }
-    .progress-card h3 { font-size: 1.05rem; font-weight: bold; color: var(--purple); margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+    .progress-card { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 28px; margin-bottom: 24px; box-shadow: 0 2px 12px rgba(59,27,64,0.06); }
+    .progress-card h3 { font-size: 1.05rem; font-weight: bold; color: #3b1b40; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
     .overall-progress { margin-bottom: 28px; }
     .op-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
-    .op-label { font-size: 0.9rem; font-weight: bold; color: var(--purple); }
-    .op-pct { font-size: 1.2rem; font-weight: bold; color: var(--gold-dark); }
+    .op-label { font-size: 0.9rem; font-weight: bold; color: #3b1b40; }
+    .op-pct { font-size: 1.2rem; font-weight: bold; color: #a07840; }
     .progress-bar-bg { height: 10px; background: rgba(59,27,64,0.08); border-radius: 5px; overflow: hidden; }
-    .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--purple), var(--gold)); border-radius: 5px; transition: width 1s cubic-bezier(0.4,0,0.2,1); }
+    .progress-bar-fill { height: 100%; background: linear-gradient(90deg, #3b1b40, #d4b48e); border-radius: 5px; transition: width 1s ease; }
 
-    /* CURRICULUM CHECKLIST */
+    /* CURRICULUM */
     .curriculum-section { margin-bottom: 16px; }
-    .cs-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 14px 18px;
-      background: linear-gradient(135deg, rgba(59,27,64,0.06), rgba(212,180,142,0.06));
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      user-select: none;
-      transition: var(--transition);
-    }
+    .cs-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: rgba(59,27,64,0.06); border-radius: 8px; cursor: pointer; user-select: none; }
     .cs-header:hover { background: rgba(59,27,64,0.09); }
     .cs-header-left { display: flex; align-items: center; gap: 12px; }
-    .cs-num {
-      width: 32px; height: 32px;
-      background: var(--purple);
-      color: white;
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.8rem; font-weight: bold; flex-shrink: 0;
-    }
-    .cs-title { font-size: 0.92rem; font-weight: bold; color: var(--purple); }
-    .cs-count { font-size: 0.78rem; color: var(--text-soft); margin-top: 2px; }
-    .cs-progress-mini { font-size: 0.82rem; color: var(--gold-dark); font-weight: bold; }
-    .cs-toggle { color: var(--purple); transition: transform 0.3s; font-size: 1rem; }
+    .cs-num { width: 32px; height: 32px; background: #3b1b40; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: bold; flex-shrink: 0; }
+    .cs-title { font-size: 0.92rem; font-weight: bold; color: #3b1b40; }
+    .cs-count { font-size: 0.78rem; color: #888; margin-top: 2px; }
+    .cs-progress-mini { font-size: 0.82rem; color: #a07840; font-weight: bold; }
+    .cs-toggle { color: #3b1b40; transition: transform 0.3s; font-size: 1rem; }
     .curriculum-section.open .cs-toggle { transform: rotate(180deg); }
     .cs-items { display: none; padding: 8px 0 4px; }
     .curriculum-section.open .cs-items { display: block; }
-
-    .matn-check {
-      display: flex; align-items: center; gap: 14px;
-      padding: 12px 18px;
-      border-radius: var(--radius-sm);
-      transition: var(--transition);
-      cursor: pointer;
-    }
+    .matn-check { display: flex; align-items: center; gap: 14px; padding: 12px 18px; border-radius: 8px; transition: all .2s; cursor: pointer; }
     .matn-check:hover { background: rgba(59,27,64,0.04); }
-    .matn-check input[type=checkbox] {
-      width: 18px; height: 18px;
-      accent-color: var(--purple);
-      cursor: pointer; flex-shrink: 0;
-    }
-    .matn-check label { font-size: 0.88rem; color: var(--text-main); cursor: pointer; flex: 1; }
-    .matn-check.done label { text-decoration: line-through; color: var(--text-soft); }
+    .matn-check input[type=checkbox] { width: 18px; height: 18px; accent-color: #3b1b40; cursor: pointer; flex-shrink: 0; }
+    .matn-check span { font-size: 0.88rem; color: #333; }
+    .matn-check.done span { text-decoration: line-through; color: #888; }
 
-    /* SUPERVISOR VIEW */
-    .sup-table-card {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 28px;
-      box-shadow: 0 2px 12px rgba(59,27,64,0.06);
-      margin-bottom: 24px;
-    }
-    .sup-table-card h3 { font-size: 1.05rem; font-weight: bold; color: var(--purple); margin-bottom: 20px; }
+    /* SUPERVISOR */
+    .sup-table-card { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 28px; box-shadow: 0 2px 12px rgba(59,27,64,0.06); margin-bottom: 24px; }
+    .sup-table-card h3 { font-size: 1.05rem; font-weight: bold; color: #3b1b40; margin-bottom: 20px; }
     .students-table { width: 100%; border-collapse: collapse; }
-    .students-table th, .students-table td { padding: 12px 16px; text-align: right; border-bottom: 1px solid var(--border); font-size: 0.88rem; }
-    .students-table th { font-weight: bold; color: var(--purple); background: rgba(59,27,64,0.03); }
-    .students-table tr:hover td { background: rgba(212,180,142,0.05); }
+    .students-table th, .students-table td { padding: 12px 16px; text-align: right; border-bottom: 1px solid #eee; font-size: 0.88rem; }
+    .students-table th { font-weight: bold; color: #3b1b40; background: rgba(59,27,64,0.03); }
     .prog-mini { height: 6px; background: rgba(59,27,64,0.08); border-radius: 3px; overflow: hidden; width: 80px; display: inline-block; vertical-align: middle; }
-    .prog-mini-fill { height: 100%; background: linear-gradient(90deg, var(--purple), var(--gold)); border-radius: 3px; }
+    .prog-mini-fill { height: 100%; background: linear-gradient(90deg, #3b1b40, #d4b48e); border-radius: 3px; }
 
-    /* PANEL VISIBILITY */
+    /* PANELS */
     .panel { display: none; }
-    .panel.active { display: block; animation: fadeIn 0.3s ease; }
+    .panel.active { display: block; }
 
+    /* FOOTER */
+    .temp-footer { background: #3b1b40; color: rgba(255,255,255,0.6); text-align: center; padding: 24px; font-size: 0.82rem; margin-top: 40px; }
+
+    /* MOBILE */
     @media (max-width: 860px) {
       .dash-wrapper { grid-template-columns: 1fr; }
       .dash-main { padding: 24px 20px; }
       .welcome-banner { padding: 24px; }
-
-      /* Sidebar كـ Drawer في الجوال */
-      .dash-sidebar {
-        position: fixed;
-        top: 80px; right: -280px;
-        width: 260px;
-        height: calc(100vh - 80px);
-        z-index: 900;
-        transition: right 0.28s cubic-bezier(.4,0,.2,1);
-        box-shadow: -4px 0 24px rgba(59,27,64,0.18);
-      }
+      .dash-sidebar { position: fixed; top: 70px; right: -280px; width: 260px; height: calc(100vh - 70px); z-index: 900; transition: right 0.28s; box-shadow: -4px 0 24px rgba(59,27,64,0.18); }
       .dash-sidebar.open { right: 0; }
-      .sidebar-overlay {
-        display: none;
-        position: fixed; inset: 0;
-        background: rgba(59,27,64,0.35);
-        z-index: 850;
-        backdrop-filter: blur(2px);
-      }
+      .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(59,27,64,0.35); z-index: 850; }
       .sidebar-overlay.show { display: block; }
-      .mobile-menu-toggle {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        position: fixed;
-        bottom: 24px; right: 20px;
-        width: 52px; height: 52px;
-        border-radius: 50%;
-        background: var(--purple);
-        color: white;
-        border: none;
-        box-shadow: 0 4px 20px rgba(59,27,64,0.4);
-        cursor: pointer;
-        font-size: 1.3rem;
-        z-index: 800;
-        transition: var(--transition);
-      }
-      .mobile-menu-toggle:hover { background: var(--purple-dark); transform: scale(1.05); }
+      .mobile-menu-toggle { display: flex; align-items: center; justify-content: center; position: fixed; bottom: 24px; right: 20px; width: 52px; height: 52px; border-radius: 50%; background: #3b1b40; color: white; border: none; box-shadow: 0 4px 20px rgba(59,27,64,0.4); cursor: pointer; font-size: 1.3rem; z-index: 800; }
     }
     @media (min-width: 861px) {
       .mobile-menu-toggle { display: none; }
@@ -272,42 +177,44 @@
 </head>
 <body>
 
-  <!-- Loading -->
+  <!-- شاشة التحميل -->
   <div class="loading-screen" id="loadingScreen">
-    <div class="spinner" style="border-color:rgba(59,27,64,0.2);border-top-color:var(--purple);width:40px;height:40px;border-width:3px;"></div>
+    <div style="width:40px;height:40px;border:3px solid rgba(59,27,64,0.15);border-top-color:#3b1b40;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+    <p style="color:#888;font-size:0.9rem;margin:0;">جارٍ التحميل...</p>
   </div>
 
-  <div id="headerPlaceholder"></div>
+  <!-- 2. HEADER مُضمَّن مباشرة — بدون components.js -->
+  <header class="temp-header" id="inlineHeader">
+    <div class="site-title">🕌 معهد التأصيل العلمي</div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span style="font-size:0.85rem;opacity:0.8;" id="headerUserName">جارٍ التحميل...</span>
+      <button class="logout-link" onclick="handleLogout()">🚪 تسجيل الخروج</button>
+    </div>
+  </header>
 
-  <!-- Sidebar overlay (جوال) -->
+  <!-- Sidebar overlay + toggle -->
   <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+  <button class="mobile-menu-toggle" id="mobileSidebarToggle" onclick="toggleSidebar()">☰</button>
 
-  <!-- زر فتح الـ sidebar في الجوال -->
-  <button class="mobile-menu-toggle" id="mobileSidebarToggle" onclick="toggleSidebar()" title="القائمة" aria-label="القائمة">
-    ☰
-  </button>
-
-  <div class="page-content">
+  <div style="padding-top:70px;">
     <div class="dash-wrapper" id="dashWrapper" style="display:none;">
 
       <!-- SIDEBAR -->
       <aside class="dash-sidebar">
         <div class="sidebar-user">
-          <div class="user-avatar" id="sideAvatar">👤</div>
+          <div class="user-avatar">👤</div>
           <div class="user-name" id="sideUserName">...</div>
-          <span class="user-role-badge" id="sideRoleBadge">طالب</span>
+          <span class="user-role-badge role-student" id="sideRoleBadge">طالب</span>
         </div>
-        <nav class="sidebar-nav" id="sidebarNav">
-          <!-- Student nav -->
+        <nav class="sidebar-nav">
           <div id="studentNav">
-            <button class="sidebar-nav-item active" onclick="showPanel('welcome')"><span class="ico">🏠</span> الرئيسية</button>
-            <button class="sidebar-nav-item" onclick="showPanel('progress')"><span class="ico">📊</span> تقرير الإنجاز</button>
-            <button class="sidebar-nav-item" onclick="showPanel('curriculum')"><span class="ico">📚</span> خطة الدراسة</button>
+            <button class="sidebar-nav-item active" onclick="showPanel('welcome',event)"><span class="ico">🏠</span> الرئيسية</button>
+            <button class="sidebar-nav-item" onclick="showPanel('progress',event)"><span class="ico">📊</span> تقرير الإنجاز</button>
+            <button class="sidebar-nav-item" onclick="showPanel('curriculum',event)"><span class="ico">📚</span> خطة الدراسة</button>
           </div>
-          <!-- Supervisor nav -->
           <div id="supervisorNav" style="display:none;">
-            <button class="sidebar-nav-item active" onclick="showPanel('supWelcome')"><span class="ico">🏠</span> الرئيسية</button>
-            <button class="sidebar-nav-item" onclick="showPanel('supStudents')"><span class="ico">👥</span> الطلاب</button>
+            <button class="sidebar-nav-item active" onclick="showPanel('supWelcome',event)"><span class="ico">🏠</span> الرئيسية</button>
+            <button class="sidebar-nav-item" onclick="showPanel('supStudents',event)"><span class="ico">👥</span> الطلاب</button>
           </div>
         </nav>
         <div class="sidebar-logout">
@@ -318,7 +225,7 @@
       <!-- MAIN -->
       <main class="dash-main">
 
-        <!-- ===== STUDENT: WELCOME ===== -->
+        <!-- STUDENT: WELCOME -->
         <div class="panel active" id="panel-welcome">
           <div class="welcome-banner">
             <div class="greeting">مرحباً بك في</div>
@@ -331,7 +238,6 @@
             <div class="stat-box"><span class="s-num" id="stat-pct">٠٪</span><span class="s-lbl">نسبة الإنجاز</span></div>
             <div class="stat-box"><span class="s-num">١</span><span class="s-lbl">سنة دراسية</span></div>
           </div>
-          <!-- Quick progress -->
           <div class="progress-card">
             <h3>📈 نظرة سريعة على تقدمك</h3>
             <div class="overall-progress">
@@ -342,16 +248,16 @@
               <div class="progress-bar-bg"><div class="progress-bar-fill" id="overallBar" style="width:0%"></div></div>
             </div>
             <div style="margin-top:16px;">
-              <button class="btn btn-primary" onclick="showPanel('curriculum')" style="font-size:0.88rem;padding:12px 24px;">
+              <button onclick="showPanel('curriculum',event)" style="background:#3b1b40;color:white;border:none;padding:12px 24px;border-radius:100px;font-size:0.88rem;font-family:inherit;cursor:pointer;">
                 📚 عرض خطة الدراسة
               </button>
             </div>
           </div>
         </div>
 
-        <!-- ===== STUDENT: PROGRESS ===== -->
+        <!-- STUDENT: PROGRESS -->
         <div class="panel" id="panel-progress">
-          <h2 style="font-size:1.4rem;color:var(--purple);margin-bottom:24px;">📊 تقرير الإنجاز</h2>
+          <h2 style="font-size:1.4rem;color:#3b1b40;margin-bottom:24px;">📊 تقرير الإنجاز</h2>
           <div class="progress-card">
             <h3>📈 الإنجاز الكلي</h3>
             <div class="overall-progress">
@@ -362,16 +268,15 @@
               <div class="progress-bar-bg"><div class="progress-bar-fill" id="overallBar2" style="width:0%"></div></div>
             </div>
           </div>
-          <!-- Phase by phase progress -->
-          <div class="progress-card" id="phaseProgressContainer">
+          <div class="progress-card">
             <h3>📋 تفصيل المراحل</h3>
             <div id="phaseProgressList"></div>
           </div>
         </div>
 
-        <!-- ===== STUDENT: CURRICULUM ===== -->
+        <!-- STUDENT: CURRICULUM -->
         <div class="panel" id="panel-curriculum">
-          <h2 style="font-size:1.4rem;color:var(--purple);margin-bottom:24px;">📚 خطة الدراسة</h2>
+          <h2 style="font-size:1.4rem;color:#3b1b40;margin-bottom:24px;">📚 خطة الدراسة</h2>
           <div class="progress-card">
             <h3>🎯 إجمالي التقدم</h3>
             <div class="overall-progress">
@@ -382,14 +287,13 @@
               <div class="progress-bar-bg"><div class="progress-bar-fill" id="overallBar3" style="width:0%"></div></div>
             </div>
           </div>
-
-          <div class="progress-card" id="curriculumChecklistContainer">
+          <div class="progress-card">
             <h3>✅ قائمة المتون — ضع علامة على ما أتممته</h3>
             <div id="curriculumChecklist"></div>
           </div>
         </div>
 
-        <!-- ===== SUPERVISOR: WELCOME ===== -->
+        <!-- SUPERVISOR: WELCOME -->
         <div class="panel" id="panel-supWelcome">
           <div class="welcome-banner">
             <div class="greeting">مرحباً بك أيها المشرف في</div>
@@ -401,23 +305,16 @@
           </div>
         </div>
 
-        <!-- ===== SUPERVISOR: STUDENTS ===== -->
+        <!-- SUPERVISOR: STUDENTS -->
         <div class="panel" id="panel-supStudents">
-          <h2 style="font-size:1.4rem;color:var(--purple);margin-bottom:24px;">👥 قائمة الطلاب</h2>
+          <h2 style="font-size:1.4rem;color:#3b1b40;margin-bottom:24px;">👥 قائمة الطلاب</h2>
           <div class="sup-table-card">
             <h3>الطلاب المسجلون</h3>
             <div style="overflow-x:auto;">
               <table class="students-table">
-                <thead>
-                  <tr>
-                    <th>الاسم</th>
-                    <th>البريد</th>
-                    <th>المرحلة</th>
-                    <th>نسبة الإنجاز</th>
-                  </tr>
-                </thead>
+                <thead><tr><th>الاسم</th><th>البريد</th><th>المرحلة</th><th>نسبة الإنجاز</th></tr></thead>
                 <tbody id="studentsTableBody">
-                  <tr><td colspan="4" style="text-align:center;color:var(--text-soft);padding:24px;">جارٍ التحميل...</td></tr>
+                  <tr><td colspan="4" style="text-align:center;padding:24px;">جارٍ التحميل...</td></tr>
                 </tbody>
               </table>
             </div>
@@ -428,244 +325,200 @@
     </div>
   </div>
 
-  <div id="footerPlaceholder"></div>
+  <!-- 2. FOOTER مُضمَّن مباشرة -->
+  <footer class="temp-footer">
+    © جميع الحقوق محفوظة لمعهد التأصيل العلمي
+  </footer>
 
-    <script type="module">
-    console.log("Dashboard Script Loaded ✅");
+  <!-- ============================================================
+       3. Firebase + Logic — كل شيء مُضمَّن، لا imports خارجية
+       ============================================================ -->
+  <script type="module">
+    console.log('🟢 [2] module script started');
 
-    import { renderHeader, renderFooter, initSharedBehavior } from './components.js';
+    // ── Firebase من CDN مباشرة ──
+    import { initializeApp }
+      from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
     import {
-      auth, db,
-      signOut, onAuthStateChanged,
-      doc, getDoc, updateDoc, collection, getDocs
-    } from './firebase.js';
+      getAuth, onAuthStateChanged, signOut,
+      browserLocalPersistence, browserSessionPersistence, setPersistence
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import {
+      getFirestore, doc, getDoc, updateDoc, collection, getDocs
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
-    // ===== GLOBAL STATE =====
+    console.log('🟢 [3] Firebase imports OK');
+
+    // ── Config مُضمَّن مباشرة (لا firebase.js) ──
+    const firebaseConfig = {
+      apiKey:            'AIzaSyC1sZ0cJeQMJ6QdnxwFkcfK3AGir0TRuuk',
+      authDomain:        'tasil-3lmi.firebaseapp.com',
+      projectId:         'tasil-3lmi',
+      storageBucket:     'tasil-3lmi.firebasestorage.app',
+      messagingSenderId: '596405733121',
+      appId:             '1:596405733121:web:38ebadcc9eef8d8bb77d00',
+    };
+
+    const app  = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db   = getFirestore(app);
+
+    setPersistence(auth, browserLocalPersistence).catch(() =>
+      setPersistence(auth, browserSessionPersistence).catch(() => {})
+    );
+
+    console.log('🟢 [4] Firebase initialized — projectId:', firebaseConfig.projectId);
+
+    // ── STATE ──
     let currentUser     = null;
     let currentUserData = null;
     let userProgress    = {};
 
-    // ===== CURRICULUM DATA =====
+    // ── CURRICULUM ──
     const CURRICULUM = [
-      {
-        id: 'phase0', label: 'المرحلة التمهيدية',
-        items: [
-          { id: 'mtn01', label: 'الأربعون النووية' },
-          { id: 'mtn02', label: 'عمدة الأحكام' },
-          { id: 'mtn03', label: 'ثلاثة الأصول' },
-          { id: 'mtn04', label: 'القواعد الأربع' },
-          { id: 'mtn05', label: 'كشف الشبهات' },
-          { id: 'mtn06', label: 'الآجرومية' },
-        ]
-      },
-      {
-        id: 'phase1', label: 'المرحلة الأولى',
-        items: [
-          { id: 'mtn07', label: 'بلوغ المرام (المختصر)' },
-          { id: 'mtn08', label: 'الورقات في أصول الفقه' },
-          { id: 'mtn09', label: 'كتاب التوحيد' },
-          { id: 'mtn10', label: 'الواسطية' },
-          { id: 'mtn11', label: 'قطر الندى' },
-        ]
-      },
-      {
-        id: 'phase2', label: 'المرحلة الثانية',
-        items: [
-          { id: 'mtn12', label: 'زاد المستقنع' },
-          { id: 'mtn13', label: 'الرحبية في الفرائض' },
-          { id: 'mtn14', label: 'الحموية الكبرى' },
-          { id: 'mtn15', label: 'ألفية ابن مالك' },
-          { id: 'mtn16', label: 'نزهة النظر' },
-        ]
-      },
-      {
-        id: 'phase3', label: 'المرحلة الثالثة',
-        items: [
-          { id: 'mtn17', label: 'منهاج الطالبين' },
-          { id: 'mtn18', label: 'روضة الناظر' },
-          { id: 'mtn19', label: 'التدمرية' },
-          { id: 'mtn20', label: 'مختصر المنتهى' },
-          { id: 'mtn21', label: 'الكافية الشافية' },
-        ]
-      },
+      { id:'phase0', label:'المرحلة التمهيدية', items:[
+        {id:'mtn01',label:'الأربعون النووية'},
+        {id:'mtn02',label:'عمدة الأحكام'},
+        {id:'mtn03',label:'ثلاثة الأصول'},
+        {id:'mtn04',label:'القواعد الأربع'},
+        {id:'mtn05',label:'كشف الشبهات'},
+        {id:'mtn06',label:'الآجرومية'},
+      ]},
+      { id:'phase1', label:'المرحلة الأولى', items:[
+        {id:'mtn07',label:'بلوغ المرام (المختصر)'},
+        {id:'mtn08',label:'الورقات في أصول الفقه'},
+        {id:'mtn09',label:'كتاب التوحيد'},
+        {id:'mtn10',label:'الواسطية'},
+        {id:'mtn11',label:'قطر الندى'},
+      ]},
+      { id:'phase2', label:'المرحلة الثانية', items:[
+        {id:'mtn12',label:'زاد المستقنع'},
+        {id:'mtn13',label:'الرحبية في الفرائض'},
+        {id:'mtn14',label:'الحموية الكبرى'},
+        {id:'mtn15',label:'ألفية ابن مالك'},
+        {id:'mtn16',label:'نزهة النظر'},
+      ]},
+      { id:'phase3', label:'المرحلة الثالثة', items:[
+        {id:'mtn17',label:'منهاج الطالبين'},
+        {id:'mtn18',label:'روضة الناظر'},
+        {id:'mtn19',label:'التدمرية'},
+        {id:'mtn20',label:'مختصر المنتهى'},
+        {id:'mtn21',label:'الكافية الشافية'},
+      ]},
     ];
-    const TOTAL_ITEMS = CURRICULUM.reduce((sum, p) => sum + p.items.length, 0);
+    const TOTAL_ITEMS = CURRICULUM.reduce((s,p) => s + p.items.length, 0);
 
-    // ─── تحسين الأداء: إزالة جميع مصادر التأخير ───
-    //
-    // 1. onAuthStateChanged يُعيد حالة الجلسة من cache المتصفح فوراً
-    // 2. userDoc + contactInfo يُحمَّلان بالتوازي (Promise.all)
-    // 3. الهيدر يُرسم فوراً بمجرد معرفة المستخدم — قبل انتظار contactInfo
-    // 4. شاشة التحميل تختفي بعد رسم الهيدر مباشرةً
-    // ────────────────────────────────────────────
-
-    // ── Timeout: إذا لم يرد Firebase خلال 15 ثانية → أظهر زر إعادة المحاولة ──
-    // لا نُحوّل لـ index.html لأن ذلك يسبب حلقة لا نهاية لها (index → dashboard → index)
+    // ── Timeout 15 ثانية ──
     const authFallback = setTimeout(() => {
       const screen = document.getElementById('loadingScreen');
       if (screen && !screen.classList.contains('hidden')) {
-        screen.innerHTML = `
-          <div style="text-align:center;padding:24px;">
-            <p style="color:var(--text-soft);margin-bottom:20px;font-size:0.95rem;">
-              تعذّر الاتصال بالخادم
-            </p>
-            <button onclick="window.location.reload()"
-              style="background:var(--purple);color:white;border:none;padding:12px 28px;
-                     border-radius:100px;font-size:1rem;font-family:inherit;cursor:pointer;
-                     box-shadow:0 4px 16px rgba(59,27,64,0.3);">
-              إعادة المحاولة
-            </button>
-            <br><br>
-            <a href="index.html" style="color:var(--text-soft);font-size:0.85rem;">
-              العودة للرئيسية
-            </a>
-          </div>`;
+        screen.innerHTML = `<div style="text-align:center;padding:24px;">
+          <p style="color:#888;margin-bottom:20px;">تعذّر الاتصال — تأكد من الاتصال بالإنترنت</p>
+          <button onclick="location.reload()" style="background:#3b1b40;color:white;border:none;padding:12px 28px;border-radius:100px;font-size:1rem;font-family:inherit;cursor:pointer;">إعادة المحاولة</button>
+          <br><br><a href="index.html" style="color:#888;font-size:0.85rem;">العودة للرئيسية</a>
+        </div>`;
       }
     }, 15000);
 
+    // ── AUTH LISTENER ──
     onAuthStateChanged(auth, async (user) => {
+      console.log('🟢 [5] onAuthStateChanged — user:', user ? user.email : 'null');
       try {
-      clearTimeout(authFallback);
-      if (!user) { window.location.href = 'index.html'; return; }
+        clearTimeout(authFallback);
 
-      // ── الخطوة 1: أخفِ الـ spinner فوراً وأظهر المحتوى ببيانات مبدئية ──
-      // هذا يضمن أن الصفحة لن تتجمد أبداً بغض النظر عن سرعة الشبكة
-      currentUser = user;
-      const quickData = {
-        fullName: user.displayName || user.email?.split('@')[0] || 'مستخدم',
-        email: user.email || '',
-        role: 'student'
-      };
-      document.getElementById('headerPlaceholder').innerHTML = renderHeader('dashboard.html', quickData);
-      document.getElementById('footerPlaceholder').innerHTML = renderFooter(null);
-      initSharedBehavior();
-      document.getElementById('loadingScreen').classList.add('hidden');
-      document.getElementById('dashWrapper').style.display = '';
+        if (!user) {
+          console.log('🔴 لا يوجد مستخدم → index.html');
+          window.location.href = 'index.html';
+          return;
+        }
 
-      // ── الخطوة 2: جلب البيانات الكاملة من Firestore في الخلفية ──
-      // بدون timeout — نصبر حتى يرد Firestore مهما طال الوقت
-      getDoc(doc(db, 'users', user.uid))
-        .then(async (userSnap) => {
-          // حماية race condition: إذا لم يوجد المستند بعد (تسجيل جديد) → انتظر
-          let finalSnap = userSnap;
-          if (!userSnap.exists()) {
-            await new Promise(r => setTimeout(r, 2000));
-            finalSnap = await getDoc(doc(db, 'users', user.uid));
-            if (!finalSnap.exists()) return; // لا نُحوّل، فقط نبقى
+        currentUser = user;
+
+        // أظهر الصفحة فوراً ببيانات مبدئية
+        document.getElementById('loadingScreen').classList.add('hidden');
+        document.getElementById('dashWrapper').style.display = '';
+        document.getElementById('headerUserName').textContent =
+          user.displayName || user.email?.split('@')[0] || 'مستخدم';
+
+        console.log('🟢 [6] UI shown — loading Firestore...');
+
+        // جلب بيانات المستخدم
+        let snap = await getDoc(doc(db, 'users', user.uid));
+        if (!snap.exists()) {
+          console.warn('⚠️ user doc missing — retrying in 2s');
+          await new Promise(r => setTimeout(r, 2000));
+          snap = await getDoc(doc(db, 'users', user.uid));
+          if (!snap.exists()) {
+            console.warn('⚠️ user doc still missing — showing empty state');
+            return;
           }
+        }
 
-          const userData = finalSnap.data();
-          userProgress    = userData.progress || {};
-          currentUserData = userData;
+        const userData  = snap.data();
+        userProgress    = userData.progress || {};
+        currentUserData = userData;
+        console.log('🟢 [7] Firestore data loaded, role:', userData.role);
 
-          // ── تحديث الرأس بالبيانات الكاملة ──
-          document.getElementById('headerPlaceholder').innerHTML = renderHeader('dashboard.html', userData);
-          initSharedBehavior();
+        // تحديث UI
+        const isAdmin = userData.role === 'superAdmin' || userData.role === 'supervisor';
+        document.getElementById('sideUserName').textContent   = userData.fullName || 'مستخدم';
+        document.getElementById('sideRoleBadge').textContent  = isAdmin ? 'مشرف' : 'طالب';
+        document.getElementById('sideRoleBadge').className    = 'user-role-badge ' + (isAdmin ? 'role-admin' : 'role-student');
+        document.getElementById('headerUserName').textContent = userData.fullName || user.email;
 
-          // ── تحديث الـ sidebar ──
-          const isAdmin = userData.role === 'superAdmin' || userData.role === 'supervisor';
-          document.getElementById('sideUserName').textContent = userData.fullName || 'مستخدم';
-          document.getElementById('sideRoleBadge').textContent = isAdmin ? 'مشرف' : 'طالب';
-          document.getElementById('sideRoleBadge').className = 'user-role-badge ' + (isAdmin ? 'role-admin' : 'role-student');
+        if (isAdmin) {
+          document.getElementById('studentNav').style.display    = 'none';
+          document.getElementById('supervisorNav').style.display = '';
+          document.getElementById('panel-welcome').classList.remove('active');
+          document.getElementById('panel-supWelcome').classList.add('active');
+          document.getElementById('supWelcomeName').textContent  = userData.fullName || '';
+          loadStudentsList();
+        } else {
+          document.getElementById('welcomeName').textContent = userData.fullName || '';
+          buildCurriculum();
+          updateAllProgress();
+        }
 
-          if (isAdmin) {
-            document.getElementById('studentNav').style.display = 'none';
-            document.getElementById('supervisorNav').style.display = '';
-            document.getElementById('panel-welcome').classList.remove('active');
-            document.getElementById('panel-supWelcome').classList.add('active');
-            document.getElementById('supWelcomeName').textContent = userData.fullName;
-            loadStudentsList();
-          } else {
-            document.getElementById('welcomeName').textContent = userData.fullName;
-            buildCurriculum();
-            updateAllProgress();
-          }
+        loadNotifications(user.uid);
 
-          // ── جلب معلومات التواصل في الخلفية ──
-          getDoc(doc(db, 'contactInfo', 'main'))
-            .then(contactSnap => {
-              if (!contactSnap.exists()) return;
-              const contactData = contactSnap.data();
-              document.getElementById('footerPlaceholder').innerHTML = renderFooter(contactData);
-              getDocs(collection(db, 'contactInfo', 'main', 'channels'))
-                .then(ch => {
-                  const channels = [];
-                  ch.forEach(d => channels.push(d.data()));
-                  contactData.channels = channels.sort((a,b) => (a.order||0)-(b.order||0));
-                  document.getElementById('footerPlaceholder').innerHTML = renderFooter(contactData);
-                }).catch(() => {});
-            }).catch(() => {});
-
-          // ── الإشعارات في الخلفية ──
-          loadNotifications(user.uid);
-        })
-        .catch(err => {
-          // Firestore فشل نهائياً — الصفحة تعمل بالبيانات المبدئية
-          console.error('Firestore error:', err);
-        });
       } catch (err) {
-        console.error('Dashboard auth error:', err);
-        // أخفِ شاشة التحميل حتى لا تتجمد الصفحة
-        const screen = document.getElementById('loadingScreen');
-        if (screen) screen.classList.add('hidden');
-        const wrapper = document.getElementById('dashWrapper');
-        if (wrapper) wrapper.style.display = '';
+        console.error('🔴 Fatal error in auth handler:', err);
+        document.getElementById('loadingScreen').classList.add('hidden');
+        document.getElementById('dashWrapper').style.display = '';
+        throw err; // يصل إلى window.onerror ويُظهر alert
       }
     });
 
+    // ── NOTIFICATIONS ──
     async function loadNotifications(uid) {
       try {
-        const snap = await getDocs(collection(db,'notifications',uid,'items'));
-        const items = [];
-        snap.forEach(d => items.push({id:d.id,...d.data()}));
-        items.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
-        const unread = items.filter(n=>!n.read).length;
-        const bell = document.getElementById('notifBell');
-        const count = document.getElementById('notifCount');
-        if (bell) bell.style.display = 'flex';
-        if (count) { count.textContent = unread; count.style.display = unread > 0 ? 'flex' : 'none'; }
-        const list = document.getElementById('notifList');
-        if (list && items.length) {
-          const icons = { exam:'📝', course:'📚', lesson:'📖', announcement:'📢', answer:'💬', unlock:'🔓' };
-          list.innerHTML = items.slice(0,15).map(n => `
-            <div class="notif-item ${n.read?'':'unread'}" onclick="markNotifRead('${n.id}','${uid}')">
-              <span class="n-ico">${icons[n.type]||'🔔'}</span>
-              <div class="n-body">
-                <div class="n-msg">${n.title||n.message}</div>
-                <div class="n-time">${n.createdAt ? new Date(n.createdAt).toLocaleDateString('ar-SA',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : ''}</div>
-              </div>
-              ${!n.read ? '<span class="n-dot"></span>' : ''}
-            </div>`).join('');
-        }
-      } catch(e){}
+        const snap = await getDocs(collection(db, 'notifications', uid, 'items'));
+        console.log('🟢 notifications:', snap.size);
+      } catch(e) { console.warn('notifications error:', e.message); }
     }
 
-    window.markNotifRead = async function(nId, uid) {
-      try { await updateDoc(doc(db,'notifications',uid,'items',nId),{read:true}); } catch(e){}
-    };
-
-
-    // ===== PANEL SWITCHER =====
-    window.showPanel = function(panelId) {
+    // ── PANEL SWITCHER ──
+    window.showPanel = function(panelId, ev) {
       document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-      document.getElementById('panel-' + panelId).classList.add('active');
+      document.getElementById('panel-' + panelId)?.classList.add('active');
       document.querySelectorAll('.sidebar-nav-item').forEach(b => b.classList.remove('active'));
-      event.target.closest('.sidebar-nav-item').classList.add('active');
-
+      if (ev) ev.currentTarget?.classList.add('active');
+      if (window.innerWidth <= 860) closeSidebar();
       if (panelId === 'supStudents') loadStudentsList();
     };
 
-    // ===== BUILD CURRICULUM CHECKLIST =====
+    // ── BUILD CURRICULUM ──
     function buildCurriculum() {
       const container = document.getElementById('curriculumChecklist');
+      if (!container) return;
       container.innerHTML = '';
       CURRICULUM.forEach((phase, pi) => {
-        const doneCount = phase.items.filter(item => userProgress[item.id]).length;
-        const section = document.createElement('div');
+        const doneCount = phase.items.filter(i => userProgress[i.id]).length;
+        const section   = document.createElement('div');
         section.className = 'curriculum-section';
         section.id = 'cs-' + phase.id;
         section.innerHTML = `
-          <div class="cs-header" onclick="toggleCS('cs-${phase.id}')">
+          <div class="cs-header" onclick="window.toggleCS('cs-${phase.id}')">
             <div class="cs-header-left">
               <div class="cs-num">${pi === 0 ? '٠' : pi}</div>
               <div>
@@ -680,133 +533,116 @@
           </div>
           <div class="cs-items">
             ${phase.items.map(item => `
-              <label class="matn-check ${userProgress[item.id] ? 'done' : ''}" id="mc-${item.id}">
-                <input type="checkbox" ${userProgress[item.id] ? 'checked' : ''}
-                  onchange="toggleItem('${item.id}', '${phase.id}', this.checked)">
+              <label class="matn-check ${userProgress[item.id]?'done':''}" id="mc-${item.id}">
+                <input type="checkbox" ${userProgress[item.id]?'checked':''}
+                  onchange="window.toggleItem('${item.id}','${phase.id}',this.checked)">
                 <span>${item.label}</span>
-              </label>
-            `).join('')}
-          </div>
-        `;
+              </label>`).join('')}
+          </div>`;
         container.appendChild(section);
       });
-
-      // Build phase progress list
+      // phase progress
       const phaseList = document.getElementById('phaseProgressList');
       if (phaseList) {
         phaseList.innerHTML = '';
-        CURRICULUM.forEach((phase, pi) => {
-          const doneCount = phase.items.filter(item => userProgress[item.id]).length;
-          const pct = Math.round((doneCount / phase.items.length) * 100);
-          const div = document.createElement('div');
-          div.style.cssText = 'margin-bottom:20px;';
-          div.innerHTML = `
+        CURRICULUM.forEach(phase => {
+          const done = phase.items.filter(i => userProgress[i.id]).length;
+          const pct  = Math.round((done / phase.items.length) * 100);
+          const d = document.createElement('div');
+          d.style.marginBottom = '20px';
+          d.innerHTML = `
             <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-              <span style="font-size:0.88rem;color:var(--text-main);">${phase.label}</span>
-              <span style="font-size:0.82rem;color:var(--gold-dark);font-weight:bold;">${doneCount}/${phase.items.length}</span>
+              <span style="font-size:0.88rem;">${phase.label}</span>
+              <span style="font-size:0.82rem;color:#a07840;font-weight:bold;">${done}/${phase.items.length}</span>
             </div>
-            <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
-          `;
-          phaseList.appendChild(div);
+            <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%"></div></div>`;
+          phaseList.appendChild(d);
         });
       }
     }
 
     window.toggleCS = function(id) {
-      document.getElementById(id).classList.toggle('open');
+      document.getElementById(id)?.classList.toggle('open');
     };
 
     window.toggleItem = async function(itemId, phaseId, checked) {
       userProgress[itemId] = checked;
-      const el = document.getElementById('mc-' + itemId);
-      if (el) el.classList.toggle('done', checked);
-      // Save to Firestore
-      await updateDoc(doc(db, 'users', currentUser.uid), { progress: userProgress });
+      document.getElementById('mc-' + itemId)?.classList.toggle('done', checked);
+      try {
+        await updateDoc(doc(db, 'users', currentUser.uid), { progress: userProgress });
+      } catch(e) { console.error('updateDoc error:', e); }
       updateAllProgress();
       buildCurriculum();
     };
 
     function updateAllProgress() {
-      const done = Object.values(userProgress).filter(Boolean).length;
-      const pct = Math.round((done / TOTAL_ITEMS) * 100);
+      const done  = Object.values(userProgress).filter(Boolean).length;
+      const pct   = Math.round((done / TOTAL_ITEMS) * 100);
       const pctAr = pct + '٪';
-
-      // Stat boxes
-      const el = document.getElementById('stat-done');
-      if (el) el.textContent = done;
-      const el2 = document.getElementById('stat-remain');
-      if (el2) el2.textContent = TOTAL_ITEMS - done;
-      const el3 = document.getElementById('stat-pct');
-      if (el3) el3.textContent = pctAr;
-
-      // Progress bars
-      ['overallPct','overallPct2','overallPct3'].forEach(id => {
-        const e = document.getElementById(id);
-        if (e) e.textContent = pctAr;
-      });
+      const set = (id, val) => { const e = document.getElementById(id); if(e) e.textContent = val; };
+      set('stat-done',   done);
+      set('stat-remain', TOTAL_ITEMS - done);
+      set('stat-pct',    pctAr);
+      ['overallPct','overallPct2','overallPct3'].forEach(id => set(id, pctAr));
       ['overallBar','overallBar2','overallBar3'].forEach(id => {
         const e = document.getElementById(id);
-        if (e) setTimeout(() => e.style.width = pct + '%', 200);
+        if(e) setTimeout(() => e.style.width = pct + '%', 200);
       });
     }
 
-    // ===== SUPERVISOR: LOAD STUDENTS =====
+    // ── STUDENTS LIST ──
     async function loadStudentsList() {
       const tbody = document.getElementById('studentsTableBody');
       if (!tbody) return;
-      const snapshot = await getDocs(collection(db, 'users'));
-      const students = [];
-      snapshot.forEach(d => { if (d.data().role === 'student') students.push(d.data()); });
-      document.getElementById('sup-stat-students').textContent = students.length;
-      if (students.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-soft);padding:24px;">لا يوجد طلاب مسجلون بعد</td></tr>';
-        return;
-      }
-      tbody.innerHTML = students.map(s => {
-        const done = Object.values(s.progress || {}).filter(Boolean).length;
-        const pct = Math.round((done / TOTAL_ITEMS) * 100);
-        const levelMap = { primary:'ابتدائي', middle:'متوسط', high:'ثانوي', bachelor:'بكالوريوس', master:'ماجستير', phd:'دكتوراه', work:'وظيفة' };
-        return `<tr>
-          <td><strong>${s.fullName || '—'}</strong></td>
-          <td>${s.email || '—'}</td>
-          <td>${levelMap[s.level] || '—'}</td>
-          <td>
-            <span style="font-weight:bold;color:var(--purple);margin-left:8px;">${pct}٪</span>
-            <div class="prog-mini" style="display:inline-block;"><div class="prog-mini-fill" style="width:${pct}%"></div></div>
-          </td>
-        </tr>`;
-      }).join('');
+      try {
+        const snapshot = await getDocs(collection(db, 'users'));
+        const students = [];
+        snapshot.forEach(d => { if (d.data().role === 'student') students.push(d.data()); });
+        const supStat = document.getElementById('sup-stat-students');
+        if (supStat) supStat.textContent = students.length;
+        if (!students.length) {
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;">لا يوجد طلاب مسجلون بعد</td></tr>';
+          return;
+        }
+        const lvl = {primary:'ابتدائي',middle:'متوسط',high:'ثانوي',bachelor:'بكالوريوس',master:'ماجستير',phd:'دكتوراه',work:'وظيفة'};
+        tbody.innerHTML = students.map(s => {
+          const done = Object.values(s.progress||{}).filter(Boolean).length;
+          const pct  = Math.round((done/TOTAL_ITEMS)*100);
+          return `<tr>
+            <td><strong>${s.fullName||'—'}</strong></td>
+            <td>${s.email||'—'}</td>
+            <td>${lvl[s.level]||'—'}</td>
+            <td>
+              <span style="font-weight:bold;color:#3b1b40;margin-left:8px;">${pct}٪</span>
+              <div class="prog-mini" style="display:inline-block;"><div class="prog-mini-fill" style="width:${pct}%"></div></div>
+            </td></tr>`;
+        }).join('');
+      } catch(e) { console.error('loadStudentsList error:', e); }
     }
 
-    // ===== LOGOUT =====
+    // ── LOGOUT ──
     window.handleLogout = async function() {
-      await signOut(auth);
+      try { await signOut(auth); } catch(e) { console.error(e); }
       window.location.href = 'index.html';
     };
 
-    // ===== MOBILE SIDEBAR TOGGLE =====
+    // ── MOBILE SIDEBAR ──
     window.toggleSidebar = function() {
-      const sidebar = document.querySelector('.dash-sidebar');
-      const overlay = document.getElementById('sidebarOverlay');
-      const btn     = document.getElementById('mobileSidebarToggle');
-      sidebar?.classList.toggle('open');
-      overlay?.classList.toggle('show');
-      if (btn) btn.textContent = sidebar?.classList.contains('open') ? '✕' : '☰';
+      const s = document.querySelector('.dash-sidebar');
+      const o = document.getElementById('sidebarOverlay');
+      const b = document.getElementById('mobileSidebarToggle');
+      s?.classList.toggle('open');
+      o?.classList.toggle('show');
+      if (b) b.textContent = s?.classList.contains('open') ? '✕' : '☰';
     };
     window.closeSidebar = function() {
-      const sidebar = document.querySelector('.dash-sidebar');
-      const overlay = document.getElementById('sidebarOverlay');
-      const btn     = document.getElementById('mobileSidebarToggle');
-      sidebar?.classList.remove('open');
-      overlay?.classList.remove('show');
-      if (btn) btn.textContent = '☰';
+      document.querySelector('.dash-sidebar')?.classList.remove('open');
+      document.getElementById('sidebarOverlay')?.classList.remove('show');
+      const b = document.getElementById('mobileSidebarToggle');
+      if (b) b.textContent = '☰';
     };
-    // أغلق الـ sidebar عند اختيار لوحة
-    const origShowPanel = window.showPanel;
-    window.showPanel = function(panelId) {
-      origShowPanel && origShowPanel(panelId);
-      if (window.innerWidth <= 860) closeSidebar();
-    };
+
+    console.log('🟢 [8] All handlers ready — waiting for Firebase auth...');
   </script>
 </body>
 </html>
