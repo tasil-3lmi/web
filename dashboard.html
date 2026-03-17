@@ -183,14 +183,17 @@
     <p style="color:#888;font-size:0.9rem;margin:0;">جارٍ التحميل...</p>
   </div>
 
-  <!-- 2. HEADER مُضمَّن مباشرة — بدون components.js -->
-  <header class="temp-header" id="inlineHeader">
-    <div class="site-title">🕌 معهد التأصيل العلمي</div>
-    <div style="display:flex;align-items:center;gap:12px;">
-      <span style="font-size:0.85rem;opacity:0.8;" id="headerUserName">جارٍ التحميل...</span>
-      <button class="logout-link" onclick="handleLogout()">🚪 تسجيل الخروج</button>
-    </div>
-  </header>
+  <!-- 2. HEADER PLACEHOLDER — id="headerPlaceholder" يطابق تماماً ما يستخدمه renderHeader -->
+  <!-- يحتوي على هيدر احتياطي يظهر فوراً قبل تحميل components.js -->
+  <div id="headerPlaceholder">
+    <header class="temp-header" id="fallbackHeader">
+      <div class="site-title">🕌 معهد التأصيل العلمي</div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="font-size:0.85rem;opacity:0.8;" id="headerUserName">جارٍ التحميل...</span>
+        <button class="logout-link" onclick="handleLogout()">🚪 تسجيل الخروج</button>
+      </div>
+    </header>
+  </div>
 
   <!-- Sidebar overlay + toggle -->
   <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
@@ -336,6 +339,13 @@
   <script type="module">
     console.log('🟢 [2] module script started');
 
+    // ── 1. components.js — المسار صحيح مع ./  ──
+    // export موجود في components.js: export function renderHeader(...) {}
+    import { renderHeader, renderFooter, initSharedBehavior }
+      from './components.js';
+
+    console.log('🟢 [2b] components.js imported OK — renderHeader:', typeof renderHeader);
+
     // ── Firebase من CDN مباشرة ──
     import { initializeApp }
       from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
@@ -434,11 +444,18 @@
 
         currentUser = user;
 
-        // أظهر الصفحة فوراً ببيانات مبدئية
+        // أظهر الصفحة فوراً ببيانات مبدئية من renderHeader
+        const quickData = {
+          fullName: user.displayName || user.email?.split('@')[0] || 'مستخدم',
+          email:    user.email || '',
+          role:     'student'
+        };
+        console.log('🟢 [5b] calling renderHeader with quickData...');
+        document.getElementById('headerPlaceholder').innerHTML = renderHeader('dashboard.html', quickData);
+        initSharedBehavior();
+
         document.getElementById('loadingScreen').classList.add('hidden');
         document.getElementById('dashWrapper').style.display = '';
-        document.getElementById('headerUserName').textContent =
-          user.displayName || user.email?.split('@')[0] || 'مستخدم';
 
         console.log('🟢 [6] UI shown — loading Firestore...');
 
@@ -459,12 +476,16 @@
         currentUserData = userData;
         console.log('🟢 [7] Firestore data loaded, role:', userData.role);
 
-        // تحديث UI
+        // 4. إعادة رسم الهيدر بالبيانات الكاملة — نفس الـ id "headerPlaceholder"
+        console.log('🟢 [7b] re-rendering header with full userData...');
+        document.getElementById('headerPlaceholder').innerHTML = renderHeader('dashboard.html', userData);
+        initSharedBehavior();
+
+        // تحديث Sidebar
         const isAdmin = userData.role === 'superAdmin' || userData.role === 'supervisor';
-        document.getElementById('sideUserName').textContent   = userData.fullName || 'مستخدم';
-        document.getElementById('sideRoleBadge').textContent  = isAdmin ? 'مشرف' : 'طالب';
-        document.getElementById('sideRoleBadge').className    = 'user-role-badge ' + (isAdmin ? 'role-admin' : 'role-student');
-        document.getElementById('headerUserName').textContent = userData.fullName || user.email;
+        document.getElementById('sideUserName').textContent  = userData.fullName || 'مستخدم';
+        document.getElementById('sideRoleBadge').textContent = isAdmin ? 'مشرف' : 'طالب';
+        document.getElementById('sideRoleBadge').className   = 'user-role-badge ' + (isAdmin ? 'role-admin' : 'role-student');
 
         if (isAdmin) {
           document.getElementById('studentNav').style.display    = 'none';
