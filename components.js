@@ -10,6 +10,8 @@ export const SHEIKH_SRC = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2w
 // HEADER  —  3 states: guest / student / supervisor
 // ──────────────────────────────────────────────────
 export function renderHeader(activePage = '', userData = null) {
+  // 3. console.log للتأكد أن الدالة نفذت
+  console.log('🟢 [renderHeader] Header rendering started — activePage:', activePage, '| userData:', userData?.fullName || null);
   const isLoggedIn = !!userData;
   const isAdmin    = userData && (userData.role === 'superAdmin' || userData.role === 'supervisor');
 
