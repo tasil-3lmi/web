@@ -306,14 +306,14 @@
         <nav class="sidebar-nav" id="sidebarNav">
           <!-- Student nav -->
           <div id="studentNav">
-            <button class="sidebar-nav-item active" onclick="showPanel('welcome')"><span class="ico">🏠</span> الرئيسية</button>
-            <button class="sidebar-nav-item" onclick="showPanel('progress')"><span class="ico">📊</span> تقرير الإنجاز</button>
-            <button class="sidebar-nav-item" onclick="showPanel('curriculum')"><span class="ico">📚</span> خطة الدراسة</button>
+            <button class="sidebar-nav-item active" onclick="showPanel('welcome', this)"><span class="ico">🏠</span> الرئيسية</button>
+            <button class="sidebar-nav-item" onclick="showPanel('progress', this)"><span class="ico">📊</span> تقرير الإنجاز</button>
+            <button class="sidebar-nav-item" onclick="showPanel('curriculum', this)"><span class="ico">📚</span> خطة الدراسة</button>
           </div>
           <!-- Supervisor nav -->
           <div id="supervisorNav" style="display:none;">
-            <button class="sidebar-nav-item active" onclick="showPanel('supWelcome')"><span class="ico">🏠</span> الرئيسية</button>
-            <button class="sidebar-nav-item" onclick="showPanel('supStudents')"><span class="ico">👥</span> الطلاب</button>
+            <button class="sidebar-nav-item active" onclick="showPanel('supWelcome', this)"><span class="ico">🏠</span> الرئيسية</button>
+            <button class="sidebar-nav-item" onclick="showPanel('supStudents', this)"><span class="ico">👥</span> الطلاب</button>
           </div>
         </nav>
         <div class="sidebar-logout">
@@ -348,7 +348,7 @@
               <div class="progress-bar-bg"><div class="progress-bar-fill" id="overallBar" style="width:0%"></div></div>
             </div>
             <div style="margin-top:16px;">
-              <button class="btn btn-primary" onclick="showPanel('curriculum')" style="font-size:0.88rem;padding:12px 24px;">
+              <button class="btn btn-primary" onclick="showPanel('curriculum', this)" style="font-size:0.88rem;padding:12px 24px;">
                 📚 عرض خطة الدراسة
               </button>
             </div>
@@ -443,6 +443,88 @@
       signOut, onAuthStateChanged,
       doc, getDoc, updateDoc, collection, getDocs
     } from './firebase.js';
+
+    // ===== المتغيرات العامة =====
+    let currentUser    = null;
+    let userProgress   = {};
+    let currentUserData = {};
+
+    // ===== بيانات المنهج الدراسي =====
+    const CURRICULUM = [
+      {
+        id: 'phase0',
+        label: 'المرحلة التمهيدية',
+        items: [
+          { id: 'p0_1', label: 'كتاب "المدخل إلى طلب العلم"' },
+          { id: 'p0_2', label: 'كتاب "تذكرة السامع والمتكلم"' },
+          { id: 'p0_3', label: 'كتاب ثالث للجرد' },
+        ]
+      },
+      {
+        id: 'phase1',
+        label: 'المرحلة الأولى — العقيدة والتوحيد',
+        items: [
+          { id: 'p1_1', label: 'القواعد الأربع' },
+          { id: 'p1_2', label: 'نواقض الإسلام' },
+          { id: 'p1_3', label: 'الأصول الثلاثة وأدلتها' },
+          { id: 'p1_4', label: 'كشف الشبهات' },
+        ]
+      },
+      {
+        id: 'phase2',
+        label: 'المرحلة الثانية — علوم الآلة والسنة',
+        items: [
+          { id: 'p2_1', label: 'متن الآجرومية' },
+          { id: 'p2_2', label: 'متن التذكرة في علوم الحديث' },
+          { id: 'p2_3', label: 'متن الأرجوزة الميئية' },
+          { id: 'p2_4', label: 'متن الرسالة اللطيفة في أصول الفقه' },
+          { id: 'p2_5', label: 'الأربعون النووية مع زيادات ابن رجب' },
+        ]
+      },
+      {
+        id: 'phase3',
+        label: 'المرحلة الثالثة — الفقه المالكي وأصوله وقواعده',
+        items: [
+          { id: 'p3_1', label: 'مقدمات التفقه' },
+          { id: 'p3_2', label: 'متن الأخضري' },
+          { id: 'p3_3', label: 'متن العشماوية' },
+          { id: 'p3_4', label: 'نظم ابن أبي كف' },
+          { id: 'p3_5', label: 'نظم المرشد المعين لابن عاشر' },
+          { id: 'p3_6', label: 'منظومة ابن سند في القواعد الفقهية' },
+        ]
+      },
+      {
+        id: 'phase4',
+        label: 'المرحلة الرابعة — أصول التفسير والعقيدة',
+        items: [
+          { id: 'p4_1', label: 'مقدمة في أصول التفسير' },
+          { id: 'p4_2', label: 'كتاب التوحيد' },
+          { id: 'p4_3', label: 'القواعد والضوابط السلفية في الأسماء والصفات' },
+          { id: 'p4_4', label: 'العقيدة الواسطية' },
+        ]
+      },
+      {
+        id: 'phase5',
+        label: 'المرحلة الخامسة — المقاصد والآداب والسياسة الشرعية',
+        items: [
+          { id: 'p5_1', label: 'منظومة تبصرة القاصد في علم المقاصد' },
+          { id: 'p5_2', label: 'كتاب الجامع من "القوانين الفقهية"' },
+          { id: 'p5_3', label: 'منظومة السبل المرضية في السياسة الشرعية' },
+        ]
+      },
+      {
+        id: 'phase6',
+        label: 'المرحلة السادسة — فقه الدعوة والمناظرة والردود والحصانة',
+        items: [
+          { id: 'p6_1', label: 'رسالة الأمر بالمعروف والنهي عن المنكر' },
+          { id: 'p6_2', label: 'متن آداب البحث والمناظرة' },
+          { id: 'p6_3', label: 'متن الرد على المخالف' },
+          { id: 'p6_4', label: 'متن الحصانة الفكرية' },
+        ]
+      }
+    ];
+
+    const TOTAL_ITEMS = CURRICULUM.reduce((sum, ph) => sum + ph.items.length, 0);
 
     // ─── تحسين الأداء: إزالة جميع مصادر التأخير ───
     //
@@ -575,11 +657,11 @@
 
 
     // ===== PANEL SWITCHER =====
-    window.showPanel = function(panelId) {
+    window.showPanel = function(panelId, clickedBtn) {
       document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-      document.getElementById('panel-' + panelId).classList.add('active');
+      document.getElementById('panel-' + panelId)?.classList.add('active');
       document.querySelectorAll('.sidebar-nav-item').forEach(b => b.classList.remove('active'));
-      event.target.closest('.sidebar-nav-item').classList.add('active');
+      if (clickedBtn) clickedBtn.classList.add('active');
 
       if (panelId === 'supStudents') loadStudentsList();
     };
@@ -732,8 +814,8 @@
     };
     // أغلق الـ sidebar عند اختيار لوحة
     const origShowPanel = window.showPanel;
-    window.showPanel = function(panelId) {
-      origShowPanel && origShowPanel(panelId);
+    window.showPanel = function(panelId, btn) {
+      origShowPanel && origShowPanel(panelId, btn);
       if (window.innerWidth <= 860) closeSidebar();
     };
   </script>
