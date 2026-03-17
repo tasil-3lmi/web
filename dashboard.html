@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
@@ -9,13 +9,7 @@
     body { background: #f7f5fa; }
 
     /* ===== LOADING ===== */
-    /* إذا ظل الـ spinner أكثر من 15 ثانية يتلاشى تلقائياً */
-    @keyframes forceHide {
-      0%, 90% { opacity: 1; pointer-events: auto; }
-      100%    { opacity: 0; pointer-events: none; }
-    }
     .loading-screen {
-      animation: forceHide 15s forwards;
       position: fixed; inset: 0;
       background: var(--white);
       display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -306,14 +300,14 @@
         <nav class="sidebar-nav" id="sidebarNav">
           <!-- Student nav -->
           <div id="studentNav">
-            <button class="sidebar-nav-item active" onclick="showPanel('welcome', this)"><span class="ico">🏠</span> الرئيسية</button>
-            <button class="sidebar-nav-item" onclick="showPanel('progress', this)"><span class="ico">📊</span> تقرير الإنجاز</button>
-            <button class="sidebar-nav-item" onclick="showPanel('curriculum', this)"><span class="ico">📚</span> خطة الدراسة</button>
+            <button class="sidebar-nav-item active" onclick="showPanel('welcome')"><span class="ico">🏠</span> الرئيسية</button>
+            <button class="sidebar-nav-item" onclick="showPanel('progress')"><span class="ico">📊</span> تقرير الإنجاز</button>
+            <button class="sidebar-nav-item" onclick="showPanel('curriculum')"><span class="ico">📚</span> خطة الدراسة</button>
           </div>
           <!-- Supervisor nav -->
           <div id="supervisorNav" style="display:none;">
-            <button class="sidebar-nav-item active" onclick="showPanel('supWelcome', this)"><span class="ico">🏠</span> الرئيسية</button>
-            <button class="sidebar-nav-item" onclick="showPanel('supStudents', this)"><span class="ico">👥</span> الطلاب</button>
+            <button class="sidebar-nav-item active" onclick="showPanel('supWelcome')"><span class="ico">🏠</span> الرئيسية</button>
+            <button class="sidebar-nav-item" onclick="showPanel('supStudents')"><span class="ico">👥</span> الطلاب</button>
           </div>
         </nav>
         <div class="sidebar-logout">
@@ -348,7 +342,7 @@
               <div class="progress-bar-bg"><div class="progress-bar-fill" id="overallBar" style="width:0%"></div></div>
             </div>
             <div style="margin-top:16px;">
-              <button class="btn btn-primary" onclick="showPanel('curriculum', this)" style="font-size:0.88rem;padding:12px 24px;">
+              <button class="btn btn-primary" onclick="showPanel('curriculum')" style="font-size:0.88rem;padding:12px 24px;">
                 📚 عرض خطة الدراسة
               </button>
             </div>
@@ -444,88 +438,6 @@
       doc, getDoc, updateDoc, collection, getDocs
     } from './firebase.js';
 
-    // ===== المتغيرات العامة =====
-    let currentUser    = null;
-    let userProgress   = {};
-    let currentUserData = {};
-
-    // ===== بيانات المنهج الدراسي =====
-    const CURRICULUM = [
-      {
-        id: 'phase0',
-        label: 'المرحلة التمهيدية',
-        items: [
-          { id: 'p0_1', label: 'كتاب "المدخل إلى طلب العلم"' },
-          { id: 'p0_2', label: 'كتاب "تذكرة السامع والمتكلم"' },
-          { id: 'p0_3', label: 'كتاب ثالث للجرد' },
-        ]
-      },
-      {
-        id: 'phase1',
-        label: 'المرحلة الأولى — العقيدة والتوحيد',
-        items: [
-          { id: 'p1_1', label: 'القواعد الأربع' },
-          { id: 'p1_2', label: 'نواقض الإسلام' },
-          { id: 'p1_3', label: 'الأصول الثلاثة وأدلتها' },
-          { id: 'p1_4', label: 'كشف الشبهات' },
-        ]
-      },
-      {
-        id: 'phase2',
-        label: 'المرحلة الثانية — علوم الآلة والسنة',
-        items: [
-          { id: 'p2_1', label: 'متن الآجرومية' },
-          { id: 'p2_2', label: 'متن التذكرة في علوم الحديث' },
-          { id: 'p2_3', label: 'متن الأرجوزة الميئية' },
-          { id: 'p2_4', label: 'متن الرسالة اللطيفة في أصول الفقه' },
-          { id: 'p2_5', label: 'الأربعون النووية مع زيادات ابن رجب' },
-        ]
-      },
-      {
-        id: 'phase3',
-        label: 'المرحلة الثالثة — الفقه المالكي وأصوله وقواعده',
-        items: [
-          { id: 'p3_1', label: 'مقدمات التفقه' },
-          { id: 'p3_2', label: 'متن الأخضري' },
-          { id: 'p3_3', label: 'متن العشماوية' },
-          { id: 'p3_4', label: 'نظم ابن أبي كف' },
-          { id: 'p3_5', label: 'نظم المرشد المعين لابن عاشر' },
-          { id: 'p3_6', label: 'منظومة ابن سند في القواعد الفقهية' },
-        ]
-      },
-      {
-        id: 'phase4',
-        label: 'المرحلة الرابعة — أصول التفسير والعقيدة',
-        items: [
-          { id: 'p4_1', label: 'مقدمة في أصول التفسير' },
-          { id: 'p4_2', label: 'كتاب التوحيد' },
-          { id: 'p4_3', label: 'القواعد والضوابط السلفية في الأسماء والصفات' },
-          { id: 'p4_4', label: 'العقيدة الواسطية' },
-        ]
-      },
-      {
-        id: 'phase5',
-        label: 'المرحلة الخامسة — المقاصد والآداب والسياسة الشرعية',
-        items: [
-          { id: 'p5_1', label: 'منظومة تبصرة القاصد في علم المقاصد' },
-          { id: 'p5_2', label: 'كتاب الجامع من "القوانين الفقهية"' },
-          { id: 'p5_3', label: 'منظومة السبل المرضية في السياسة الشرعية' },
-        ]
-      },
-      {
-        id: 'phase6',
-        label: 'المرحلة السادسة — فقه الدعوة والمناظرة والردود والحصانة',
-        items: [
-          { id: 'p6_1', label: 'رسالة الأمر بالمعروف والنهي عن المنكر' },
-          { id: 'p6_2', label: 'متن آداب البحث والمناظرة' },
-          { id: 'p6_3', label: 'متن الرد على المخالف' },
-          { id: 'p6_4', label: 'متن الحصانة الفكرية' },
-        ]
-      }
-    ];
-
-    const TOTAL_ITEMS = CURRICULUM.reduce((sum, ph) => sum + ph.items.length, 0);
-
     // ─── تحسين الأداء: إزالة جميع مصادر التأخير ───
     //
     // 1. onAuthStateChanged يُعيد حالة الجلسة من cache المتصفح فوراً
@@ -534,13 +446,29 @@
     // 4. شاشة التحميل تختفي بعد رسم الهيدر مباشرةً
     // ────────────────────────────────────────────
 
-    // ── Timeout للجوال: إذا لم يرد Firebase خلال 12 ثانية → ارجع للرئيسية ──
+    // ── Timeout: إذا لم يرد Firebase خلال 15 ثانية → أظهر زر إعادة المحاولة ──
+    // لا نُحوّل لـ index.html لأن ذلك يسبب حلقة لا نهاية لها (index → dashboard → index)
     const authFallback = setTimeout(() => {
       const screen = document.getElementById('loadingScreen');
       if (screen && !screen.classList.contains('hidden')) {
-        window.location.href = 'index.html';
+        screen.innerHTML = `
+          <div style="text-align:center;padding:24px;">
+            <p style="color:var(--text-soft);margin-bottom:20px;font-size:0.95rem;">
+              تعذّر الاتصال بالخادم
+            </p>
+            <button onclick="window.location.reload()"
+              style="background:var(--purple);color:white;border:none;padding:12px 28px;
+                     border-radius:100px;font-size:1rem;font-family:inherit;cursor:pointer;
+                     box-shadow:0 4px 16px rgba(59,27,64,0.3);">
+              إعادة المحاولة
+            </button>
+            <br><br>
+            <a href="index.html" style="color:var(--text-soft);font-size:0.85rem;">
+              العودة للرئيسية
+            </a>
+          </div>`;
       }
-    }, 12000);
+    }, 15000);
 
     onAuthStateChanged(auth, async (user) => {
       clearTimeout(authFallback);
@@ -657,11 +585,11 @@
 
 
     // ===== PANEL SWITCHER =====
-    window.showPanel = function(panelId, clickedBtn) {
+    window.showPanel = function(panelId) {
       document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-      document.getElementById('panel-' + panelId)?.classList.add('active');
+      document.getElementById('panel-' + panelId).classList.add('active');
       document.querySelectorAll('.sidebar-nav-item').forEach(b => b.classList.remove('active'));
-      if (clickedBtn) clickedBtn.classList.add('active');
+      event.target.closest('.sidebar-nav-item').classList.add('active');
 
       if (panelId === 'supStudents') loadStudentsList();
     };
@@ -814,8 +742,8 @@
     };
     // أغلق الـ sidebar عند اختيار لوحة
     const origShowPanel = window.showPanel;
-    window.showPanel = function(panelId, btn) {
-      origShowPanel && origShowPanel(panelId, btn);
+    window.showPanel = function(panelId) {
+      origShowPanel && origShowPanel(panelId);
       if (window.innerWidth <= 860) closeSidebar();
     };
   </script>
