@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
@@ -437,6 +437,57 @@
       signOut, onAuthStateChanged,
       doc, getDoc, updateDoc, collection, getDocs
     } from './firebase.js';
+
+    // ===== GLOBAL STATE =====
+    let currentUser     = null;
+    let currentUserData = null;
+    let userProgress    = {};
+
+    // ===== CURRICULUM DATA =====
+    const CURRICULUM = [
+      {
+        id: 'phase0', label: 'المرحلة التمهيدية',
+        items: [
+          { id: 'mtn01', label: 'الأربعون النووية' },
+          { id: 'mtn02', label: 'عمدة الأحكام' },
+          { id: 'mtn03', label: 'ثلاثة الأصول' },
+          { id: 'mtn04', label: 'القواعد الأربع' },
+          { id: 'mtn05', label: 'كشف الشبهات' },
+          { id: 'mtn06', label: 'الآجرومية' },
+        ]
+      },
+      {
+        id: 'phase1', label: 'المرحلة الأولى',
+        items: [
+          { id: 'mtn07', label: 'بلوغ المرام (المختصر)' },
+          { id: 'mtn08', label: 'الورقات في أصول الفقه' },
+          { id: 'mtn09', label: 'كتاب التوحيد' },
+          { id: 'mtn10', label: 'الواسطية' },
+          { id: 'mtn11', label: 'قطر الندى' },
+        ]
+      },
+      {
+        id: 'phase2', label: 'المرحلة الثانية',
+        items: [
+          { id: 'mtn12', label: 'زاد المستقنع' },
+          { id: 'mtn13', label: 'الرحبية في الفرائض' },
+          { id: 'mtn14', label: 'الحموية الكبرى' },
+          { id: 'mtn15', label: 'ألفية ابن مالك' },
+          { id: 'mtn16', label: 'نزهة النظر' },
+        ]
+      },
+      {
+        id: 'phase3', label: 'المرحلة الثالثة',
+        items: [
+          { id: 'mtn17', label: 'منهاج الطالبين' },
+          { id: 'mtn18', label: 'روضة الناظر' },
+          { id: 'mtn19', label: 'التدمرية' },
+          { id: 'mtn20', label: 'مختصر المنتهى' },
+          { id: 'mtn21', label: 'الكافية الشافية' },
+        ]
+      },
+    ];
+    const TOTAL_ITEMS = CURRICULUM.reduce((sum, p) => sum + p.items.length, 0);
 
     // ─── تحسين الأداء: إزالة جميع مصادر التأخير ───
     //
