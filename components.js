@@ -10,8 +10,6 @@ export const SHEIKH_SRC = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2w
 // HEADER  —  3 states: guest / student / supervisor
 // ──────────────────────────────────────────────────
 export function renderHeader(activePage = '', userData = null) {
-  // 3. console.log للتأكد أن الدالة نفذت
-  console.log('🟢 [renderHeader] Header rendering started — activePage:', activePage, '| userData:', userData?.fullName || null);
   const isLoggedIn = !!userData;
   const isAdmin    = userData && (userData.role === 'superAdmin' || userData.role === 'supervisor');
 
@@ -50,14 +48,15 @@ export function renderHeader(activePage = '', userData = null) {
   }).join('');
 
   const mobileLinks = navPages.map(p => {
-    const cls = 'nav-link' + (p.special ? ' nav-admin-link' : '');
+    const isActive = activePage === p.href;
+    const cls = 'nav-link' + (isActive ? ' active' : '') + (p.special ? ' nav-admin-link' : '');
     return `<a href="${p.href}" class="${cls}">${p.label}</a>`;
   }).join('');
 
-  /* ── Right side ── */
+  /* ── Right side — على الجوال: نخفي كل شيء إلا زر الـ hamburger ── */
   const rightSide = isLoggedIn ? `
     <div class="header-controls">
-      <button class="notif-bell" id="notifBell" onclick="toggleNotifPanel()" title="الإشعارات" aria-label="الإشعارات">
+      <button class="notif-bell" id="notifBell" onclick="toggleNotifPanel()" title="الإشعارات" aria-label="الإشعارات" style="display:none;">
         🔔<span class="notif-count" id="notifCount" style="display:none;">0</span>
       </button>
       <div class="user-menu-wrap" id="userMenuWrap">
@@ -96,14 +95,37 @@ export function renderHeader(activePage = '', userData = null) {
       </nav>
       ${rightSide}
     </div>
+
+    <!-- ══ MOBILE MENU — يظهر عند الضغط على ☰ ══ -->
     <div class="mobile-menu" id="mobileMenu">
-      ${mobileLinks}
+
       ${isLoggedIn ? `
-        <div style="padding:12px 0;border-top:1px solid rgba(255,255,255,0.1);margin-top:8px;">
-          <a href="profile.html" class="nav-link">👤 ملفي الشخصي</a>
-          <button class="nav-link" onclick="handleHeaderLogout()" style="background:none;border:none;width:100%;text-align:right;color:rgba(255,255,255,0.7);cursor:pointer;">🚪 تسجيل الخروج</button>
-        </div>` : ''}
+      <!-- بيانات المستخدم في أعلى القائمة -->
+      <div class="mobile-menu-user">
+        <div class="mob-avatar">${userData.fullName ? userData.fullName.charAt(0) : '؟'}</div>
+        <div class="mob-info">
+          <div class="mob-name">${userData.fullName || 'مستخدم'}</div>
+          <div class="mob-role">${isAdmin ? 'مشرف' : 'طالب'}</div>
+        </div>
+        <button onclick="toggleNotifPanel()" title="الإشعارات"
+          style="background:rgba(255,255,255,0.1);border:none;border-radius:50%;width:38px;height:38px;color:white;font-size:1.1rem;cursor:pointer;flex-shrink:0;position:relative;">
+          🔔
+          <span id="notifBadgeMob" style="display:none;position:absolute;top:2px;right:2px;background:#e07000;color:white;border-radius:50%;width:16px;height:16px;font-size:0.6rem;display:flex;align-items:center;justify-content:center;"></span>
+        </button>
+      </div>` : ''}
+
+      <!-- روابط التنقل -->
+      ${mobileLinks}
+
+      ${isLoggedIn ? `
+      <div class="mobile-menu-divider"></div>
+      <a href="profile.html" class="nav-link" style="color:rgba(255,255,255,0.7);">👤 ملفي الشخصي</a>
+      ${isAdmin ? '<a href="admin.html" class="nav-link nav-admin-link">🛠️ لوحة الإدارة</a>' : ''}
+      <button class="mob-logout" onclick="handleHeaderLogout()">🚪 تسجيل الخروج</button>
+      ` : ''}
+
     </div>
+
     <!-- Notification Panel -->
     <div class="notif-panel" id="notifPanel" style="display:none;">
       <div class="notif-header">
@@ -163,23 +185,43 @@ export function initSharedBehavior() {
     header?.classList.toggle('scrolled', window.scrollY > 40);
   });
 
-  // Hamburger
-  const hamburger = document.getElementById('hamburger');
+  // Hamburger — يفتح/يغلق القائمة المنسدلة ويحوّل الأيقونة إلى X
+  const hamburger  = document.getElementById('hamburger');
   const mobileMenu = document.getElementById('mobileMenu');
-  hamburger?.addEventListener('click', () => {
-    mobileMenu?.classList.toggle('open');
-    hamburger.classList.toggle('open');
+  hamburger?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = mobileMenu?.classList.toggle('open');
+    hamburger.classList.toggle('open', isOpen);
+  });
+
+  // إغلاق القائمة عند الضغط خارجها
+  document.addEventListener('click', e => {
+    if (mobileMenu?.classList.contains('open')) {
+      if (!mobileMenu.contains(e.target) && !hamburger?.contains(e.target)) {
+        mobileMenu.classList.remove('open');
+        hamburger?.classList.remove('open');
+      }
+    }
+  });
+
+  // إغلاق القائمة عند اختيار رابط داخلها
+  mobileMenu?.querySelectorAll('a').forEach(a => {
+    a.addEventListener('click', () => {
+      mobileMenu.classList.remove('open');
+      hamburger?.classList.remove('open');
+    });
   });
 
   // Close dropdowns on outside click
   document.addEventListener('click', e => {
     const wrap = document.getElementById('userMenuWrap');
     if (wrap && !wrap.contains(e.target)) {
-      document.getElementById('userDropdown')?.style && (document.getElementById('userDropdown').style.display = 'none');
+      const dropdown = document.getElementById('userDropdown');
+      if (dropdown) dropdown.style.display = 'none';
     }
     const notifPanel = document.getElementById('notifPanel');
     const bell = document.getElementById('notifBell');
-    if (notifPanel && bell && !notifPanel.contains(e.target) && !bell.contains(e.target)) {
+    if (notifPanel && !notifPanel.contains(e.target) && !(bell && bell.contains(e.target))) {
       notifPanel.style.display = 'none';
     }
   });
