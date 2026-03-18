@@ -28,6 +28,16 @@
 </head>
 <body>
   <div id="headerPlaceholder"></div>
+
+  <!-- Overlay للـ sidebar على الجوال -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+  <!-- زر فتح قائمة الدروس العائم (يظهر على الجوال فقط) -->
+  <button class="lessons-toggle-btn" id="lessonsToggleBtn" onclick="toggleSidebar()">
+    📚 قائمة الدروس
+    <span class="tog-count" id="togCount">0</span>
+  </button>
+
   <div class="page-content">
     <div class="course-top-banner">
       <div class="container">
@@ -66,7 +76,7 @@
     import { renderHeader, renderFooter, initSharedBehavior } from './components.js';
     import { auth, db, onAuthStateChanged, doc, getDoc, collection, getDocs, updateDoc } from './firebase.js';
 
-    // ── رسم الهيدر مبدئياً بدون بيانات ──
+    // رسم الهيدر المبدئي
     document.getElementById('headerPlaceholder').innerHTML = renderHeader('courses.html', null);
     document.getElementById('footerPlaceholder').innerHTML = renderFooter();
     initSharedBehavior();
@@ -95,7 +105,6 @@
       if (user) {
         const snap = await getDoc(doc(db, 'users', user.uid));
         userProgress = snap.data()?.progress || {};
-        // ── تحديث الهيدر ببيانات المستخدم الكاملة ──
         const userData = snap.data() || {};
         document.getElementById('headerPlaceholder').innerHTML = renderHeader('courses.html', userData);
         initSharedBehavior();
@@ -123,9 +132,9 @@
         lessons.sort((a,b) => (a.order||0) - (b.order||0));
       } catch(e) {}
 
-      // Build default 20 lessons if none
+      // Default 50 lessons if none in Firestore
       if (!lessons.length) {
-        for (let i = 1; i <= 20; i++) {
+        for (let i = 1; i <= 50; i++) {
           lessons.push({ id: 'l'+i, title: 'الدرس ' + i, order: i, visible: true, locked: false });
         }
       }
@@ -143,11 +152,17 @@
     }
 
     function buildSidebar() {
+      const visibleLessons = lessons.filter(l => l.visible !== false);
+
+      // تحديث عداد الزر العائم
+      const togCount = document.getElementById('togCount');
+      if (togCount) togCount.textContent = visibleLessons.length;
+
       const linksEl = document.getElementById('lessonLinks');
-      linksEl.innerHTML = lessons.filter(l => l.visible !== false).map((l, i) => {
+      linksEl.innerHTML = visibleLessons.map((l, i) => {
         const done = userProgress['lesson_' + courseId + '_' + l.id];
         return `<a class="lesson-link${l.locked?' locked-lesson':''}${done?' done':''}"
-          onclick="openLesson('${l.id}')" href="javascript:void(0)" id="ll-${l.id}">
+          onclick="selectLesson('${l.id}')" href="javascript:void(0)" id="ll-${l.id}">
           <div class="l-num">${done ? '✓' : (i+1)}</div>
           <span>${l.title}</span>
           ${l.locked ? '<span style="font-size:0.75rem;margin-right:auto;">🔒</span>' : ''}
@@ -162,6 +177,24 @@
           ${ex.locked ? '<span style="font-size:0.75rem;margin-right:auto;">🔒</span>' : ''}
         </a>`).join('');
     }
+
+    // على الجوال: أغلق الـ sidebar عند اختيار درس
+    window.selectLesson = async function(lessonId) {
+      if (window.innerWidth <= 860) closeSidebar();
+      await openLesson(lessonId);
+    };
+
+    // فتح/إغلاق الـ sidebar
+    window.toggleSidebar = function() {
+      const sidebar = document.querySelector('.lessons-sidebar');
+      const overlay  = document.getElementById('sidebarOverlay');
+      const isOpen   = sidebar.classList.toggle('open');
+      overlay.classList.toggle('show', isOpen);
+    };
+    window.closeSidebar = function() {
+      document.querySelector('.lessons-sidebar')?.classList.remove('open');
+      document.getElementById('sidebarOverlay')?.classList.remove('show');
+    };
 
     window.openLesson = async function(lessonId) {
       document.querySelectorAll('.lesson-link').forEach(l => l.classList.remove('active'));
