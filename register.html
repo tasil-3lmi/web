@@ -213,14 +213,83 @@
                     <label class="form-label">كلمة المرور <span class="req">*</span></label>
                     <input type="password" class="form-control" id="reg_password" placeholder="••••••••" required minlength="6">
                   </div>
-                  <div class="form-group">
+                  <div class="form-group full">
                     <label class="form-label">رقم الهاتف</label>
-                    <input type="tel" class="form-control" id="reg_phone" placeholder="+968 XXXX XXXX">
+                    <div style="display:flex;gap:8px;">
+                      <select class="form-control" id="reg_dialcode" style="width:130px;flex-shrink:0;padding-right:8px;">
+                        <option value="+968">🇴🇲 +968</option>
+                        <option value="+966">🇸🇦 +966</option>
+                        <option value="+971">🇦🇪 +971</option>
+                        <option value="+974">🇶🇦 +974</option>
+                        <option value="+973">🇧🇭 +973</option>
+                        <option value="+965">🇰🇼 +965</option>
+                        <option value="+967">🇾🇪 +967</option>
+                        <option value="+962">🇯🇴 +962</option>
+                        <option value="+963">🇸🇾 +963</option>
+                        <option value="+961">🇱🇧 +961</option>
+                        <option value="+964">🇮🇶 +964</option>
+                        <option value="+20">🇪🇬 +20</option>
+                        <option value="+212">🇲🇦 +212</option>
+                        <option value="+213">🇩🇿 +213</option>
+                        <option value="+216">🇹🇳 +216</option>
+                        <option value="+218">🇱🇾 +218</option>
+                        <option value="+249">🇸🇩 +249</option>
+                        <option value="+252">🇸🇴 +252</option>
+                        <option value="+60">🇲🇾 +60</option>
+                        <option value="+62">🇮🇩 +62</option>
+                        <option value="+44">🇬🇧 +44</option>
+                        <option value="+1">🇺🇸 +1</option>
+                        <option value="+49">🇩🇪 +49</option>
+                        <option value="+33">🇫🇷 +33</option>
+                        <option value="+90">🇹🇷 +90</option>
+                        <option value="+92">🇵🇰 +92</option>
+                        <option value="+91">🇮🇳 +91</option>
+                        <option value="+other">🌍 أخرى</option>
+                      </select>
+                      <input type="tel" class="form-control" id="reg_phone" placeholder="XXXX XXXX" style="flex:1;">
+                    </div>
                   </div>
                   <div class="form-group">
                     <label class="form-label">معرف التليجرام</label>
                     <input type="text" class="form-control" id="reg_telegram" placeholder="@username">
                   </div>
+                  <div class="form-group">
+                    <label class="form-label">البلد <span class="req">*</span></label>
+                    <select class="form-control" id="reg_country">
+                      <option value="">اختر البلد</option>
+                      <option value="عُمان">🇴🇲 عُمان</option>
+                      <option value="السعودية">🇸🇦 المملكة العربية السعودية</option>
+                      <option value="الإمارات">🇦🇪 الإمارات</option>
+                      <option value="قطر">🇶🇦 قطر</option>
+                      <option value="البحرين">🇧🇭 البحرين</option>
+                      <option value="الكويت">🇰🇼 الكويت</option>
+                      <option value="اليمن">🇾🇪 اليمن</option>
+                      <option value="الأردن">🇯🇴 الأردن</option>
+                      <option value="سوريا">🇸🇾 سوريا</option>
+                      <option value="لبنان">🇱🇧 لبنان</option>
+                      <option value="العراق">🇮🇶 العراق</option>
+                      <option value="مصر">🇪🇬 مصر</option>
+                      <option value="المغرب">🇲🇦 المغرب</option>
+                      <option value="الجزائر">🇩🇿 الجزائر</option>
+                      <option value="تونس">🇹🇳 تونس</option>
+                      <option value="ليبيا">🇱🇾 ليبيا</option>
+                      <option value="السودان">🇸🇩 السودان</option>
+                      <option value="الصومال">🇸🇴 الصومال</option>
+                      <option value="ماليزيا">🇲🇾 ماليزيا</option>
+                      <option value="إندونيسيا">🇮🇩 إندونيسيا</option>
+                      <option value="المملكة المتحدة">🇬🇧 المملكة المتحدة</option>
+                      <option value="الولايات المتحدة">🇺🇸 الولايات المتحدة</option>
+                      <option value="ألمانيا">🇩🇪 ألمانيا</option>
+                      <option value="فرنسا">🇫🇷 فرنسا</option>
+                      <option value="تركيا">🇹🇷 تركيا</option>
+                      <option value="باكستان">🇵🇰 باكستان</option>
+                      <option value="الهند">🇮🇳 الهند</option>
+                      <option value="أخرى">🌍 أخرى</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">مكان الإقامة</label>
+                    <input type="text" class="form-control" id="reg_residence" placeholder="المدينة / المنطقة">
                   <div class="form-group full">
                     <label class="form-label">المرحلة الدراسية</label>
                     <select class="form-control" id="reg_level">
@@ -285,38 +354,6 @@
                 <div class="switch-link">
                   ليس لديك حساب؟ <a onclick="switchStudentTab('new')">سجّل الآن</a>
                 </div>
-                <div style="text-align:center;margin-top:10px;">
-                  <a onclick="showForgotPassword()" style="font-size:0.82rem;color:var(--text-soft);cursor:pointer;text-decoration:underline;">
-                    🔑 نسيت كلمة المرور؟
-                  </a>
-                </div>
-
-                <!-- Forgot Password Form (مخفي افتراضياً) -->
-                <div id="forgotPasswordBox" style="display:none;margin-top:20px;padding:20px;background:rgba(59,27,64,0.04);border:1px solid var(--border);border-radius:12px;">
-                  <p style="font-size:0.88rem;font-weight:bold;color:var(--purple);margin-bottom:12px;">
-                    🔑 إعادة تعيين كلمة المرور
-                  </p>
-                  <p style="font-size:0.82rem;color:var(--text-soft);margin-bottom:14px;line-height:1.7;">
-                    أدخل بريدك الإلكتروني وسنرسل لك رابطاً لإعادة تعيين كلمة المرور.
-                  </p>
-                  <div class="form-group">
-                    <label class="form-label">البريد الإلكتروني</label>
-                    <input type="email" class="form-control" id="forgot_email" placeholder="example@mail.com">
-                  </div>
-                  <div class="form-error"  id="forgot_error"></div>
-                  <div class="form-success" id="forgot_success"
-                    style="display:none;color:#1a7a4a;font-size:0.85rem;padding:10px 14px;background:rgba(26,122,74,0.08);border-radius:8px;margin-bottom:12px;"></div>
-                  <div style="display:flex;gap:10px;">
-                    <button type="button" class="btn" onclick="hideForgotPassword()"
-                      style="flex:1;background:#f0f0f0;color:#555;border:none;padding:12px;">
-                      إلغاء
-                    </button>
-                    <button type="button" class="submit-btn" onclick="sendResetEmail()" id="resetBtn"
-                      style="flex:2;margin-top:0;">
-                      <span id="resetBtnText">إرسال رابط الاسترداد</span>
-                    </button>
-                  </div>
-                </div>
               </form>
             </div>
           </div>
@@ -368,9 +405,6 @@
       onAuthStateChanged,
       doc, setDoc, getDoc, collection, getDocs
     } from './firebase.js';
-
-    import { sendPasswordResetEmail }
-      from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 
     // ── رسم الهيدر الأساسي فوراً بدون انتظار الشعار ──
     document.getElementById('headerPlaceholder').innerHTML = `
@@ -451,14 +485,18 @@
       btn.disabled = true;
       btnText.innerHTML = '<span class="spinner"></span> جارٍ التسجيل...';
 
-      const fullName = document.getElementById('reg_fullName').value.trim();
-      const email    = document.getElementById('reg_email').value.trim();
-      const username = document.getElementById('reg_username').value.trim();
-      const password = document.getElementById('reg_password').value;
-      const phone    = document.getElementById('reg_phone').value.trim();
-      const telegram = document.getElementById('reg_telegram').value.trim();
-      const level    = document.getElementById('reg_level').value;
-      const gender   = document.querySelector('input[name="gender"]:checked')?.value || 'male';
+      const fullName  = document.getElementById('reg_fullName').value.trim();
+      const email     = document.getElementById('reg_email').value.trim();
+      const username  = document.getElementById('reg_username').value.trim();
+      const password  = document.getElementById('reg_password').value;
+      const dialCode  = document.getElementById('reg_dialcode').value;
+      const phoneNum  = document.getElementById('reg_phone').value.trim();
+      const phone     = phoneNum ? dialCode + ' ' + phoneNum : '';
+      const telegram  = document.getElementById('reg_telegram').value.trim();
+      const country   = document.getElementById('reg_country').value;
+      const residence = document.getElementById('reg_residence').value.trim();
+      const level     = document.getElementById('reg_level').value;
+      const gender    = document.querySelector('input[name="gender"]:checked')?.value || 'male';
 
       try {
         // الخطوة 1: إنشاء الحساب في Firebase Auth
@@ -468,6 +506,7 @@
         // ⚠️ يجب await هنا — dashboard.html يحتاج هذا المستند فور الوصول
         await setDoc(doc(db, 'users', userCred.user.uid), {
           fullName, email, username, phone, telegram,
+          country, residence,
           level, gender, role: 'student',
           status: 'pending',
           progress: {}, createdAt: new Date().toISOString()
@@ -548,59 +587,6 @@
         errEl.classList.add('show');
         btn.disabled = false;
         btnText.textContent = 'دخول المشرف';
-      }
-    };
-    // ============ FORGOT PASSWORD ============
-    window.showForgotPassword = function() {
-      document.getElementById('forgotPasswordBox').style.display = '';
-      document.getElementById('forgot_error').classList.remove('show');
-      document.getElementById('forgot_success').style.display = 'none';
-      document.getElementById('forgot_email').value = document.getElementById('login_identifier').value || '';
-      document.getElementById('forgot_email').focus();
-    };
-
-    window.hideForgotPassword = function() {
-      document.getElementById('forgotPasswordBox').style.display = 'none';
-    };
-
-    window.sendResetEmail = async function() {
-      const email  = document.getElementById('forgot_email').value.trim();
-      const errEl  = document.getElementById('forgot_error');
-      const sucEl  = document.getElementById('forgot_success');
-      const btn    = document.getElementById('resetBtn');
-      const btnTxt = document.getElementById('resetBtnText');
-      errEl.classList.remove('show');
-      sucEl.style.display = 'none';
-
-      if (!email) {
-        errEl.textContent = 'يرجاء إدخال البريد الإلكتروني';
-        errEl.classList.add('show');
-        return;
-      }
-
-      btn.disabled     = true;
-      btnTxt.innerHTML = '<span class="spinner"></span> جارٍ الإرسال...';
-
-      try {
-        await sendPasswordResetEmail(auth, email);
-        sucEl.textContent   = '✅ تم إرسال رابط الاسترداد! تحقق من بريدك الإلكتروني (وتحقق من مجلد الرسائل غير المرغوب فيها).';
-        sucEl.style.display = '';
-        btnTxt.textContent  = 'تم الإرسال ✅';
-        setTimeout(() => {
-          btn.disabled         = false;
-          btnTxt.textContent   = 'إرسال رابط الاسترداد';
-        }, 5000);
-      } catch(e) {
-        const msgs = {
-          'auth/user-not-found':      'لا يوجد حساب مرتبط بهذا البريد الإلكتروني',
-          'auth/invalid-email':       'صيغة البريد الإلكتروني غير صحيحة',
-          'auth/too-many-requests':   'محاولات كثيرة، انتظر قليلاً ثم حاول مجدداً',
-          'auth/network-request-failed': 'تحقق من اتصالك بالإنترنت',
-        };
-        errEl.textContent = msgs[e.code] || ('خطأ: ' + e.message);
-        errEl.classList.add('show');
-        btn.disabled   = false;
-        btnTxt.textContent = 'إرسال رابط الاسترداد';
       }
     };
   </script>
