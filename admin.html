@@ -277,9 +277,35 @@
     let scheduleData = {};
     let activeTab = 'questions';
 
+    // timeout: لو Firebase ما رد خلال 10 ثواني أظهر خطأ
+    const loadingTimeout = setTimeout(() => {
+      const ls = document.getElementById('loadingScreen');
+      if (ls && ls.style.display !== 'none') {
+        ls.innerHTML = `
+          <div style="font-size:3rem;margin-bottom:16px;">⚠️</div>
+          <p style="color:var(--purple);font-weight:bold;font-size:1rem;">تعذّر الاتصال بالخادم</p>
+          <p style="color:var(--text-soft);font-size:0.88rem;margin-bottom:20px;">تحقق من اتصالك بالإنترنت وأعد المحاولة</p>
+          <button onclick="location.reload()" class="btn btn-primary">إعادة المحاولة</button>
+        `;
+      }
+    }, 10000);
+
     onAuthStateChanged(auth, async user => {
-      if (!user) { window.location.href = 'register.html'; return; }
-      const snap = await getDoc(doc(db, 'users', user.uid));
+      if (!user) { clearTimeout(loadingTimeout); window.location.href = 'register.html'; return; }
+      let snap;
+      try {
+        snap = await getDoc(doc(db, 'users', user.uid));
+      } catch(e) {
+        clearTimeout(loadingTimeout);
+        document.getElementById('loadingScreen').innerHTML = `
+          <div style="font-size:3rem;margin-bottom:16px;">⚠️</div>
+          <p style="color:var(--purple);font-weight:bold;font-size:1rem;">خطأ في قراءة البيانات</p>
+          <p style="color:var(--text-soft);font-size:0.88rem;margin-bottom:20px;">${e.message}</p>
+          <button onclick="location.reload()" class="btn btn-primary">إعادة المحاولة</button>
+        `;
+        return;
+      }
+      clearTimeout(loadingTimeout);
       if (!snap.exists()) { window.location.href = 'register.html'; return; }
       const data = snap.data();
       if (data.role !== 'superAdmin' && data.role !== 'supervisor') {
