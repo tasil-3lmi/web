@@ -149,12 +149,80 @@
                 <div class="profile-section-body">
                   <div class="form-group">
                     <label class="form-label">رقم الهاتف</label>
-                    <input type="tel" class="form-control" id="edit_phone" placeholder="+968 XXXX XXXX">
+                    <div style="display:flex;gap:8px;">
+                      <select class="form-control" id="edit_dialcode" style="width:130px;flex-shrink:0;padding-right:6px;font-size:0.85rem;">
+                        <option value="+968">🇴🇲 +968</option>
+                        <option value="+966">🇸🇦 +966</option>
+                        <option value="+971">🇦🇪 +971</option>
+                        <option value="+974">🇶🇦 +974</option>
+                        <option value="+973">🇧🇭 +973</option>
+                        <option value="+965">🇰🇼 +965</option>
+                        <option value="+967">🇾🇪 +967</option>
+                        <option value="+962">🇯🇴 +962</option>
+                        <option value="+963">🇸🇾 +963</option>
+                        <option value="+961">🇱🇧 +961</option>
+                        <option value="+964">🇮🇶 +964</option>
+                        <option value="+20">🇪🇬 +20</option>
+                        <option value="+212">🇲🇦 +212</option>
+                        <option value="+213">🇩🇿 +213</option>
+                        <option value="+216">🇹🇳 +216</option>
+                        <option value="+218">🇱🇾 +218</option>
+                        <option value="+249">🇸🇩 +249</option>
+                        <option value="+60">🇲🇾 +60</option>
+                        <option value="+62">🇮🇩 +62</option>
+                        <option value="+44">🇬🇧 +44</option>
+                        <option value="+1">🇺🇸 +1</option>
+                        <option value="+49">🇩🇪 +49</option>
+                        <option value="+33">🇫🇷 +33</option>
+                        <option value="+90">🇹🇷 +90</option>
+                        <option value="+92">🇵🇰 +92</option>
+                        <option value="+91">🇮🇳 +91</option>
+                        <option value="+other">🌍 أخرى</option>
+                      </select>
+                      <input type="tel" class="form-control" id="edit_phone" placeholder="XXXX XXXX" style="flex:1;">
+                    </div>
                   </div>
                   <div class="form-group">
                     <label class="form-label">معرف التليجرام</label>
                     <input type="text" class="form-control" id="edit_telegram" placeholder="@username">
                   </div>
+                  <div class="form-group">
+                    <label class="form-label">البلد</label>
+                    <select class="form-control" id="edit_country">
+                      <option value="">اختر البلد</option>
+                      <option value="عُمان">🇴🇲 عُمان</option>
+                      <option value="السعودية">🇸🇦 المملكة العربية السعودية</option>
+                      <option value="الإمارات">🇦🇪 الإمارات</option>
+                      <option value="قطر">🇶🇦 قطر</option>
+                      <option value="البحرين">🇧🇭 البحرين</option>
+                      <option value="الكويت">🇰🇼 الكويت</option>
+                      <option value="اليمن">🇾🇪 اليمن</option>
+                      <option value="الأردن">🇯🇴 الأردن</option>
+                      <option value="سوريا">🇸🇾 سوريا</option>
+                      <option value="لبنان">🇱🇧 لبنان</option>
+                      <option value="العراق">🇮🇶 العراق</option>
+                      <option value="مصر">🇪🇬 مصر</option>
+                      <option value="المغرب">🇲🇦 المغرب</option>
+                      <option value="الجزائر">🇩🇿 الجزائر</option>
+                      <option value="تونس">🇹🇳 تونس</option>
+                      <option value="ليبيا">🇱🇾 ليبيا</option>
+                      <option value="السودان">🇸🇩 السودان</option>
+                      <option value="الصومال">🇸🇴 الصومال</option>
+                      <option value="ماليزيا">🇲🇾 ماليزيا</option>
+                      <option value="إندونيسيا">🇮🇩 إندونيسيا</option>
+                      <option value="المملكة المتحدة">🇬🇧 المملكة المتحدة</option>
+                      <option value="الولايات المتحدة">🇺🇸 الولايات المتحدة</option>
+                      <option value="ألمانيا">🇩🇪 ألمانيا</option>
+                      <option value="فرنسا">🇫🇷 فرنسا</option>
+                      <option value="تركيا">🇹🇷 تركيا</option>
+                      <option value="باكستان">🇵🇰 باكستان</option>
+                      <option value="الهند">🇮🇳 الهند</option>
+                      <option value="أخرى">🌍 أخرى</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">مكان الإقامة</label>
+                    <input type="text" class="form-control" id="edit_residence" placeholder="المدينة / المنطقة">
                   <div class="form-group" id="edit_level_group">
                     <label class="form-label">المرحلة الدراسية</label>
                     <select class="form-control" id="edit_level">
@@ -181,65 +249,16 @@
                 </div>
                 <div class="profile-section-body">
                   <div class="form-group">
-                    <label class="form-label">كلمة المرور الحالية <span class="req">*</span></label>
-                    <input type="password" class="form-control" id="current_password" placeholder="••••••••">
+                    <label class="form-label">كلمة المرور الجديدة</label>
+                    <input type="password" class="form-control" id="new_password" placeholder="••••••••" minlength="6">
                   </div>
                   <div class="form-group">
-                    <label class="form-label">كلمة المرور الجديدة <span class="req">*</span></label>
-                    <input type="password" class="form-control" id="new_password" placeholder="•••••••• (٦ أحرف على الأقل)" minlength="6">
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">تأكيد كلمة المرور الجديدة <span class="req">*</span></label>
+                    <label class="form-label">تأكيد كلمة المرور</label>
                     <input type="password" class="form-control" id="confirm_password" placeholder="••••••••">
                   </div>
                   <div class="form-error" id="pw_error"></div>
-                  <div class="form-success" id="pw_success" style="display:none;color:#1a7a4a;font-size:0.85rem;padding:10px 14px;background:rgba(26,122,74,0.08);border-radius:8px;margin-bottom:12px;"></div>
                   <button class="btn btn-outline" onclick="changePassword()" style="width:100%;">
-                    🔒 تحديث كلمة المرور
-                  </button>
-                </div>
-              </div>
-
-              <!-- Delete Account -->
-              <div class="profile-section reveal" id="deleteAccountSection">
-                <div class="profile-section-header" style="border-bottom:1px solid rgba(185,45,58,0.15);">
-                  <h3 style="color:#b92d3a;">⚠️ حذف الحساب</h3>
-                </div>
-                <div class="profile-section-body">
-                  <p style="font-size:0.85rem;color:#888;line-height:1.8;margin-bottom:16px;">
-                    سيؤدي حذف الحساب إلى <strong style="color:#b92d3a;">إزالة جميع بياناتك نهائياً</strong> من الموقع وقاعدة البيانات.
-                    هذا الإجراء <strong>لا يمكن التراجع عنه</strong>.
-                  </p>
-
-                  <div id="deleteConfirmBox" style="display:none;background:rgba(185,45,58,0.05);border:1.5px solid rgba(185,45,58,0.2);border-radius:10px;padding:20px;">
-                    <p style="font-size:0.85rem;color:#b92d3a;font-weight:bold;margin-bottom:14px;">
-                      للتأكيد، أدخل كلمة المرور ثم اكتب "احذف حسابي" في الحقل أدناه:
-                    </p>
-                    <div class="form-group">
-                      <label class="form-label">كلمة المرور</label>
-                      <input type="password" class="form-control" id="delete_password" placeholder="أدخل كلمة المرور الحالية">
-                    </div>
-                    <div class="form-group">
-                      <label class="form-label">اكتب: <strong style="color:#b92d3a;">احذف حسابي</strong></label>
-                      <input type="text" class="form-control" id="delete_confirm_text" placeholder="احذف حسابي"
-                        style="border-color:rgba(185,45,58,0.3);">
-                    </div>
-                    <div class="form-error" id="delete_error"></div>
-                    <div style="display:flex;gap:10px;margin-top:8px;">
-                      <button class="btn" onclick="cancelDeleteAccount()"
-                        style="flex:1;background:#f0f0f0;color:#555;border:none;">
-                        إلغاء
-                      </button>
-                      <button class="btn" onclick="confirmDeleteAccount()" id="deleteConfirmBtn"
-                        style="flex:1;background:#b92d3a;color:white;border:none;">
-                        🗑️ حذف حسابي نهائياً
-                      </button>
-                    </div>
-                  </div>
-
-                  <button class="btn" id="deleteAccountBtn" onclick="showDeleteConfirm()"
-                    style="width:100%;background:rgba(185,45,58,0.08);color:#b92d3a;border:1.5px solid rgba(185,45,58,0.25);font-weight:bold;">
-                    🗑️ حذف الحساب
+                    تحديث كلمة المرور
                   </button>
                 </div>
               </div>
@@ -280,42 +299,41 @@
 
   <script type="module">
     import { renderHeader, renderFooter, initSharedBehavior, showToast } from './components.js';
-    import { auth, db, onAuthStateChanged, doc, getDoc, updateDoc, deleteDoc, collection, getDocs } from './firebase.js';
-    import {
-      updatePassword,
-      reauthenticateWithCredential,
-      EmailAuthProvider,
-      deleteUser
-    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import { auth, db, onAuthStateChanged, doc, getDoc, updateDoc, collection, getDocs } from './firebase.js';
+    import { updatePassword, reauthenticateWithCredential, EmailAuthProvider }
+      from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 
     const TOTAL_ITEMS = 23;
     const levelMap = { primary:'ابتدائي', middle:'متوسط', high:'ثانوي', bachelor:'بكالوريوس', master:'ماجستير', phd:'دكتوراه', work:'وظيفة' };
     const roleMap   = { student:'طالب', supervisor:'مشرف', superAdmin:'مشرف عام' };
 
     let currentUser = null;
-    let userData    = null;
+    let userData = null;
     let privateChannelUrl = '';
 
     onAuthStateChanged(auth, async user => {
       if (!user) { window.location.href = 'index.html'; return; }
       currentUser = user;
 
+      // Load user data
       const snap = await getDoc(doc(db, 'users', user.uid));
       if (!snap.exists()) { window.location.href = 'index.html'; return; }
       userData = snap.data();
 
+      // Load contact info
       let contactData = null;
       try {
         const cs = await getDoc(doc(db, 'contactInfo', 'main'));
         if (cs.exists()) {
           contactData = cs.data();
           privateChannelUrl = contactData.privateChannelUrl || '';
-          const ch = await getDocs(collection(db, 'contactInfo', 'main', 'channels'));
+          const ch = await getDocs(collection(db,'contactInfo','main','channels'));
           const channels = []; ch.forEach(d => channels.push(d.data()));
-          contactData.channels = channels.sort((a,b) => (a.order||0) - (b.order||0));
+          contactData.channels = channels.sort((a,b)=>(a.order||0)-(b.order||0));
         }
       } catch(e) {}
 
+      // Render header & footer
       document.getElementById('headerPlaceholder').innerHTML = renderHeader('profile.html', userData);
       document.getElementById('footerPlaceholder').innerHTML = renderFooter(contactData);
       initSharedBehavior();
@@ -327,24 +345,28 @@
       const isStudent = userData.role === 'student';
       const isAdmin   = userData.role === 'superAdmin' || userData.role === 'supervisor';
 
+      // Hero
       const initials = (userData.fullName || '؟').charAt(0);
       document.getElementById('heroAvatar').textContent = initials;
       document.getElementById('heroName').textContent   = userData.fullName || '—';
       document.getElementById('heroEmail').textContent  = userData.email || '';
-      document.getElementById('heroBadgeRole').textContent = roleMap[userData.role] || userData.role;
-      document.getElementById('heroBadgeJoin').textContent = userData.createdAt
-        ? 'انضم: ' + new Date(userData.createdAt).toLocaleDateString('ar-SA', { year:'numeric', month:'short' })
+      document.getElementById('heroBadgeRole').textContent  = roleMap[userData.role] || userData.role;
+      document.getElementById('heroBadgeJoin').textContent  = userData.createdAt
+        ? 'انضم: ' + new Date(userData.createdAt).toLocaleDateString('ar-SA', {year:'numeric', month:'short'})
         : '';
 
+      // Basic info
       const infoItems = [
-        { lbl: 'الاسم الثلاثي',    val: userData.fullName   || '—' },
-        { lbl: 'اسم المستخدم',     val: userData.username   || '—' },
-        { lbl: 'البريد الإلكتروني', val: userData.email     || '—' },
-        { lbl: 'رقم الهاتف',       val: userData.phone      || '—' },
-        { lbl: 'معرف التليجرام',   val: userData.telegram   || '—' },
-        { lbl: 'الجنس',            val: userData.gender === 'female' ? 'أنثى' : 'ذكر' },
+        { lbl: 'الاسم الثلاثي',   val: userData.fullName   || '—' },
+        { lbl: 'اسم المستخدم',    val: userData.username   || '—' },
+        { lbl: 'البريد الإلكتروني', val: userData.email    || '—' },
+        { lbl: 'رقم الهاتف',      val: userData.phone      || '—' },
+        { lbl: 'معرف التليجرام',  val: userData.telegram   || '—' },
+        { lbl: 'البلد',           val: userData.country    || '—' },
+        { lbl: 'مكان الإقامة',   val: userData.residence  || '—' },
+        { lbl: 'الجنس',           val: userData.gender === 'female' ? 'أنثى' : 'ذكر' },
         { lbl: 'المرحلة الدراسية', val: levelMap[userData.level] || '—' },
-        { lbl: 'الدور',            val: roleMap[userData.role]   || '—' },
+        { lbl: 'الدور',           val: roleMap[userData.role] || '—' },
       ];
       document.getElementById('basicInfoGrid').innerHTML = infoItems.map(i => `
         <div class="info-item">
@@ -352,152 +374,107 @@
           <div class="val">${i.val}</div>
         </div>`).join('');
 
-      document.getElementById('edit_phone').value    = userData.phone    || '';
-      document.getElementById('edit_telegram').value = userData.telegram || '';
-      document.getElementById('edit_level').value    = userData.level    || '';
+      // Fill edit fields
+      // تحليل رقم الهاتف المخزون لفصل مفتاح الدولة عن الرقم
+      const storedPhone = userData.phone || '';
+      const dialCodes = ['+968','+966','+971','+974','+973','+965','+967','+962',
+        '+963','+961','+964','+20','+212','+213','+216','+218','+249','+60','+62',
+        '+44','+1','+49','+33','+90','+92','+91'];
+      let matchedCode = '+968', phoneNumOnly = storedPhone;
+      for (const code of dialCodes) {
+        if (storedPhone.startsWith(code + ' ')) {
+          matchedCode  = code;
+          phoneNumOnly = storedPhone.slice(code.length + 1);
+          break;
+        } else if (storedPhone.startsWith(code)) {
+          matchedCode  = code;
+          phoneNumOnly = storedPhone.slice(code.length).trim();
+          break;
+        }
+      }
+      const dcEl = document.getElementById('edit_dialcode');
+      if (dcEl) {
+        dcEl.value = matchedCode;
+        if (!dcEl.value) dcEl.value = '+other';
+      }
+      document.getElementById('edit_phone').value     = phoneNumOnly;
+      document.getElementById('edit_telegram').value  = userData.telegram  || '';
+      document.getElementById('edit_country').value   = userData.country   || '';
+      document.getElementById('edit_residence').value = userData.residence || '';
+      document.getElementById('edit_level').value     = userData.level     || '';
       if (isAdmin) document.getElementById('edit_level_group').style.display = 'none';
 
+      // Progress (student only)
       if (isStudent) {
         document.getElementById('progressSection').style.display = '';
         const done = Object.values(userData.progress || {}).filter(Boolean).length;
         const pct  = Math.round((done / TOTAL_ITEMS) * 100);
-        document.getElementById('progressPct').textContent = pct + '٪';
-        document.getElementById('doneCount').textContent   = done;
-        document.getElementById('remainCount').textContent = TOTAL_ITEMS - done;
-        setTimeout(() => { document.getElementById('progressBar').style.width = pct + '%'; }, 300);
+        document.getElementById('progressPct').textContent  = pct + '٪';
+        document.getElementById('doneCount').textContent    = done;
+        document.getElementById('remainCount').textContent  = TOTAL_ITEMS - done;
+        setTimeout(() => {
+          document.getElementById('progressBar').style.width = pct + '%';
+        }, 300);
       }
 
-      if (privateChannelUrl) document.getElementById('channelSection').style.display = '';
+      // Private channel
+      if (privateChannelUrl) {
+        document.getElementById('channelSection').style.display = '';
+      }
 
-      document.getElementById('loadingProfile').style.display = 'none';
-      document.getElementById('profileContent').style.display = '';
+      document.getElementById('loadingProfile').style.display  = 'none';
+      document.getElementById('profileContent').style.display  = '';
 
+      // Scroll reveal
       const obs = new IntersectionObserver(entries => {
         entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
       }, { threshold: 0.08 });
       document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
     }
 
-    // ── حفظ بيانات الملف الشخصي ──
+    // Save profile edits
     window.saveProfile = async function() {
-      const phone    = document.getElementById('edit_phone').value.trim();
-      const telegram = document.getElementById('edit_telegram').value.trim();
-      const level    = document.getElementById('edit_level').value;
+      const dialCode  = document.getElementById('edit_dialcode').value;
+      const phoneNum  = document.getElementById('edit_phone').value.trim();
+      const phone     = phoneNum ? (dialCode !== '+other' ? dialCode + ' ' + phoneNum : phoneNum) : '';
+      const telegram  = document.getElementById('edit_telegram').value.trim();
+      const country   = document.getElementById('edit_country').value;
+      const residence = document.getElementById('edit_residence').value.trim();
+      const level     = document.getElementById('edit_level').value;
       try {
-        await updateDoc(doc(db, 'users', currentUser.uid), { phone, telegram, level });
-        userData.phone    = phone;
-        userData.telegram = telegram;
-        userData.level    = level;
+        await updateDoc(doc(db, 'users', currentUser.uid), { phone, telegram, country, residence, level });
+        userData.phone     = phone;
+        userData.telegram  = telegram;
+        userData.country   = country;
+        userData.residence = residence;
+        userData.level     = level;
         showToast('تم حفظ التعديلات ✅', 'success');
         renderProfile();
       } catch(e) { showToast('حدث خطأ: ' + e.message, 'error'); }
     };
 
-    // ── تغيير كلمة المرور (مع إعادة المصادقة) ──
+    // Change password
     window.changePassword = async function() {
-      const currentPw = document.getElementById('current_password').value;
-      const newPw     = document.getElementById('new_password').value;
-      const confPw    = document.getElementById('confirm_password').value;
-      const errEl     = document.getElementById('pw_error');
-      const sucEl     = document.getElementById('pw_success');
+      const newPw  = document.getElementById('new_password').value;
+      const confPw = document.getElementById('confirm_password').value;
+      const errEl  = document.getElementById('pw_error');
       errEl.classList.remove('show');
-      sucEl.style.display = 'none';
-
-      if (!currentPw)        { errEl.textContent = 'يرجاء إدخال كلمة المرور الحالية';         errEl.classList.add('show'); return; }
-      if (newPw.length < 6)  { errEl.textContent = 'كلمة المرور الجديدة يجب أن تكون ٦ أحرف على الأقل'; errEl.classList.add('show'); return; }
-      if (newPw !== confPw)  { errEl.textContent = 'كلمتا المرور الجديدتان غير متطابقتين';    errEl.classList.add('show'); return; }
-      if (newPw === currentPw) { errEl.textContent = 'كلمة المرور الجديدة مطابقة للحالية، اختر كلمة مختلفة'; errEl.classList.add('show'); return; }
-
+      if (newPw.length < 6) { errEl.textContent = 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'; errEl.classList.add('show'); return; }
+      if (newPw !== confPw) { errEl.textContent = 'كلمتا المرور غير متطابقتين'; errEl.classList.add('show'); return; }
       try {
-        // إعادة المصادقة أولاً (Firebase يشترطها للعمليات الحساسة)
-        const credential = EmailAuthProvider.credential(currentUser.email, currentPw);
-        await reauthenticateWithCredential(currentUser, credential);
         await updatePassword(currentUser, newPw);
-
-        document.getElementById('current_password').value  = '';
-        document.getElementById('new_password').value      = '';
-        document.getElementById('confirm_password').value  = '';
-        sucEl.textContent    = '✅ تم تغيير كلمة المرور بنجاح';
-        sucEl.style.display  = '';
-        setTimeout(() => { sucEl.style.display = 'none'; }, 4000);
+        document.getElementById('new_password').value    = '';
+        document.getElementById('confirm_password').value = '';
+        showToast('تم تغيير كلمة المرور ✅', 'success');
       } catch(e) {
-        const msgs = {
-          'auth/wrong-password':          'كلمة المرور الحالية غير صحيحة',
-          'auth/invalid-credential':      'كلمة المرور الحالية غير صحيحة',
-          'auth/too-many-requests':       'محاولات كثيرة، انتظر قليلاً ثم حاول مجدداً',
-          'auth/requires-recent-login':   'انتهت صلاحية الجلسة، سجّل الدخول مجدداً',
-        };
-        errEl.textContent = msgs[e.code] || ('خطأ: ' + e.message);
+        if (e.code === 'auth/requires-recent-login') {
+          errEl.textContent = 'يجب إعادة تسجيل الدخول لتغيير كلمة المرور';
+        } else { errEl.textContent = 'خطأ: ' + e.message; }
         errEl.classList.add('show');
       }
     };
 
-    // ── حذف الحساب ──
-    window.showDeleteConfirm = function() {
-      document.getElementById('deleteConfirmBox').style.display  = '';
-      document.getElementById('deleteAccountBtn').style.display  = 'none';
-      document.getElementById('delete_error').classList.remove('show');
-      document.getElementById('delete_password').value      = '';
-      document.getElementById('delete_confirm_text').value  = '';
-    };
-
-    window.cancelDeleteAccount = function() {
-      document.getElementById('deleteConfirmBox').style.display = 'none';
-      document.getElementById('deleteAccountBtn').style.display = '';
-    };
-
-    window.confirmDeleteAccount = async function() {
-      const password    = document.getElementById('delete_password').value;
-      const confirmText = document.getElementById('delete_confirm_text').value.trim();
-      const errEl       = document.getElementById('delete_error');
-      const btn         = document.getElementById('deleteConfirmBtn');
-      errEl.classList.remove('show');
-
-      if (!password)                  { errEl.textContent = 'يرجاء إدخال كلمة المرور';          errEl.classList.add('show'); return; }
-      if (confirmText !== 'احذف حسابي') { errEl.textContent = 'يرجاء كتابة "احذف حسابي" بالضبط'; errEl.classList.add('show'); return; }
-
-      btn.disabled     = true;
-      btn.textContent  = 'جارٍ الحذف...';
-
-      try {
-        // 1. إعادة المصادقة
-        const credential = EmailAuthProvider.credential(currentUser.email, password);
-        await reauthenticateWithCredential(currentUser, credential);
-
-        const uid = currentUser.uid;
-
-        // 2. حذف بيانات Firestore: مستند المستخدم
-        await deleteDoc(doc(db, 'users', uid));
-
-        // 3. حذف الإشعارات (اختياري — لا يوقف العملية لو فشل)
-        try {
-          const notifSnap = await getDocs(collection(db, 'notifications', uid, 'items'));
-          const delProms  = [];
-          notifSnap.forEach(d => delProms.push(deleteDoc(d.ref)));
-          await Promise.all(delProms);
-        } catch(e) { /* إذا فشل حذف الإشعارات نكمل */ }
-
-        // 4. حذف حساب Firebase Auth (يجب أن يكون آخر خطوة)
-        await deleteUser(currentUser);
-
-        // 5. إعادة التوجيه للصفحة الرئيسية
-        window.location.href = 'index.html';
-
-      } catch(e) {
-        const msgs = {
-          'auth/wrong-password':     'كلمة المرور غير صحيحة',
-          'auth/invalid-credential': 'كلمة المرور غير صحيحة',
-          'auth/too-many-requests':  'محاولات كثيرة، انتظر قليلاً',
-          'auth/requires-recent-login': 'انتهت صلاحية الجلسة، أعد تسجيل الدخول',
-        };
-        errEl.textContent = msgs[e.code] || ('خطأ: ' + e.message);
-        errEl.classList.add('show');
-        btn.disabled    = false;
-        btn.textContent = '🗑️ حذف حسابي نهائياً';
-      }
-    };
-
-    // ── فتح القناة الخاصة ──
+    // Open private channel with confirmation
     window.openPrivateChannel = function() {
       if (!privateChannelUrl) return showToast('لم يتم إضافة رابط القناة بعد', 'error');
       const confirmed = confirm(
@@ -509,6 +486,5 @@
       if (confirmed) window.open(privateChannelUrl, '_blank');
     };
   </script>
-
 </body>
 </html>
