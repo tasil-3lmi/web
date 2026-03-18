@@ -28,16 +28,6 @@
 </head>
 <body>
   <div id="headerPlaceholder"></div>
-
-  <!-- Overlay للـ sidebar على الجوال -->
-  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
-
-  <!-- زر فتح قائمة الدروس العائم (يظهر على الجوال فقط) -->
-  <button class="lessons-toggle-btn" id="lessonsToggleBtn" onclick="toggleSidebar()">
-    📚 قائمة الدروس
-    <span class="tog-count" id="togCount">0</span>
-  </button>
-
   <div class="page-content">
     <div class="course-top-banner">
       <div class="container">
@@ -45,7 +35,7 @@
         <h1 id="courseTitle">جارٍ التحميل...</h1>
         <p id="courseDesc"></p>
         <div class="course-top-meta">
-          <span>📖 <span id="lessonCountLabel">20</span> درس</span>
+          <span>📖 <span id="lessonCountLabel">50</span> درس</span>
           <span>📋 <span id="examCountLabel">0</span> اختبار</span>
         </div>
       </div>
@@ -73,13 +63,12 @@
   <div id="footerPlaceholder"></div>
 
   <script type="module">
-    import { renderHeader, renderFooter, initSharedBehavior } from './components.js';
+    import { renderHeader, renderFooter } from './components.js';
     import { auth, db, onAuthStateChanged, doc, getDoc, collection, getDocs, updateDoc } from './firebase.js';
 
-    // رسم الهيدر المبدئي
-    document.getElementById('headerPlaceholder').innerHTML = renderHeader('courses.html', null);
+    document.getElementById('headerPlaceholder').innerHTML = renderHeader('courses.html');
     document.getElementById('footerPlaceholder').innerHTML = renderFooter();
-    initSharedBehavior();
+    initHeader();
 
     const params = new URLSearchParams(location.search);
     const courseId = params.get('id') || 'prep';
@@ -105,9 +94,6 @@
       if (user) {
         const snap = await getDoc(doc(db, 'users', user.uid));
         userProgress = snap.data()?.progress || {};
-        const userData = snap.data() || {};
-        document.getElementById('headerPlaceholder').innerHTML = renderHeader('courses.html', userData);
-        initSharedBehavior();
       }
       loadCourse();
     });
@@ -132,7 +118,7 @@
         lessons.sort((a,b) => (a.order||0) - (b.order||0));
       } catch(e) {}
 
-      // Default 50 lessons if none in Firestore
+      // Build default 20 lessons if none
       if (!lessons.length) {
         for (let i = 1; i <= 50; i++) {
           lessons.push({ id: 'l'+i, title: 'الدرس ' + i, order: i, visible: true, locked: false });
@@ -152,17 +138,11 @@
     }
 
     function buildSidebar() {
-      const visibleLessons = lessons.filter(l => l.visible !== false);
-
-      // تحديث عداد الزر العائم
-      const togCount = document.getElementById('togCount');
-      if (togCount) togCount.textContent = visibleLessons.length;
-
       const linksEl = document.getElementById('lessonLinks');
-      linksEl.innerHTML = visibleLessons.map((l, i) => {
+      linksEl.innerHTML = lessons.filter(l => l.visible !== false).map((l, i) => {
         const done = userProgress['lesson_' + courseId + '_' + l.id];
         return `<a class="lesson-link${l.locked?' locked-lesson':''}${done?' done':''}"
-          onclick="selectLesson('${l.id}')" href="javascript:void(0)" id="ll-${l.id}">
+          onclick="openLesson('${l.id}')" href="javascript:void(0)" id="ll-${l.id}">
           <div class="l-num">${done ? '✓' : (i+1)}</div>
           <span>${l.title}</span>
           ${l.locked ? '<span style="font-size:0.75rem;margin-right:auto;">🔒</span>' : ''}
@@ -177,24 +157,6 @@
           ${ex.locked ? '<span style="font-size:0.75rem;margin-right:auto;">🔒</span>' : ''}
         </a>`).join('');
     }
-
-    // على الجوال: أغلق الـ sidebar عند اختيار درس
-    window.selectLesson = async function(lessonId) {
-      if (window.innerWidth <= 860) closeSidebar();
-      await openLesson(lessonId);
-    };
-
-    // فتح/إغلاق الـ sidebar
-    window.toggleSidebar = function() {
-      const sidebar = document.querySelector('.lessons-sidebar');
-      const overlay  = document.getElementById('sidebarOverlay');
-      const isOpen   = sidebar.classList.toggle('open');
-      overlay.classList.toggle('show', isOpen);
-    };
-    window.closeSidebar = function() {
-      document.querySelector('.lessons-sidebar')?.classList.remove('open');
-      document.getElementById('sidebarOverlay')?.classList.remove('show');
-    };
 
     window.openLesson = async function(lessonId) {
       document.querySelectorAll('.lesson-link').forEach(l => l.classList.remove('active'));
@@ -363,6 +325,15 @@
       setTimeout(()=>t.classList.remove('show'),3200);
     }
 
+    function initHeader() {
+      const header = document.getElementById('siteHeader');
+      const hamburger = document.getElementById('hamburger');
+      const mobileMenu = document.getElementById('mobileMenu');
+      window.addEventListener('scroll', () => header.classList.toggle('scrolled', window.scrollY > 40));
+      hamburger && hamburger.addEventListener('click', () => mobileMenu.classList.toggle('open'));
+    }
+    window.toggleNotifPanel = function() { const p=document.getElementById('notifPanel'); if(p) p.style.display=p.style.display==='none'?'block':'none'; };
+    window.markAllRead = function() {};
   </script>
 </body>
 </html>
