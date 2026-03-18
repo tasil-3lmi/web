@@ -1364,3 +1364,298 @@ select.form-control { appearance: none; background-image: url("data:image/svg+xm
 @media (max-width: 600px) {
   .channel-admin-row { grid-template-columns: 1fr; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE — شامل لجميع الصفحات على الجوال
+   breakpoints: 768px (جوال) | 480px (جوال صغير)
+═══════════════════════════════════════════════════════════════ */
+
+/* ── عناصر مشتركة بين الصفحات ── */
+@media (max-width: 768px) {
+
+  /* page-hero (curriculum, about, courses, questions) */
+  .page-hero {
+    padding: 88px 0 40px !important;
+    text-align: center;
+  }
+  .page-hero h1 { font-size: clamp(1.5rem, 6vw, 2rem) !important; }
+  .page-hero p  { font-size: 0.88rem !important; }
+
+  /* ── padding-top للصفحات الداخلية ── */
+  .page-content { padding-top: 0; }
+  .course-top-banner { padding: 80px 0 28px !important; }
+
+  /* ── بطاقات عامة ── */
+  .card, .panel-card, .profile-section,
+  .q-card, .exam-admin-block { padding: 18px !important; }
+
+  /* ── أزرار ── */
+  .btn { padding: 11px 20px; font-size: 0.88rem; }
+  .btn-sm { padding: 7px 14px; font-size: 0.78rem; }
+
+  /* ── جداول ── */
+  .data-table, .students-table, .schedule-table {
+    font-size: 0.78rem;
+  }
+  .data-table th, .data-table td,
+  .students-table th, .students-table td { padding: 8px 10px; }
+
+  /* ── تبويبات الإدارة ── */
+  .admin-tabs { overflow-x: auto; white-space: nowrap; gap: 6px; }
+  .admin-tab-btn { font-size: 0.78rem; padding: 8px 14px; white-space: nowrap; }
+
+  /* ── form grid ── */
+  .form-grid { grid-template-columns: 1fr !important; }
+  .form-grid .full { grid-column: span 1 !important; }
+}
+
+/* ══════════════════════════════
+   index.html
+══════════════════════════════ */
+@media (max-width: 768px) {
+  .hero { padding-top: 64px; }
+  .hero-inner { grid-template-columns: 1fr !important; gap: 32px; text-align: center; }
+  .hero-visual { display: none !important; }
+  .hero-title { font-size: clamp(1.8rem, 7vw, 2.4rem) !important; }
+  .hero-actions { justify-content: center; flex-wrap: wrap; gap: 10px; }
+  .hero-stats { justify-content: center; flex-wrap: wrap; gap: 16px; }
+  .hero-stat-num { font-size: 1.6rem; }
+  .about-grid { grid-template-columns: 1fr !important; gap: 32px; }
+  .about-features { grid-template-columns: 1fr !important; }
+  .target-inner { grid-template-columns: 1fr !important; gap: 24px; }
+  .target-list { grid-template-columns: 1fr !important; }
+  .adv-grid { grid-template-columns: 1fr !important; }
+  .cta-actions { flex-direction: column; align-items: center; gap: 12px; }
+}
+
+/* ══════════════════════════════
+   dashboard.html
+══════════════════════════════ */
+@media (max-width: 768px) {
+  /* dash-wrapper الآن عمود واحد */
+  .dash-wrapper {
+    grid-template-columns: 1fr !important;
+    padding-top: 64px !important;
+  }
+  .dash-main { padding: 20px 16px !important; }
+
+  /* Sidebar كـ drawer */
+  .dash-sidebar {
+    position: fixed !important;
+    top: 64px !important;
+    right: -300px;
+    width: 280px !important;
+    height: calc(100vh - 64px) !important;
+    z-index: 900;
+    transition: right 0.28s cubic-bezier(.4,0,.2,1) !important;
+    box-shadow: -4px 0 24px rgba(59,27,64,0.2);
+  }
+  .dash-sidebar.open { right: 0 !important; }
+
+  /* Welcome banner */
+  .welcome-banner { padding: 24px 20px !important; }
+  .welcome-banner h2 { font-size: 1.3rem !important; }
+
+  /* Stats row */
+  .student-stats { grid-template-columns: 1fr 1fr !important; gap: 12px !important; }
+  .stat-box .s-num { font-size: 1.6rem !important; }
+
+  /* Progress card */
+  .progress-card { padding: 20px !important; }
+  .progress-card h3 { font-size: 0.95rem !important; }
+
+  /* Students table في داشبورد */
+  .sup-table-card { padding: 16px !important; }
+}
+
+/* ══════════════════════════════
+   courses.html
+══════════════════════════════ */
+@media (max-width: 768px) {
+  .courses-grid { grid-template-columns: 1fr !important; gap: 16px !important; }
+  .course-card { padding: 0 !important; }
+  .course-card-header { padding: 20px !important; }
+  .course-card-body { padding: 16px 20px !important; }
+  .phase-header { flex-wrap: wrap; gap: 8px; }
+}
+
+/* ══════════════════════════════
+   course.html (المقرر)
+══════════════════════════════ */
+@media (max-width: 768px) {
+  .course-layout {
+    grid-template-columns: 1fr !important;
+  }
+  .lessons-sidebar {
+    position: fixed !important;
+    top: 64px !important;
+    right: -300px;
+    width: 280px !important;
+    height: calc(100vh - 64px) !important;
+    z-index: 900;
+    transition: right 0.28s !important;
+    box-shadow: -4px 0 24px rgba(59,27,64,0.2);
+  }
+  .lessons-sidebar.open { right: 0 !important; }
+  .lesson-content { padding: 20px 16px !important; }
+  .lesson-attachments { grid-template-columns: 1fr !important; }
+  .course-top-banner h1 { font-size: 1.3rem !important; }
+}
+
+/* ══════════════════════════════
+   curriculum.html
+══════════════════════════════ */
+@media (max-width: 768px) {
+  .curriculum-stats { grid-template-columns: 1fr 1fr !important; gap: 12px !important; }
+  .phase-card { margin-bottom: 20px; }
+  .matn-item { padding: 14px 16px !important; }
+  .matn-grid { grid-template-columns: 1fr !important; }
+}
+
+/* ══════════════════════════════
+   about.html
+══════════════════════════════ */
+@media (max-width: 768px) {
+  .about-hero-inner {
+    grid-template-columns: 1fr !important;
+    gap: 32px;
+    text-align: center;
+  }
+  .about-logo-side { display: none; }
+  .info-cards-grid { grid-template-columns: 1fr 1fr !important; }
+  .sheikh-section {
+    grid-template-columns: 1fr !important;
+    gap: 24px;
+    text-align: center;
+  }
+  .sheikh-img-wrap { margin: 0 auto; }
+}
+@media (max-width: 480px) {
+  .info-cards-grid { grid-template-columns: 1fr !important; }
+}
+
+/* ══════════════════════════════
+   exam.html
+══════════════════════════════ */
+@media (max-width: 768px) {
+  .exam-header-card { padding: 20px !important; }
+  .exam-header-card h1 { font-size: 1.2rem !important; }
+  .exam-meta { flex-wrap: wrap; gap: 8px; }
+  .exam-layout {
+    grid-template-columns: 1fr !important;
+  }
+  .exam-sidebar {
+    position: static !important;
+    order: 2;
+    height: auto !important;
+    border-radius: 12px;
+    margin: 0 0 20px;
+  }
+  .exam-main { order: 1; }
+  .exam-nav-grid { grid-template-columns: repeat(8, 1fr) !important; gap: 6px !important; }
+  .exam-actions { flex-direction: column; gap: 10px; }
+  .exam-actions .btn { width: 100%; justify-content: center; }
+  .result-card { padding: 28px 20px !important; }
+  .big-score { font-size: 3.5rem !important; }
+}
+
+/* ══════════════════════════════
+   questions.html
+══════════════════════════════ */
+@media (max-width: 768px) {
+  .questions-layout {
+    grid-template-columns: 1fr !important;
+    gap: 24px;
+  }
+  .q-form-card { order: -1; } /* نموذج السؤال فوق القائمة */
+  .q-card-header { flex-direction: column; gap: 8px; }
+}
+
+/* ══════════════════════════════
+   schedule.html (الجدول)
+══════════════════════════════ */
+@media (max-width: 768px) {
+  .week-nav { flex-wrap: wrap; justify-content: center; gap: 8px; }
+  .week-label { font-size: 0.85rem !important; text-align: center; }
+  /* الجدول يصبح scroll أفقي */
+  .schedule-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .schedule-table { min-width: 500px; }
+  .schedule-table th,
+  .schedule-table td { padding: 8px 6px !important; font-size: 0.75rem !important; min-width: 60px; }
+}
+
+/* ══════════════════════════════
+   register.html
+══════════════════════════════ */
+@media (max-width: 768px) {
+  .register-page { padding: 80px 0 40px !important; }
+  .register-body { padding: 20px 16px !important; }
+  .register-card { border-radius: 12px; }
+  .form-grid { grid-template-columns: 1fr !important; }
+  .form-grid .full { grid-column: span 1 !important; }
+  .role-btn { padding: 14px 8px !important; font-size: 0.82rem !important; }
+}
+
+/* ══════════════════════════════
+   profile.html
+══════════════════════════════ */
+@media (max-width: 768px) {
+  .profile-hero { padding: 88px 0 40px !important; }
+  .profile-hero-inner { flex-direction: column; text-align: center; gap: 16px; }
+  .profile-hero-badges { justify-content: center; }
+  #profileGrid {
+    grid-template-columns: 1fr !important;
+  }
+  .info-grid { grid-template-columns: 1fr !important; }
+}
+
+/* ══════════════════════════════
+   admin.html
+══════════════════════════════ */
+@media (max-width: 768px) {
+  .admin-header { padding: 88px 0 28px !important; }
+  .admin-header h1 { font-size: 1.4rem !important; }
+  .admin-body { padding: 20px 0 !important; }
+
+  /* تبويبات الإدارة: scroll أفقي */
+  .admin-tabs {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+    gap: 6px;
+    scrollbar-width: none;
+  }
+  .admin-tabs::-webkit-scrollbar { display: none; }
+  .admin-tab-btn { flex-shrink: 0; }
+
+  /* جدول الطلاب */
+  .students-admin-wrap { overflow-x: auto; }
+  #studentsAdminTable { min-width: 560px; }
+
+  /* محرر الجدول الأسبوعي */
+  .time-slot-row { grid-template-columns: 1fr 1fr !important; }
+
+  /* محرر المقررات */
+  .course-editor-row { grid-template-columns: 1fr 1fr !important; }
+  .lesson-admin-row  { grid-template-columns: 1fr !important; gap: 6px; }
+
+  /* Modals */
+  .modal-box { padding: 20px 16px !important; margin: 12px !important; max-width: calc(100vw - 24px) !important; }
+  .modal-box form > div[style*="grid"] { grid-template-columns: 1fr !important; }
+}
+
+/* ══════════════════════════════
+   جوال صغير جداً ≤ 400px
+══════════════════════════════ */
+@media (max-width: 400px) {
+  .hero-title     { font-size: 1.6rem !important; }
+  .welcome-banner h2 { font-size: 1.1rem !important; }
+  .student-stats  { grid-template-columns: 1fr !important; }
+  .stat-box .s-num { font-size: 1.4rem !important; }
+  .curriculum-stats { grid-template-columns: 1fr !important; }
+  .info-cards-grid  { grid-template-columns: 1fr !important; }
+  .admin-tab-btn  { font-size: 0.72rem !important; padding: 7px 10px !important; }
+  .site-name      { font-size: 0.82rem !important; }
+  .exam-nav-grid  { grid-template-columns: repeat(6, 1fr) !important; }
+}
