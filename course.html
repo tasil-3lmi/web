@@ -63,12 +63,13 @@
   <div id="footerPlaceholder"></div>
 
   <script type="module">
-    import { renderHeader, renderFooter } from './components.js';
+    import { renderHeader, renderFooter, initSharedBehavior } from './components.js';
     import { auth, db, onAuthStateChanged, doc, getDoc, collection, getDocs, updateDoc } from './firebase.js';
 
-    document.getElementById('headerPlaceholder').innerHTML = renderHeader('courses.html');
-    document.getElementById('footerPlaceholder').innerHTML = renderFooter();
-    initHeader();
+    // رسم الهيدر مبدئياً (قبل onAuthStateChanged)
+    document.getElementById('headerPlaceholder').innerHTML = renderHeader('courses.html', null);
+    document.getElementById('footerPlaceholder').innerHTML = renderFooter(null);
+    initSharedBehavior();
 
     const params = new URLSearchParams(location.search);
     const courseId = params.get('id') || 'prep';
@@ -94,6 +95,23 @@
       if (user) {
         const snap = await getDoc(doc(db, 'users', user.uid));
         userProgress = snap.data()?.progress || {};
+        const userData = snap.data() || {};
+
+        // تحديث الهيدر ببيانات المستخدم الكاملة
+        document.getElementById('headerPlaceholder').innerHTML = renderHeader('courses.html', userData);
+        initSharedBehavior();
+
+        // جلب الفوتر مع بيانات التواصل
+        getDoc(doc(db, 'contactInfo', 'main')).then(cs => {
+          if (!cs.exists()) return;
+          const contactData = cs.data();
+          document.getElementById('footerPlaceholder').innerHTML = renderFooter(contactData);
+          getDocs(collection(db, 'contactInfo', 'main', 'channels')).then(ch => {
+            const channels = []; ch.forEach(d => channels.push(d.data()));
+            contactData.channels = channels.sort((a,b) => (a.order||0)-(b.order||0));
+            document.getElementById('footerPlaceholder').innerHTML = renderFooter(contactData);
+          }).catch(() => {});
+        }).catch(() => {});
       }
       loadCourse();
     });
@@ -325,15 +343,6 @@
       setTimeout(()=>t.classList.remove('show'),3200);
     }
 
-    function initHeader() {
-      const header = document.getElementById('siteHeader');
-      const hamburger = document.getElementById('hamburger');
-      const mobileMenu = document.getElementById('mobileMenu');
-      window.addEventListener('scroll', () => header.classList.toggle('scrolled', window.scrollY > 40));
-      hamburger && hamburger.addEventListener('click', () => mobileMenu.classList.toggle('open'));
-    }
-    window.toggleNotifPanel = function() { const p=document.getElementById('notifPanel'); if(p) p.style.display=p.style.display==='none'?'block':'none'; };
-    window.markAllRead = function() {};
   </script>
 </body>
 </html>
