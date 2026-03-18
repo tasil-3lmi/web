@@ -76,7 +76,7 @@
         <!-- TABS -->
         <div class="admin-tabs">
           <button class="admin-tab-btn active" onclick="showAdminTab('questions', this)">💬 الأسئلة</button>
-          <button class="admin-tab-btn" onclick="showAdminTab('students', this)">👥 الطلاب <span id="adminPendingBadge" style="display:none;background:#e07000;color:white;border-radius:100px;padding:1px 7px;font-size:0.72rem;margin-right:4px;"></span></button>
+          <button class="admin-tab-btn" onclick="showAdminTab('students', this)">👥 الطلاب</button>
           <button class="admin-tab-btn" onclick="showAdminTab('supervisors', this)">👨‍💼 المشرفون</button>
           <button class="admin-tab-btn" onclick="showAdminTab('schedule', this)">📅 الجدول</button>
           <button class="admin-tab-btn" onclick="showAdminTab('courses', this)">📚 المقررات</button>
@@ -100,44 +100,11 @@
         <!-- STUDENTS TAB -->
         <div id="tab-students" class="admin-panel-content" style="display:none;">
           <div class="panel-card">
-            <h3>👥 إدارة الطلاب
-              <span id="pendingCountBadge" style="font-size:0.78rem;font-weight:normal;color:#a07000;background:rgba(212,140,0,0.12);padding:3px 10px;border-radius:100px;display:none;"></span>
-            </h3>
-
-            <!-- تبويبات الحالة -->
-            <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;" id="studentFilterTabs">
-              <button onclick="filterStudentsAdmin('pending')" id="sf-pending"
-                class="filter-btn active"
-                style="display:flex;align-items:center;gap:6px;">
-                🕐 بانتظار الموافقة
-                <span id="sf-cnt-pending" style="background:#e07000;color:white;border-radius:100px;padding:1px 7px;font-size:0.72rem;">0</span>
-              </button>
-              <button onclick="filterStudentsAdmin('approved')" id="sf-approved" class="filter-btn">
-                ✅ مقبولون
-                <span id="sf-cnt-approved" style="background:#1a7a4a;color:white;border-radius:100px;padding:1px 7px;font-size:0.72rem;margin-right:4px;">0</span>
-              </button>
-              <button onclick="filterStudentsAdmin('rejected')" id="sf-rejected" class="filter-btn">
-                ❌ مرفوضون
-                <span id="sf-cnt-rejected" style="background:#b92d3a;color:white;border-radius:100px;padding:1px 7px;font-size:0.72rem;margin-right:4px;">0</span>
-              </button>
-            </div>
-
+            <h3>👥 إدارة الطلاب</h3>
             <div style="overflow-x:auto;">
               <table class="data-table" id="studentsAdminTable">
-                <thead>
-                  <tr>
-                    <th>الاسم</th>
-                    <th>البريد</th>
-                    <th>الهاتف</th>
-                    <th>المرحلة</th>
-                    <th>الجنس</th>
-                    <th>الإنجاز</th>
-                    <th>الإجراءات</th>
-                  </tr>
-                </thead>
-                <tbody id="studentsAdminBody">
-                  <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-soft);">جارٍ التحميل...</td></tr>
-                </tbody>
+                <thead><tr><th>الاسم</th><th>البريد</th><th>المرحلة</th><th>الجنس</th><th>الإنجاز</th><th>الحالة</th><th>الإجراءات</th></tr></thead>
+                <tbody id="studentsAdminBody"><tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-soft);">جارٍ التحميل...</td></tr></tbody>
               </table>
             </div>
           </div>
@@ -408,134 +375,52 @@
     };
 
     // ===== STUDENTS =====
-    let currentStudentFilter = 'pending';
-
     async function loadStudents() {
       const snap = await getDocs(collection(db, 'users'));
       allStudents = [];
-      snap.forEach(d => { if (d.data().role === 'student') allStudents.push({ uid: d.id, ...d.data() }); });
-      updateStudentCounts();
-      renderStudents(currentStudentFilter);
+      snap.forEach(d => { if(d.data().role==='student') allStudents.push({uid:d.id,...d.data()}); });
+      renderStudents();
     }
 
-    function updateStudentCounts() {
-      const pending  = allStudents.filter(s => (s.status || 'pending') === 'pending').length;
-      const approved = allStudents.filter(s => s.status === 'approved').length;
-      const rejected = allStudents.filter(s => s.status === 'rejected').length;
-
-      document.getElementById('sf-cnt-pending').textContent  = pending;
-      document.getElementById('sf-cnt-approved').textContent = approved;
-      document.getElementById('sf-cnt-rejected').textContent = rejected;
-
-      // شارة التنبيه على تبويب الطلاب
-      const badge = document.getElementById('adminPendingBadge');
-      if (badge) { badge.textContent = pending; badge.style.display = pending > 0 ? '' : 'none'; }
-
-      // عنوان البطاقة
-      const countBadge = document.getElementById('pendingCountBadge');
-      if (countBadge) {
-        countBadge.textContent = pending > 0 ? `${pending} طلب بانتظار الموافقة` : '';
-        countBadge.style.display = pending > 0 ? '' : 'none';
-      }
-    }
-
-    window.filterStudentsAdmin = function(filter) {
-      currentStudentFilter = filter;
-      ['pending','approved','rejected'].forEach(f => {
-        document.getElementById('sf-' + f)?.classList.toggle('active', f === filter);
-      });
-      renderStudents(filter);
-    };
-
-    function renderStudents(filter = 'pending') {
-      const tbody    = document.getElementById('studentsAdminBody');
-      const list     = allStudents.filter(s => (s.status || 'pending') === filter);
-      const levelMap = { primary:'ابتدائي', middle:'متوسط', high:'ثانوي', bachelor:'بكالوريوس', master:'ماجستير', phd:'دكتوراه', work:'وظيفة' };
-
-      if (!list.length) {
-        const msgs = { pending: 'لا يوجد طلاب بانتظار الموافقة ✅', approved: 'لا يوجد طلاب مقبولون بعد', rejected: 'لا يوجد طلاب مرفوضون' };
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-soft);">${msgs[filter] || '—'}</td></tr>`;
-        return;
-      }
-
-      tbody.innerHTML = list.map(s => {
-        const done = Object.values(s.progress || {}).filter(Boolean).length;
-        const pct  = Math.round((done / TOTAL_ITEMS) * 100);
-
-        // أزرار الإجراء حسب الحالة
-        let actionBtns = '';
-        if (filter === 'pending') {
-          actionBtns = `
-            <div class="actions" style="display:flex;gap:6px;flex-wrap:wrap;">
-              <button class="btn btn-sm btn-success" onclick="acceptStudent('${s.uid}')">✅ قبول</button>
-              <button class="btn btn-sm btn-warn"    onclick="rejectStudent('${s.uid}')">❌ رفض</button>
-              <button class="btn btn-sm btn-danger"  onclick="deleteStudent('${s.uid}','${s.fullName}')">🗑️ حذف</button>
-            </div>`;
-        } else if (filter === 'approved') {
-          actionBtns = `
-            <div class="actions" style="display:flex;gap:6px;flex-wrap:wrap;">
-              <button class="btn btn-sm btn-warn"   onclick="rejectStudent('${s.uid}')">إلغاء القبول</button>
-              <button class="btn btn-sm btn-danger" onclick="deleteStudent('${s.uid}','${s.fullName}')">🗑️ حذف</button>
-            </div>`;
-        } else {
-          actionBtns = `
-            <div class="actions" style="display:flex;gap:6px;flex-wrap:wrap;">
-              <button class="btn btn-sm btn-success" onclick="acceptStudent('${s.uid}')">✅ قبول</button>
-              <button class="btn btn-sm btn-danger"  onclick="deleteStudent('${s.uid}','${s.fullName}')">🗑️ حذف</button>
-            </div>`;
-        }
-
+    function renderStudents() {
+      const tbody = document.getElementById('studentsAdminBody');
+      const levelMap = {primary:'ابتدائي',middle:'متوسط',high:'ثانوي',bachelor:'بكالوريوس',master:'ماجستير',phd:'دكتوراه',work:'وظيفة'};
+      if (!allStudents.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-soft);">لا يوجد طلاب</td></tr>'; return; }
+      tbody.innerHTML = allStudents.map(s => {
+        const done = Object.values(s.progress||{}).filter(Boolean).length;
+        const pct = Math.round((done/TOTAL_ITEMS)*100);
         return `<tr>
-          <td>
-            <strong>${s.fullName || '—'}</strong>
-            <div style="font-size:0.75rem;color:var(--text-soft);">${s.username || ''}</div>
-          </td>
-          <td style="direction:ltr;font-size:0.82rem;">${s.email || '—'}</td>
-          <td style="font-size:0.82rem;">${s.phone || '—'}</td>
-          <td>${levelMap[s.level] || '—'}</td>
-          <td>${s.gender === 'female' ? 'أنثى' : 'ذكر'}</td>
+          <td><strong>${s.fullName||'—'}</strong><br><small style="color:var(--text-soft);">${s.username||''}</small></td>
+          <td style="direction:ltr;">${s.email||'—'}</td>
+          <td>${levelMap[s.level]||'—'}</td>
+          <td>${s.gender==='female'?'أنثى':'ذكر'}</td>
           <td>
             <span style="font-weight:bold;color:var(--purple);">${pct}٪</span>
-            <div style="height:4px;background:rgba(59,27,64,0.08);border-radius:2px;margin-top:4px;width:80px;">
-              <div style="height:100%;background:linear-gradient(90deg,var(--purple),var(--gold));width:${pct}%;border-radius:2px;"></div>
+            <div style="height:4px;background:rgba(59,27,64,0.08);border-radius:2px;margin-top:4px;"><div style="height:100%;background:linear-gradient(90deg,var(--purple),var(--gold));width:${pct}%;border-radius:2px;"></div></div>
+          </td>
+          <td><span class="badge ${s.status==='rejected'?'badge-gold':'badge-green'}">${s.status==='rejected'?'مرفوض':'مقبول'}</span></td>
+          <td>
+            <div class="actions">
+              ${s.status!=='rejected'?`<button class="btn btn-sm btn-warn" onclick="rejectStudent('${s.uid}')">رفض</button>`:`<button class="btn btn-sm btn-success" onclick="acceptStudent('${s.uid}')">قبول</button>`}
+              <button class="btn btn-sm btn-danger" onclick="deleteStudent('${s.uid}','${s.fullName}')">حذف</button>
             </div>
           </td>
-          <td>${actionBtns}</td>
         </tr>`;
       }).join('');
     }
 
     window.rejectStudent = async function(uid) {
-      try {
-        await updateDoc(doc(db, 'users', uid), { status: 'rejected' });
-        const s = allStudents.find(x => x.uid === uid);
-        if (s) s.status = 'rejected';
-        updateStudentCounts();
-        renderStudents(currentStudentFilter);
-        showToast('تم رفض الطالب', 'success');
-      } catch(e) { showToast('حدث خطأ: ' + e.message, 'error'); }
+      await updateDoc(doc(db,'users',uid),{status:'rejected'});
+      showToast('تم رفض الطالب','success'); loadStudents();
     };
-
     window.acceptStudent = async function(uid) {
-      try {
-        await updateDoc(doc(db, 'users', uid), { status: 'approved' });
-        const s = allStudents.find(x => x.uid === uid);
-        if (s) s.status = 'approved';
-        updateStudentCounts();
-        renderStudents(currentStudentFilter);
-        showToast('تم قبول الطالب ✅', 'success');
-      } catch(e) { showToast('حدث خطأ: ' + e.message, 'error'); }
+      await updateDoc(doc(db,'users',uid),{status:'accepted'});
+      showToast('تم قبول الطالب','success'); loadStudents();
     };
-
     window.deleteStudent = async function(uid, name) {
       if (!confirm(`هل تريد حذف حساب "${name}"؟ لا يمكن التراجع.`)) return;
-      try {
-        await deleteDoc(doc(db, 'users', uid));
-        allStudents = allStudents.filter(x => x.uid !== uid);
-        updateStudentCounts();
-        renderStudents(currentStudentFilter);
-        showToast('تم حذف الحساب', 'success');
-      } catch(e) { showToast('حدث خطأ: ' + e.message, 'error'); }
+      await deleteDoc(doc(db,'users',uid));
+      showToast('تم حذف الحساب','success'); loadStudents();
     };
 
     // ===== SUPERVISORS =====
@@ -717,7 +602,7 @@
         lessons.sort((a,b)=>(a.order||0)-(b.order||0));
       } catch(e) {}
       if (!lessons.length) {
-        for (let i=1;i<=20;i++) lessons.push({id:'l'+i,title:'الدرس '+i,order:i,visible:true,locked:false});
+        for (let i=1;i<=50;i++) lessons.push({id:'l'+i,title:'الدرس '+i,order:i,visible:true,locked:false});
       }
       const el = document.getElementById('lessons_list_'+courseId);
       el.innerHTML = `<div style="font-size:0.72rem;color:var(--text-soft);margin-bottom:6px;display:grid;grid-template-columns:1fr 1fr 60px 60px 80px;gap:8px;padding:0 4px;">
