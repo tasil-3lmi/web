@@ -940,25 +940,62 @@
       const el = document.getElementById('channelsList');
       if (!el) return;
       const types = ['تليجرام','يوتيوب','تويتر','انستغرام','فيسبوك','واتساب','أخرى'];
-      el.innerHTML = contactChannels.map((ch,i) => `
-        <div class="channel-admin-row">
-          <select onchange="contactChannels[${i}].type=this.value">
-            ${types.map(t=>`<option value="${t}" ${ch.type===t?'selected':''}>${t}</option>`).join('')}
+      el.innerHTML = contactChannels.map((ch, i) => `
+        <div class="channel-admin-row" data-idx="${i}">
+          <select class="ch-type">
+            ${types.map(t => `<option value="${t}" ${ch.type===t?'selected':''}>${t}</option>`).join('')}
           </select>
-          <input type="text" value="${ch.icon||'🔗'}" placeholder="أيقونة" style="width:50px;text-align:center;" oninput="contactChannels[${i}].icon=this.value">
-          <input type="text" value="${ch.name||''}" placeholder="الاسم" oninput="contactChannels[${i}].name=this.value">
-          <input type="url" value="${ch.url||''}" placeholder="https://..." oninput="contactChannels[${i}].url=this.value">
+          <input type="text" class="ch-icon" value="${ch.icon||'🔗'}" placeholder="أيقونة" style="width:50px;text-align:center;">
+          <input type="text" class="ch-name" value="${ch.name||''}" placeholder="الاسم">
+          <input type="url"  class="ch-url"  value="${ch.url||''}"  placeholder="https://...">
           <button class="del-btn" onclick="removeChannel(${i})">✕</button>
         </div>`).join('');
     }
 
+    // قراءة جميع القنوات من الـ DOM قبل الحفظ
+    function collectChannelsFromDOM() {
+      const rows = document.querySelectorAll('#channelsList .channel-admin-row');
+      rows.forEach((row, i) => {
+        if (!contactChannels[i]) return;
+        contactChannels[i].type = row.querySelector('.ch-type')?.value || '';
+        contactChannels[i].icon = row.querySelector('.ch-icon')?.value || '';
+        contactChannels[i].name = row.querySelector('.ch-name')?.value || '';
+        contactChannels[i].url  = row.querySelector('.ch-url')?.value  || '';
+      });
+    }
+
     window.addChannel = function() {
+      collectChannelsFromDOM();
       contactChannels.push({ type:'تليجرام', icon:'✈️', name:'', url:'', order: contactChannels.length });
       renderChannels();
     };
-    window.removeChannel = function(i) { contactChannels.splice(i,1); renderChannels(); };
+    window.removeChannel = function(i) {
+      collectChannelsFromDOM();
+      contactChannels.splice(i, 1);
+      renderChannels();
+    };
 
-    window.saveContactInfo = async function() {
+    window.saveChannels = async function() {
+      collectChannelsFromDOM();
+      try {
+        // حذف القنوات المحذوفة من Firestore أولاً
+        const oldSnap = await getDocs(collection(db,'contactInfo','main','channels'));
+        const oldIds  = new Set(); oldSnap.forEach(d => oldIds.add(d.id));
+        const newIds  = new Set(contactChannels.map(ch => ch.id).filter(Boolean));
+        const delProms = [...oldIds].filter(id => !newIds.has(id))
+          .map(id => deleteDoc(doc(db,'contactInfo','main','channels',id)));
+        await Promise.all(delProms);
+
+        // حفظ القنوات الحالية
+        for (let i = 0; i < contactChannels.length; i++) {
+          const ch = contactChannels[i];
+          const id = ch.id || 'ch_' + Date.now() + '_' + i;
+          contactChannels[i].id = id;
+          await setDoc(doc(db,'contactInfo','main','channels',id), { ...ch, id, order: i });
+        }
+        showToast('تم حفظ القنوات ✅','success');
+      } catch(e) { showToast('خطأ: ' + e.message, 'error'); }
+    };
       await setDoc(doc(db,'contactInfo','main'), {
         phone:    document.getElementById('ct_phone').value.trim(),
         whatsapp: document.getElementById('ct_whatsapp').value.trim(),
@@ -968,15 +1005,6 @@
         updatedBy: currentAdmin?.fullName || ''
       }, { merge: true });
       showToast('تم حفظ معلومات التواصل ✅','success');
-    };
-
-    window.saveChannels = async function() {
-      for (let i=0; i<contactChannels.length; i++) {
-        const ch = contactChannels[i];
-        const id = ch.id || 'ch_'+Date.now()+'_'+i;
-        await setDoc(doc(db,'contactInfo','main','channels',id), {...ch, id, order:i});
-      }
-      showToast('تم حفظ القنوات ✅','success');
     };
 
     window.savePrivateChannel = async function() {
