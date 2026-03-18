@@ -62,6 +62,14 @@
       </div>
     </div>
 
+    <div id="loadingScreen" style="text-align:center;padding:80px 0;">
+      <div style="font-size:3rem;margin-bottom:16px;animation:spin 1.2s linear infinite;display:inline-block;">⏳</div>
+      <p style="color:var(--text-soft);font-size:1rem;">جارٍ التحقق من صلاحياتك...</p>
+    </div>
+    <style>
+      @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    </style>
+
     <div id="accessDenied" style="display:none;">
       <div class="container" style="padding-top:60px;text-align:center;">
         <div style="font-size:4rem;margin-bottom:16px;">🚫</div>
@@ -275,6 +283,7 @@
       if (!snap.exists()) { window.location.href = 'register.html'; return; }
       const data = snap.data();
       if (data.role !== 'superAdmin' && data.role !== 'supervisor') {
+        document.getElementById('loadingScreen').style.display = 'none';
         document.getElementById('accessDenied').style.display = '';
         return;
       }
@@ -298,6 +307,7 @@
       document.getElementById('footerPlaceholder').innerHTML = renderFooter(contactData);
       initSharedBehavior();
 
+      document.getElementById('loadingScreen').style.display = 'none';
       document.getElementById('adminContent').style.display = '';
       if (!isSuperAdmin) {
         const supBtn = document.querySelector('[onclick*="supervisors"]');
