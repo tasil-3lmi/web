@@ -100,8 +100,14 @@
         <!-- STUDENTS TAB -->
         <div id="tab-students" class="admin-panel-content" style="display:none;">
           <div class="panel-card">
-            <h3>👥 إدارة الطلاب</h3>
-           <div style="overflow-x:auto;">
+            <h3>👥 إدارة الطلاب <span id="pendingStudentsCount" class="badge badge-gold" style="font-size:0.75rem;"></span></h3>
+            <div class="filter-row" style="display:flex;gap:8px;margin-bottom:16px;">
+              <button class="filter-btn active" onclick="filterStudents('all',this)">الكل</button>
+              <button class="filter-btn" onclick="filterStudents('pending',this)">⏳ قيد المراجعة</button>
+              <button class="filter-btn" onclick="filterStudents('accepted',this)">✅ مقبول</button>
+              <button class="filter-btn" onclick="filterStudents('rejected',this)">🚫 مرفوض</button>
+            </div>
+            <div style="overflow-x:auto;">
               <table class="data-table" id="studentsAdminTable">
                 <thead><tr><th>الاسم</th><th>البريد</th><th>المرحلة</th><th>الجنس</th><th>الإنجاز</th><th>الحالة</th><th>الإجراءات</th></tr></thead>
                 <tbody id="studentsAdminBody"><tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-soft);">جارٍ التحميل...</td></tr></tbody>
@@ -109,7 +115,7 @@
             </div>
           </div>
         </div>
- 
+
         <!-- SUPERVISORS TAB -->
         <div id="tab-supervisors" class="admin-panel-content" style="display:none;">
           <div class="panel-card">
@@ -382,11 +388,23 @@
       renderStudents();
     }
 
-    function renderStudents() {
+    window.filterStudents = function(status, btn) {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const filtered = status === 'all' ? allStudents : allStudents.filter(s => (s.status || 'pending') === status);
+      renderStudents(filtered);
+    };
+
+    function renderStudents(students) {
+      students = students || allStudents;
       const tbody = document.getElementById('studentsAdminBody');
       const levelMap = {primary:'ابتدائي',middle:'متوسط',high:'ثانوي',bachelor:'بكالوريوس',master:'ماجستير',phd:'دكتوراه',work:'وظيفة'};
-      if (!allStudents.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-soft);">لا يوجد طلاب</td></tr>'; return; }
-      tbody.innerHTML = allStudents.map(s => {
+      // Update pending count badge
+      const pendingCount = allStudents.filter(s => (s.status || 'pending') === 'pending').length;
+      const pendingEl = document.getElementById('pendingStudentsCount');
+      if (pendingEl) pendingEl.textContent = pendingCount > 0 ? `${pendingCount} بانتظار المراجعة` : '';
+      if (!students.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-soft);">لا يوجد طلاب</td></tr>'; return; }
+      tbody.innerHTML = students.map(s => {
         const done = Object.values(s.progress||{}).filter(Boolean).length;
         const pct = Math.round((done/TOTAL_ITEMS)*100);
         return `<tr>
@@ -398,10 +416,18 @@
             <span style="font-weight:bold;color:var(--purple);">${pct}٪</span>
             <div style="height:4px;background:rgba(59,27,64,0.08);border-radius:2px;margin-top:4px;"><div style="height:100%;background:linear-gradient(90deg,var(--purple),var(--gold));width:${pct}%;border-radius:2px;"></div></div>
           </td>
-          <td><span class="badge ${s.status==='rejected'?'badge-gold':'badge-green'}">${s.status==='rejected'?'مرفوض':'مقبول'}</span></td>
+          <td>
+            ${s.status==='accepted'
+              ? '<span class="badge badge-green">مقبول</span>'
+              : s.status==='rejected'
+                ? '<span class="badge badge-danger" style="background:rgba(185,45,58,0.12);color:#b92d3a;">مرفوض</span>'
+                : '<span class="badge badge-gold">⏳ قيد المراجعة</span>'}
+          </td>
           <td>
             <div class="actions">
-              ${s.status!=='rejected'?`<button class="btn btn-sm btn-warn" onclick="rejectStudent('${s.uid}')">رفض</button>`:`<button class="btn btn-sm btn-success" onclick="acceptStudent('${s.uid}')">قبول</button>`}
+              ${s.status==='accepted'
+                ? `<button class="btn btn-sm btn-warn" onclick="rejectStudent('${s.uid}')">رفض</button>`
+                : `<button class="btn btn-sm btn-success" onclick="acceptStudent('${s.uid}')">قبول</button>`}
               <button class="btn btn-sm btn-danger" onclick="deleteStudent('${s.uid}','${s.fullName}')">حذف</button>
             </div>
           </td>
