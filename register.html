@@ -207,7 +207,8 @@
                   </div>
                   <div class="form-group">
                     <label class="form-label">اسم المستخدم <span class="req">*</span></label>
-                    <input type="text" class="form-control" id="reg_username" placeholder="username" required>
+                    <input type="text" class="form-control" id="reg_username" placeholder="username" required onblur="checkUsernameUnique(this.value)">
+                    <div class="form-error" id="username_error" style="font-size:0.82rem;margin-top:4px;"></div>
                   </div>
                   <div class="form-group">
                     <label class="form-label">كلمة المرور <span class="req">*</span></label>
@@ -476,6 +477,32 @@
     };
 
     // ============ REGISTER NEW STUDENT ============
+    // ── التحقق من فرادة اسم المستخدم ──
+    window.checkUsernameUnique = async function(username) {
+      const errEl = document.getElementById('username_error');
+      errEl.textContent = '';
+      errEl.classList.remove('show');
+      username = username.trim();
+      if (!username) return true;
+
+      try {
+        const snap = await getDocs(collection(db, 'users'));
+        const exists = snap.docs.some(d => d.data().username === username);
+        if (exists) {
+          errEl.textContent = '⚠️ اسم المستخدم مستخدم مسبقاً، يرجى اختيار اسم آخر.';
+          errEl.style.display = 'block';
+          errEl.style.color = '#b92d3a';
+          document.getElementById('reg_username').style.borderColor = '#b92d3a';
+          return false;
+        } else {
+          document.getElementById('reg_username').style.borderColor = '#1a7a4a';
+          return true;
+        }
+      } catch(e) {
+        return true; // في حالة خطأ الشبكة نسمح بالمتابعة
+      }
+    };
+
     window.handleRegister = async function(e) {
       e.preventDefault();
       isRegistering = true; // منع onAuthStateChanged من التدخل
@@ -498,6 +525,15 @@
       const residence = document.getElementById('reg_residence').value.trim();
       const level     = document.getElementById('reg_level').value;
       const gender    = document.querySelector('input[name="gender"]:checked')?.value || 'male';
+
+      // التحقق من فرادة اسم المستخدم قبل الإنشاء
+      const isUnique = await checkUsernameUnique(username);
+      if (!isUnique) {
+        isRegistering = false;
+        btn.disabled = false;
+        btnText.textContent = 'إنشاء الحساب';
+        return;
+      }
 
       try {
         // الخطوة 1: إنشاء الحساب في Firebase Auth
@@ -549,8 +585,29 @@
 
       try {
         const email = await emailFromIdentifier(identifier);
-        // setPersistence مُعيَّن مسبقاً في firebase.js — لا نحتاجه هنا
-        await signInWithEmailAndPassword(auth, email, password);
+        const cred = await signInWithEmailAndPassword(auth, email, password);
+
+        // ── التحقق من حالة الحساب قبل التحويل ──
+        const snap = await getDoc(doc(db, 'users', cred.user.uid));
+        if (snap.exists()) {
+          const userData = snap.data();
+          if (userData.status === 'pending') {
+            await auth.signOut();
+            errEl.textContent = 'حسابك قيد المراجعة، يرجى الانتظار حتى تتم موافقة المشرف.';
+            errEl.classList.add('show');
+            btn.disabled = false;
+            btnText.textContent = 'تسجيل الدخول';
+            return;
+          }
+          if (userData.status === 'rejected') {
+            await auth.signOut();
+            errEl.textContent = 'تم رفض طلب تسجيلك. يرجى التواصل مع إدارة المعهد.';
+            errEl.classList.add('show');
+            btn.disabled = false;
+            btnText.textContent = 'تسجيل الدخول';
+            return;
+          }
+        }
         window.location.href = 'dashboard.html';
       } catch (err) {
         errEl.textContent = 'بيانات غير صحيحة، تحقق من البريد وكلمة المرور.';
