@@ -3,593 +3,332 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>التسجيل — معهد التأصيل العلمي</title>
+  <title>الملف الشخصي — معهد التأصيل العلمي</title>
   <link rel="stylesheet" href="styles.css">
   <style>
-    .register-page {
-      min-height: 100vh;
-      background: linear-gradient(160deg, var(--white) 0%, rgba(212,180,142,0.06) 50%, rgba(59,27,64,0.03) 100%);
-      padding: 120px 0 80px;
-    }
-    .register-container {
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 0 24px;
-    }
-    .register-header {
+    body { background: #f7f5fa; }
+    .profile-hero {
+      background: linear-gradient(135deg, var(--purple), #5a2d6b);
+      padding: 110px 0 60px;
       text-align: center;
-      margin-bottom: 40px;
+      color: white;
     }
-    .register-header img { width: 80px; height: 80px; object-fit: contain; margin: 0 auto 16px; display: block; }
-    .register-header h1 { font-size: 1.8rem; color: var(--purple); margin-bottom: 8px; }
-    .register-header p { color: var(--text-soft); font-size: 0.92rem; }
-
-    .register-card {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      box-shadow: var(--shadow-lg);
-      overflow: hidden;
+    .profile-avatar {
+      width: 90px; height: 90px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.18);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.2rem; font-weight: bold; color: white;
+      margin: 0 auto 16px;
+      border: 3px solid rgba(255,255,255,0.35);
     }
-
-    /* Role Switcher */
-    .role-switcher {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      background: rgba(59,27,64,0.04);
-      border-bottom: 1px solid var(--border);
+    .profile-name { font-size: 1.5rem; font-weight: bold; margin-bottom: 6px; }
+    .profile-role-badge {
+      display: inline-block; padding: 4px 16px;
+      background: rgba(212,180,142,0.25);
+      border: 1px solid rgba(212,180,142,0.4);
+      border-radius: 100px; font-size: 0.82rem; color: var(--gold);
     }
-    .role-btn {
-      padding: 18px;
-      text-align: center;
-      font-family: inherit;
-      font-size: 0.95rem;
-      font-weight: bold;
-      color: var(--text-soft);
-      background: none;
-      border: none;
-      cursor: pointer;
-      transition: var(--transition);
-      border-bottom: 3px solid transparent;
+    .profile-body { padding: 40px 0 60px; }
+    .panel-card {
+      background: white; border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 28px;
+      box-shadow: var(--shadow); margin-bottom: 24px;
     }
-    .role-btn.active {
-      color: var(--purple);
-      background: var(--white);
-      border-bottom-color: var(--purple);
+    .panel-card h3 {
+      font-size: 1rem; font-weight: bold; color: var(--purple);
+      margin-bottom: 20px; display: flex; align-items: center; gap: 8px;
     }
-    .role-btn .role-icon { font-size: 1.3rem; display: block; margin-bottom: 4px; }
-
-    .register-body { padding: 36px; }
-
-    /* Inner Tabs (for student: new account / login) */
-    .inner-tabs { display: flex; gap: 0; margin-bottom: 28px; background: rgba(59,27,64,0.05); border-radius: 100px; padding: 4px; }
-    .inner-tab {
-      flex: 1; padding: 10px; text-align: center;
-      font-family: inherit; font-size: 0.88rem; font-weight: bold;
-      background: none; border: none; border-radius: 100px;
-      cursor: pointer; transition: var(--transition); color: var(--text-soft);
+    .info-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
     }
-    .inner-tab.active { background: var(--white); color: var(--purple); box-shadow: 0 2px 8px rgba(59,27,64,0.1); }
-
-    /* Form Grid */
-    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; }
-    .form-grid .form-group { grid-column: span 1; }
-    .form-grid .full { grid-column: span 2; }
-
-    .submit-btn {
-      width: 100%;
-      padding: 16px;
-      background: var(--purple);
-      color: var(--white);
-      border: none;
-      border-radius: var(--radius-sm);
-      font-family: inherit;
-      font-size: 1rem;
-      font-weight: bold;
-      cursor: pointer;
-      transition: var(--transition);
-      display: flex; align-items: center; justify-content: center; gap: 10px;
-      margin-top: 8px;
+    .info-item label {
+      display: block; font-size: 0.75rem; color: var(--text-soft);
+      margin-bottom: 4px; font-weight: bold;
     }
-    .submit-btn:hover { background: var(--purple-dark); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(59,27,64,0.3); }
-    .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-
-    .divider-text {
-      text-align: center;
-      font-size: 0.8rem;
-      color: var(--text-soft);
-      margin: 20px 0;
-      position: relative;
+    .info-item span {
+      font-size: 0.92rem; color: var(--text);
     }
-    .divider-text::before, .divider-text::after {
-      content: '';
-      position: absolute;
-      top: 50%; width: 38%;
-      height: 1px; background: var(--border);
+    .status-pending  { background: rgba(212,180,142,0.15); color: #b07d2a; padding: 3px 12px; border-radius: 100px; font-size: 0.8rem; font-weight: bold; }
+    .status-accepted { background: rgba(26,122,74,0.12);   color: #1a7a4a; padding: 3px 12px; border-radius: 100px; font-size: 0.8rem; font-weight: bold; }
+    .status-rejected { background: rgba(185,45,58,0.10);   color: #b92d3a; padding: 3px 12px; border-radius: 100px; font-size: 0.8rem; font-weight: bold; }
+    .progress-bar-wrap { background: rgba(59,27,64,0.08); border-radius: 8px; height: 10px; margin-top: 6px; }
+    .progress-bar-fill { height: 100%; border-radius: 8px; background: linear-gradient(90deg, var(--purple), var(--gold)); transition: width 0.6s ease; }
+    .private-channel-box {
+      background: rgba(212,180,142,0.08); border: 1px solid rgba(212,180,142,0.3);
+      border-radius: var(--radius-sm); padding: 18px; text-align: center;
     }
-    .divider-text::before { right: 0; }
-    .divider-text::after { left: 0; }
-
-    .switch-link {
-      text-align: center;
-      font-size: 0.85rem;
-      color: var(--text-soft);
-      margin-top: 16px;
+    .private-channel-box a {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 24px; background: linear-gradient(135deg,var(--purple),#5a2d6b);
+      color: white; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 0.9rem;
     }
-    .switch-link a { color: var(--purple); font-weight: bold; text-decoration: underline; cursor: pointer; }
-
-    /* Radio group */
-    .radio-group { display: flex; gap: 16px; }
-    .radio-item { display: flex; align-items: center; gap: 8px; cursor: pointer; }
-    .radio-item input { accent-color: var(--purple); width: 16px; height: 16px; }
-    .radio-item label { font-size: 0.9rem; color: var(--text-main); cursor: pointer; }
-
-    /* Success state */
-    .success-state {
-      display: none;
-      text-align: center;
-      padding: 40px 20px;
-    }
-    .success-state.show { display: block; animation: scaleIn 0.4s ease; }
-    .success-icon { font-size: 4rem; margin-bottom: 16px; }
-    .success-state h3 { font-size: 1.4rem; color: var(--purple); margin-bottom: 8px; }
-    .success-state p { color: var(--text-soft); font-size: 0.9rem; margin-bottom: 24px; }
-
-    @media (max-width: 560px) {
-      .form-grid { grid-template-columns: 1fr; }
-      .form-grid .full { grid-column: span 1; }
-      .register-body { padding: 24px; }
-    }
+    .edit-form { display: none; }
+    .edit-form.open { display: block; }
+    @media(max-width:600px) { .info-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
   <div id="headerPlaceholder"></div>
+  <div class="page-content">
 
-  <div class="page-content register-page">
-    <div class="register-container">
-      <div class="register-header fade-in-up">
-        <img id="registerLogo" alt="شعار المعهد">
-        <h1>التسجيل في المعهد</h1>
-        <p>سجّل حسابك وابدأ رحلتك العلمية</p>
+    <!-- HERO -->
+    <div class="profile-hero">
+      <div class="container">
+        <div class="profile-avatar" id="profileAvatar">؟</div>
+        <div class="profile-name" id="profileName">جارٍ التحميل...</div>
+        <div class="profile-role-badge" id="profileRole">طالب</div>
       </div>
+    </div>
 
-      <div class="register-card fade-in-up delay-1">
+    <div class="profile-body">
+      <div class="container" style="max-width:720px;">
 
-        <!-- Role Switcher -->
-        <div class="role-switcher">
-          <button class="role-btn active" id="roleStudent" onclick="switchRole('student')">
-            <span class="role-icon">👨‍🎓</span>
-            طالب
-          </button>
-          <button class="role-btn" id="roleSupervisor" onclick="switchRole('supervisor')">
-            <span class="role-icon">👨‍💼</span>
-            مشرف
-          </button>
+        <!-- حالة الحساب -->
+        <div class="panel-card" id="statusCard" style="display:none;">
+          <h3>📋 حالة الحساب</h3>
+          <div id="statusContent"></div>
         </div>
 
-        <div class="register-body">
-
-          <!-- ============================
-               STUDENT SECTION
-               ============================ -->
-          <div id="studentSection">
-            <!-- Inner tabs -->
-            <div class="inner-tabs">
-              <button class="inner-tab active" id="tabNewAccount" onclick="switchStudentTab('new')">حساب جديد</button>
-              <button class="inner-tab" id="tabLogin" onclick="switchStudentTab('login')">تسجيل الدخول</button>
-            </div>
-
-            <!-- New Account Form -->
-            <div id="formNewAccount">
-              <div class="success-state" id="successRegister">
-                <div class="success-icon">🕐</div>
-                <h3 style="color:var(--purple);">تم استلام طلبك بنجاح!</h3>
-                <p style="font-size:1rem;font-weight:bold;color:var(--purple);margin-bottom:8px;">
-                  انتظر قبولك
-                </p>
-                <p style="color:var(--text-soft);font-size:0.88rem;line-height:1.8;">
-                  سيتم مراجعة طلبك من قِبَل إدارة المعهد في أقرب وقت.<br>
-                  وإن تأخر الرد راجع إدارة المعهد.
-                </p>
-                <a href="index.html" class="btn btn-outline" style="margin-top:16px;">
-                  العودة للرئيسية
-                </a>
-              </div>
-              <form id="registerForm" onsubmit="handleRegister(event)">
-                <div class="form-grid">
-                  <div class="form-group full">
-                    <label class="form-label">الاسم الثلاثي <span class="req">*</span></label>
-                    <input type="text" class="form-control" id="reg_fullName" placeholder="أدخل اسمك الثلاثي" required>
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">البريد الإلكتروني <span class="req">*</span></label>
-                    <input type="email" class="form-control" id="reg_email" placeholder="example@mail.com" required>
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">اسم المستخدم <span class="req">*</span></label>
-                    <input type="text" class="form-control" id="reg_username" placeholder="username" required>
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">كلمة المرور <span class="req">*</span></label>
-                    <input type="password" class="form-control" id="reg_password" placeholder="••••••••" required minlength="6">
-                  </div>
-                  <div class="form-group full">
-                    <label class="form-label">رقم الهاتف</label>
-                    <div style="display:flex;gap:8px;">
-                      <select class="form-control" id="reg_dialcode" style="width:130px;flex-shrink:0;padding-right:8px;">
-                        <option value="+968">🇴🇲 +968</option>
-                        <option value="+966">🇸🇦 +966</option>
-                        <option value="+971">🇦🇪 +971</option>
-                        <option value="+974">🇶🇦 +974</option>
-                        <option value="+973">🇧🇭 +973</option>
-                        <option value="+965">🇰🇼 +965</option>
-                        <option value="+967">🇾🇪 +967</option>
-                        <option value="+962">🇯🇴 +962</option>
-                        <option value="+963">🇸🇾 +963</option>
-                        <option value="+961">🇱🇧 +961</option>
-                        <option value="+964">🇮🇶 +964</option>
-                        <option value="+20">🇪🇬 +20</option>
-                        <option value="+212">🇲🇦 +212</option>
-                        <option value="+213">🇩🇿 +213</option>
-                        <option value="+216">🇹🇳 +216</option>
-                        <option value="+218">🇱🇾 +218</option>
-                        <option value="+249">🇸🇩 +249</option>
-                        <option value="+252">🇸🇴 +252</option>
-                        <option value="+60">🇲🇾 +60</option>
-                        <option value="+62">🇮🇩 +62</option>
-                        <option value="+44">🇬🇧 +44</option>
-                        <option value="+1">🇺🇸 +1</option>
-                        <option value="+49">🇩🇪 +49</option>
-                        <option value="+33">🇫🇷 +33</option>
-                        <option value="+90">🇹🇷 +90</option>
-                        <option value="+92">🇵🇰 +92</option>
-                        <option value="+91">🇮🇳 +91</option>
-                        <option value="+other">🌍 أخرى</option>
-                      </select>
-                      <input type="tel" class="form-control" id="reg_phone" placeholder="XXXX XXXX" style="flex:1;">
-                    </div>
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">معرف التليجرام</label>
-                    <input type="text" class="form-control" id="reg_telegram" placeholder="@username">
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">البلد <span class="req">*</span></label>
-                    <select class="form-control" id="reg_country">
-                      <option value="">اختر البلد</option>
-                      <option value="عُمان">🇴🇲 عُمان</option>
-                      <option value="السعودية">🇸🇦 المملكة العربية السعودية</option>
-                      <option value="الإمارات">🇦🇪 الإمارات</option>
-                      <option value="قطر">🇶🇦 قطر</option>
-                      <option value="البحرين">🇧🇭 البحرين</option>
-                      <option value="الكويت">🇰🇼 الكويت</option>
-                      <option value="اليمن">🇾🇪 اليمن</option>
-                      <option value="الأردن">🇯🇴 الأردن</option>
-                      <option value="سوريا">🇸🇾 سوريا</option>
-                      <option value="لبنان">🇱🇧 لبنان</option>
-                      <option value="العراق">🇮🇶 العراق</option>
-                      <option value="مصر">🇪🇬 مصر</option>
-                      <option value="المغرب">🇲🇦 المغرب</option>
-                      <option value="الجزائر">🇩🇿 الجزائر</option>
-                      <option value="تونس">🇹🇳 تونس</option>
-                      <option value="ليبيا">🇱🇾 ليبيا</option>
-                      <option value="السودان">🇸🇩 السودان</option>
-                      <option value="الصومال">🇸🇴 الصومال</option>
-                      <option value="ماليزيا">🇲🇾 ماليزيا</option>
-                      <option value="إندونيسيا">🇮🇩 إندونيسيا</option>
-                      <option value="المملكة المتحدة">🇬🇧 المملكة المتحدة</option>
-                      <option value="الولايات المتحدة">🇺🇸 الولايات المتحدة</option>
-                      <option value="ألمانيا">🇩🇪 ألمانيا</option>
-                      <option value="فرنسا">🇫🇷 فرنسا</option>
-                      <option value="تركيا">🇹🇷 تركيا</option>
-                      <option value="باكستان">🇵🇰 باكستان</option>
-                      <option value="الهند">🇮🇳 الهند</option>
-                      <option value="أخرى">🌍 أخرى</option>
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">مكان الإقامة</label>
-                    <input type="text" class="form-control" id="reg_residence" placeholder="المدينة / المنطقة">
-                  </div>
-                  <div class="form-group full">
-                    <label class="form-label">المرحلة الدراسية</label>
-                    <select class="form-control" id="reg_level">
-                      <option value="">اختر المرحلة</option>
-                      <option value="primary">ابتدائي</option>
-                      <option value="middle">متوسط</option>
-                      <option value="high">ثانوي</option>
-                      <option value="bachelor">بكالوريوس</option>
-                      <option value="master">ماجستير</option>
-                      <option value="phd">دكتوراه</option>
-                      <option value="work">وظيفة</option>
-                    </select>
-                  </div>
-                  <div class="form-group full">
-                    <label class="form-label">الجنس <span class="req">*</span></label>
-                    <div class="radio-group">
-                      <label class="radio-item">
-                        <input type="radio" name="gender" value="male" checked> <span>ذكر</span>
-                      </label>
-                      <label class="radio-item">
-                        <input type="radio" name="gender" value="female"> <span>أنثى</span>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-                <div class="form-error" id="reg_error"></div>
-                <button type="submit" class="submit-btn" id="registerBtn">
-                  <span id="registerBtnText">إنشاء الحساب</span>
-                </button>
-                <div class="switch-link">
-                  لديك حساب؟ <a onclick="switchStudentTab('login')">تسجيل الدخول</a>
-                </div>
-              </form>
-            </div>
-
-            <!-- Login Form -->
-            <div id="formLogin" style="display:none;">
-              <div class="success-state" id="successLogin">
-                <div class="success-icon">✅</div>
-                <h3>أهلاً وسهلاً!</h3>
-                <p>جارٍ تحويلك إلى لوحة التحكم...</p>
-              </div>
-              <form id="loginForm" onsubmit="handleLogin(event)">
-                <div class="form-group">
-                  <label class="form-label">البريد الإلكتروني أو اسم المستخدم <span class="req">*</span></label>
-                  <input type="text" class="form-control" id="login_identifier" placeholder="البريد أو اسم المستخدم" required>
-                </div>
-                <div class="form-group">
-                  <label class="form-label">كلمة المرور <span class="req">*</span></label>
-                  <input type="password" class="form-control" id="login_password" placeholder="••••••••" required>
-                </div>
-                <div class="form-group">
-                  <label class="checkbox-group">
-                    <input type="checkbox" id="login_remember">
-                    <label for="login_remember">تذكرني (تسجيل دخول دائم)</label>
-                  </label>
-                </div>
-                <div class="form-error" id="login_error"></div>
-                <button type="submit" class="submit-btn" id="loginBtn">
-                  <span id="loginBtnText">تسجيل الدخول</span>
-                </button>
-                <div class="switch-link">
-                  ليس لديك حساب؟ <a onclick="switchStudentTab('new')">سجّل الآن</a>
-                </div>
-              </form>
-            </div>
+        <!-- المعلومات الشخصية -->
+        <div class="panel-card">
+          <h3>👤 المعلومات الشخصية
+            <button class="btn btn-outline btn-sm" style="margin-right:auto;" onclick="toggleEdit()">✏️ تعديل</button>
+          </h3>
+          <div class="info-grid" id="infoDisplay">
+            <div class="info-item"><label>الاسم الكامل</label><span id="d_fullName">—</span></div>
+            <div class="info-item"><label>اسم المستخدم</label><span id="d_username">—</span></div>
+            <div class="info-item"><label>البريد الإلكتروني</label><span id="d_email" style="direction:ltr;display:block;">—</span></div>
+            <div class="info-item"><label>رقم الهاتف</label><span id="d_phone">—</span></div>
+            <div class="info-item"><label>تليجرام</label><span id="d_telegram">—</span></div>
+            <div class="info-item"><label>الجنس</label><span id="d_gender">—</span></div>
+            <div class="info-item"><label>الدولة</label><span id="d_country">—</span></div>
+            <div class="info-item"><label>مكان الإقامة</label><span id="d_residence">—</span></div>
+            <div class="info-item"><label>المستوى الدراسي</label><span id="d_level">—</span></div>
           </div>
 
-          <!-- ============================
-               SUPERVISOR SECTION
-               ============================ -->
-          <div id="supervisorSection" style="display:none;">
-            <div class="success-state" id="successSupervisor">
-              <div class="success-icon">✅</div>
-              <h3>أهلاً بك أيها المشرف!</h3>
-              <p>جارٍ تحويلك إلى لوحة التحكم...</p>
+          <!-- نموذج التعديل -->
+          <div class="edit-form" id="editForm">
+            <div class="info-grid" style="margin-top:16px;">
+              <div class="form-group"><label class="form-label">الاسم الكامل</label><input type="text" class="form-control" id="e_fullName"></div>
+              <div class="form-group"><label class="form-label">رقم الهاتف</label><input type="text" class="form-control" id="e_phone"></div>
+              <div class="form-group"><label class="form-label">تليجرام</label><input type="text" class="form-control" id="e_telegram" placeholder="@username"></div>
+              <div class="form-group"><label class="form-label">مكان الإقامة</label><input type="text" class="form-control" id="e_residence"></div>
             </div>
-            <form id="supervisorForm" onsubmit="handleSupervisorLogin(event)">
-              <div class="form-group">
-                <label class="form-label">البريد الإلكتروني / اسم المستخدم <span class="req">*</span></label>
-                <input type="text" class="form-control" id="sup_identifier" placeholder="البريد أو اسم المستخدم" required>
-              </div>
-              <div class="form-group">
-                <label class="form-label">كلمة المرور <span class="req">*</span></label>
-                <input type="password" class="form-control" id="sup_password" placeholder="••••••••" required>
-              </div>
-              <div class="form-group">
-                <label class="checkbox-group">
-                  <input type="checkbox" id="sup_remember">
-                  <label for="sup_remember">تذكرني (تسجيل دخول دائم)</label>
-                </label>
-              </div>
-              <div class="form-error" id="sup_error"></div>
-              <button type="submit" class="submit-btn" id="supBtn">
-                <span id="supBtnText">دخول المشرف</span>
-              </button>
-            </form>
+            <div style="display:flex;gap:12px;margin-top:8px;">
+              <button class="btn btn-primary btn-sm" onclick="saveProfile()">💾 حفظ التعديلات</button>
+              <button class="btn btn-outline btn-sm" onclick="toggleEdit()">إلغاء</button>
+            </div>
           </div>
+        </div>
 
-        </div><!-- /register-body -->
-      </div><!-- /register-card -->
+        <!-- تغيير كلمة المرور -->
+        <div class="panel-card">
+          <h3>🔒 تغيير كلمة المرور</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div class="form-group">
+              <label class="form-label">كلمة المرور الجديدة</label>
+              <input type="password" class="form-control" id="newPassword" placeholder="••••••••" minlength="6">
+            </div>
+            <div class="form-group">
+              <label class="form-label">تأكيد كلمة المرور</label>
+              <input type="password" class="form-control" id="confirmPassword" placeholder="••••••••">
+            </div>
+          </div>
+          <div class="form-error" id="passError" style="margin-bottom:8px;"></div>
+          <button class="btn btn-primary btn-sm" onclick="changePassword()">تحديث كلمة المرور</button>
+        </div>
+
+        <!-- تقدم الدراسة -->
+        <div class="panel-card" id="progressCard" style="display:none;">
+          <h3>📚 تقدم الدراسة</h3>
+          <div style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:0.9rem;color:var(--text-soft);">الإنجاز الكلي</span>
+            <span style="font-weight:bold;color:var(--purple);" id="progressPct">0٪</span>
+          </div>
+          <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
+        </div>
+
+        <!-- القناة الخاصة -->
+        <div class="panel-card" id="privateChannelCard" style="display:none;">
+          <h3>🔒 القناة الخاصة بطلاب المعهد</h3>
+          <div class="private-channel-box">
+            <p style="color:var(--text-soft);font-size:0.85rem;margin-bottom:12px;">⚠️ هذا الرابط خاص بطلاب المعهد، يُرجى عدم مشاركته</p>
+            <a href="#" id="privateChannelLink" target="_blank">✈️ الانضمام للقناة الخاصة</a>
+          </div>
+        </div>
+
+        <!-- تسجيل الخروج -->
+        <div style="text-align:center;padding:8px 0 24px;">
+          <button class="btn btn-outline" onclick="handleLogout()" style="color:#b92d3a;border-color:#b92d3a;">🚪 تسجيل الخروج</button>
+        </div>
+
+      </div>
     </div>
   </div>
 
   <div id="footerPlaceholder"></div>
 
   <script type="module">
-    // ── تحميل Firebase أولاً لأنه الأهم ──
+    import { renderHeader, renderFooter, initSharedBehavior, showToast } from './components.js';
     import {
       auth, db,
-      createUserWithEmailAndPassword,
-      signInWithEmailAndPassword,
       onAuthStateChanged,
-      doc, setDoc, getDoc, collection, getDocs
+      doc, getDoc, updateDoc, collection, getDocs
     } from './firebase.js';
+    import { updatePassword, reauthenticateWithCredential, EmailAuthProvider }
+      from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import { signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 
-    // ── رسم الهيدر الأساسي فوراً بدون انتظار الشعار ──
-    document.getElementById('headerPlaceholder').innerHTML = `
-      <header class="site-header" id="siteHeader">
-        <div class="header-inner">
-          <a href="index.html" class="logo-area">
-            <span class="site-name">معهد التأصيل العلمي</span>
-          </a>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <a href="register.html" class="nav-link nav-btn">تسجيل الدخول</a>
-          </div>
-        </div>
-      </header>`;
+    const TOTAL_ITEMS = 23;
+    const LEVEL_MAP = { primary:'ابتدائي', middle:'متوسط', high:'ثانوي', bachelor:'بكالوريوس', master:'ماجستير', phd:'دكتوراه', work:'وظيفة' };
 
-    // ── علم لمنع التحويل أثناء التسجيل ──
-    // المشكلة: onAuthStateChanged يُطلَق فوراً عند إنشاء الحساب
-    // قبل اكتمال setDoc → تحويل مبكر → dashboard لا تجد بيانات المستخدم
-    let isRegistering = false;
+    let currentUser = null;
+    let currentData = null;
 
-    // ── إذا كان مسجّلاً مسبقاً → حوّله فوراً ──
-    onAuthStateChanged(auth, user => {
-      if (user && !isRegistering) window.location.href = 'dashboard.html';
-    });
+    onAuthStateChanged(auth, async user => {
+      if (!user) { window.location.href = 'register.html'; return; }
+      currentUser = user;
 
-    // ── تحميل components.js (الشعار) في الخلفية بعد رسم الصفحة ──
-    requestAnimationFrame(() => {
-      import('./components.js').then(({ renderHeader, renderFooter, initSharedBehavior, LOGO_SRC }) => {
-        document.getElementById('headerPlaceholder').innerHTML = renderHeader('register.html', null);
-        document.getElementById('footerPlaceholder').innerHTML = renderFooter();
-        document.getElementById('registerLogo').src = LOGO_SRC;
-        initSharedBehavior();
-      });
-    });
+      // تحميل البيانات
+      const snap = await getDoc(doc(db, 'users', user.uid));
+      if (!snap.exists()) { window.location.href = 'register.html'; return; }
 
-    // ── Scroll behavior بدون انتظار components ──
-    window.addEventListener('scroll', () => {
-      document.getElementById('siteHeader')?.classList.toggle('scrolled', window.scrollY > 40);
-    });
+      currentData = snap.data();
+      const d = currentData;
 
-    // ── cache اسم المستخدم → بريد ──
-    let usernameCache = null;
-    async function emailFromIdentifier(identifier) {
-      if (identifier.includes('@')) return identifier;
-      if (!usernameCache) {
-        usernameCache = {};
-        const snap = await getDocs(collection(db, 'users'));
-        snap.forEach(d => { if (d.data().username) usernameCache[d.data().username] = d.data().email; });
-      }
-      return usernameCache[identifier] || identifier;
-    }
+      // رسم الهيدر
+      document.getElementById('headerPlaceholder').innerHTML = renderHeader('profile.html', d);
+      document.getElementById('footerPlaceholder').innerHTML = renderFooter(null);
+      initSharedBehavior();
 
-    // ============ ROLE SWITCH ============
-    window.switchRole = function(role) {
-      const isStudent = role === 'student';
-      document.getElementById('studentSection').style.display    = isStudent ? '' : 'none';
-      document.getElementById('supervisorSection').style.display = isStudent ? 'none' : '';
-      document.getElementById('roleStudent').classList.toggle('active', isStudent);
-      document.getElementById('roleSupervisor').classList.toggle('active', !isStudent);
-    };
+      // HERO
+      document.getElementById('profileAvatar').textContent = d.fullName ? d.fullName.charAt(0) : '؟';
+      document.getElementById('profileName').textContent   = d.fullName || '—';
+      const isAdmin = d.role === 'superAdmin' || d.role === 'supervisor';
+      document.getElementById('profileRole').textContent   = isAdmin ? 'مشرف' : 'طالب';
 
-    // ============ STUDENT TABS ============
-    window.switchStudentTab = function(tab) {
-      const isNew = tab === 'new';
-      document.getElementById('formNewAccount').style.display = isNew ? '' : 'none';
-      document.getElementById('formLogin').style.display      = isNew ? 'none' : '';
-      document.getElementById('tabNewAccount').classList.toggle('active', isNew);
-      document.getElementById('tabLogin').classList.toggle('active', !isNew);
-    };
-
-    // ============ REGISTER NEW STUDENT ============
-    window.handleRegister = async function(e) {
-      e.preventDefault();
-      isRegistering = true; // منع onAuthStateChanged من التدخل
-      const btn     = document.getElementById('registerBtn');
-      const btnText = document.getElementById('registerBtnText');
-      const errEl   = document.getElementById('reg_error');
-      errEl.classList.remove('show');
-      btn.disabled = true;
-      btnText.innerHTML = '<span class="spinner"></span> جارٍ التسجيل...';
-
-      const fullName  = document.getElementById('reg_fullName').value.trim();
-      const email     = document.getElementById('reg_email').value.trim();
-      const username  = document.getElementById('reg_username').value.trim();
-      const password  = document.getElementById('reg_password').value;
-      const dialCode  = document.getElementById('reg_dialcode').value;
-      const phoneNum  = document.getElementById('reg_phone').value.trim();
-      const phone     = phoneNum ? dialCode + ' ' + phoneNum : '';
-      const telegram  = document.getElementById('reg_telegram').value.trim();
-      const country   = document.getElementById('reg_country').value;
-      const residence = document.getElementById('reg_residence').value.trim();
-      const level     = document.getElementById('reg_level').value;
-      const gender    = document.querySelector('input[name="gender"]:checked')?.value || 'male';
-
-      try {
-        // الخطوة 1: إنشاء الحساب في Firebase Auth
-        const userCred = await createUserWithEmailAndPassword(auth, email, password);
-
-        // الخطوة 2: حفظ بيانات المستخدم في Firestore
-        // ⚠️ يجب await هنا — dashboard.html يحتاج هذا المستند فور الوصول
-        await setDoc(doc(db, 'users', userCred.user.uid), {
-          fullName, email, username, phone, telegram,
-          country, residence,
-          level, gender, role: 'student',
-          status: 'pending',
-          progress: {}, createdAt: new Date().toISOString()
-        });
-
-        // الخطوة 3: إظهار رسالة الانتظار (لا تحويل — المعهد يقبل يدوياً)
-        document.getElementById('registerForm').style.display = 'none';
-        document.getElementById('successRegister').classList.add('show');
-        // تسجيل خروج تلقائي لأن الحساب بانتظار القبول
-        await auth.signOut().catch(() => {});
-
-      } catch (err) {
-        const msgs = {
-          'auth/email-already-in-use': 'البريد الإلكتروني مستخدم مسبقاً.',
-          'auth/weak-password':        'كلمة المرور ضعيفة (٦ أحرف على الأقل).',
-          'auth/invalid-email':        'صيغة البريد الإلكتروني غير صحيحة.',
-          'auth/network-request-failed': 'تحقق من اتصالك بالإنترنت.',
-        };
-        errEl.textContent = msgs[err.code] || 'حدث خطأ، حاول مرة أخرى.';
-        errEl.classList.add('show');
-        isRegistering = false; // أعد التفعيل عند الخطأ
-        btn.disabled = false;
-        btnText.textContent = 'إنشاء الحساب';
-      }
-    };
-
-    // ============ STUDENT LOGIN ============
-    window.handleLogin = async function(e) {
-      e.preventDefault();
-      const btn     = document.getElementById('loginBtn');
-      const btnText = document.getElementById('loginBtnText');
-      const errEl   = document.getElementById('login_error');
-      errEl.classList.remove('show');
-      btn.disabled = true;
-      btnText.innerHTML = '<span class="spinner"></span> جارٍ الدخول...';
-
-      const identifier = document.getElementById('login_identifier').value.trim();
-      const password   = document.getElementById('login_password').value;
-
-      try {
-        const email = await emailFromIdentifier(identifier);
-        // setPersistence مُعيَّن مسبقاً في firebase.js — لا نحتاجه هنا
-        await signInWithEmailAndPassword(auth, email, password);
-        window.location.href = 'dashboard.html';
-      } catch (err) {
-        errEl.textContent = 'بيانات غير صحيحة، تحقق من البريد وكلمة المرور.';
-        errEl.classList.add('show');
-        btn.disabled = false;
-        btnText.textContent = 'تسجيل الدخول';
-      }
-    };
-
-    // ============ SUPERVISOR LOGIN ============
-    window.handleSupervisorLogin = async function(e) {
-      e.preventDefault();
-      const btn     = document.getElementById('supBtn');
-      const btnText = document.getElementById('supBtnText');
-      const errEl   = document.getElementById('sup_error');
-      errEl.classList.remove('show');
-      btn.disabled = true;
-      btnText.innerHTML = '<span class="spinner"></span> جارٍ الدخول...';
-
-      const identifier = document.getElementById('sup_identifier').value.trim();
-      const password   = document.getElementById('sup_password').value;
-
-      try {
-        const email = await emailFromIdentifier(identifier);
-        const cred  = await signInWithEmailAndPassword(auth, email, password);
-        const snap  = await getDoc(doc(db, 'users', cred.user.uid));
-        if (snap.exists() && ['superAdmin','supervisor'].includes(snap.data().role)) {
-          window.location.href = 'dashboard.html';
+      // حالة الحساب (للطلاب فقط)
+      if (!isAdmin) {
+        const statusCard = document.getElementById('statusCard');
+        const statusEl   = document.getElementById('statusContent');
+        statusCard.style.display = '';
+        if (d.status === 'pending') {
+          statusEl.innerHTML = '<span class="status-pending">⏳ قيد المراجعة — سيتم إعلامك عند القبول</span>';
+        } else if (d.status === 'rejected') {
+          statusEl.innerHTML = '<span class="status-rejected">🚫 تم رفض طلبك — تواصل مع الإدارة</span>';
         } else {
-          await auth.signOut();
-          throw new Error('not_supervisor');
+          statusEl.innerHTML = '<span class="status-accepted">✅ مقبول</span>';
         }
-      } catch (err) {
-        errEl.textContent = 'بيانات غير صحيحة أو ليس لديك صلاحية مشرف.';
-        errEl.classList.add('show');
-        btn.disabled = false;
-        btnText.textContent = 'دخول المشرف';
+      }
+
+      // المعلومات الشخصية
+      document.getElementById('d_fullName').textContent  = d.fullName  || '—';
+      document.getElementById('d_username').textContent  = d.username  || '—';
+      document.getElementById('d_email').textContent     = d.email     || '—';
+      document.getElementById('d_phone').textContent     = d.phone     || '—';
+      document.getElementById('d_telegram').textContent  = d.telegram  || '—';
+      document.getElementById('d_gender').textContent    = d.gender === 'female' ? 'أنثى' : 'ذكر';
+      document.getElementById('d_country').textContent   = d.country   || '—';
+      document.getElementById('d_residence').textContent = d.residence || '—';
+      document.getElementById('d_level').textContent     = LEVEL_MAP[d.level] || '—';
+
+      // نموذج التعديل — القيم الأولية
+      document.getElementById('e_fullName').value  = d.fullName  || '';
+      document.getElementById('e_phone').value     = d.phone     || '';
+      document.getElementById('e_telegram').value  = d.telegram  || '';
+      document.getElementById('e_residence').value = d.residence || '';
+
+      // تقدم الدراسة
+      if (!isAdmin) {
+        const done = Object.values(d.progress || {}).filter(Boolean).length;
+        const pct  = Math.round((done / TOTAL_ITEMS) * 100);
+        document.getElementById('progressCard').style.display = '';
+        document.getElementById('progressPct').textContent = pct + '٪';
+        document.getElementById('progressFill').style.width = pct + '%';
+      }
+
+      // القناة الخاصة
+      try {
+        const cs = await getDoc(doc(db, 'contactInfo', 'main'));
+        if (cs.exists() && cs.data().privateChannelUrl && !isAdmin && d.status === 'accepted') {
+          document.getElementById('privateChannelCard').style.display = '';
+          document.getElementById('privateChannelLink').href = cs.data().privateChannelUrl;
+        }
+      } catch(e) {}
+    });
+
+    // تبديل نموذج التعديل
+    window.toggleEdit = function() {
+      document.getElementById('editForm').classList.toggle('open');
+    };
+
+    // حفظ التعديلات
+    window.saveProfile = async function() {
+      if (!currentUser) return;
+      const updates = {
+        fullName:  document.getElementById('e_fullName').value.trim(),
+        phone:     document.getElementById('e_phone').value.trim(),
+        telegram:  document.getElementById('e_telegram').value.trim(),
+        residence: document.getElementById('e_residence').value.trim(),
+      };
+      try {
+        await updateDoc(doc(db, 'users', currentUser.uid), updates);
+        // تحديث العرض
+        document.getElementById('d_fullName').textContent  = updates.fullName  || '—';
+        document.getElementById('d_phone').textContent     = updates.phone     || '—';
+        document.getElementById('d_telegram').textContent  = updates.telegram  || '—';
+        document.getElementById('d_residence').textContent = updates.residence || '—';
+        document.getElementById('profileName').textContent = updates.fullName  || '—';
+        document.getElementById('editForm').classList.remove('open');
+        showToast('تم حفظ التعديلات ✅', 'success');
+      } catch(e) {
+        showToast('حدث خطأ: ' + e.message, 'error');
       }
     };
+
+    // تغيير كلمة المرور
+    window.changePassword = async function() {
+      const newPass  = document.getElementById('newPassword').value;
+      const confirm  = document.getElementById('confirmPassword').value;
+      const errEl    = document.getElementById('passError');
+      errEl.textContent = '';
+      errEl.classList.remove('show');
+
+      if (newPass.length < 6) {
+        errEl.textContent = 'كلمة المرور يجب أن تكون ٦ أحرف على الأقل.';
+        errEl.classList.add('show'); return;
+      }
+      if (newPass !== confirm) {
+        errEl.textContent = 'كلمتا المرور غير متطابقتين.';
+        errEl.classList.add('show'); return;
+      }
+      try {
+        await updatePassword(currentUser, newPass);
+        document.getElementById('newPassword').value = '';
+        document.getElementById('confirmPassword').value = '';
+        showToast('تم تحديث كلمة المرور ✅', 'success');
+      } catch(e) {
+        if (e.code === 'auth/requires-recent-login') {
+          errEl.textContent = 'يرجى تسجيل الخروج والدخول مجدداً ثم إعادة المحاولة.';
+        } else {
+          errEl.textContent = 'حدث خطأ: ' + e.message;
+        }
+        errEl.classList.add('show');
+      }
+    };
+
+    // تسجيل الخروج
+    window.handleLogout = async function() {
+      await signOut(auth);
+      window.location.href = 'index.html';
+    };
+
+    window.toggleNotifPanel = function() {
+      const p = document.getElementById('notifPanel');
+      if (p) p.style.display = p.style.display === 'none' ? 'block' : 'none';
+    };
+    window.markAllRead = function() {};
   </script>
 </body>
 </html>
