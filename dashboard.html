@@ -602,6 +602,32 @@
           }
 
           const userData = finalSnap.data();
+
+          // ── التحقق من حالة الحساب — pending أو rejected لا يدخل ──
+          if (userData.role === 'student' && userData.status !== 'accepted') {
+            await signOut(auth);
+            document.getElementById('loadingScreen').classList.add('hidden');
+            document.getElementById('dashWrapper').style.display = 'none';
+            document.body.innerHTML = `
+              <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f7f5fa;font-family:inherit;direction:rtl;text-align:center;padding:24px;">
+                <div style="background:white;border-radius:16px;padding:48px 40px;box-shadow:0 4px 24px rgba(59,27,64,0.10);max-width:480px;width:100%;">
+                  <div style="font-size:3.5rem;margin-bottom:16px;">${userData.status === 'rejected' ? '🚫' : '⏳'}</div>
+                  <h2 style="color:#3b1b40;margin-bottom:12px;font-size:1.4rem;">
+                    ${userData.status === 'rejected' ? 'تم رفض طلبك' : 'حسابك قيد المراجعة'}
+                  </h2>
+                  <p style="color:#666;line-height:1.7;margin-bottom:28px;">
+                    ${userData.status === 'rejected'
+                      ? 'عذراً، تم رفض طلب تسجيلك. يرجى التواصل مع إدارة المعهد لمزيد من المعلومات.'
+                      : 'شكراً لتسجيلك في معهد التأصيل العلمي. سيتم مراجعة طلبك من قِبل المشرفين وسيتم إعلامك عند القبول.'}
+                  </p>
+                  <a href="index.html" style="display:inline-block;padding:12px 32px;background:linear-gradient(135deg,#3b1b40,#5a2d6b);color:white;border-radius:8px;text-decoration:none;font-weight:bold;">
+                    العودة للرئيسية
+                  </a>
+                </div>
+              </div>`;
+            return;
+          }
+
           userProgress    = userData.progress || {};
           currentUserData = userData;
 
