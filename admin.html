@@ -448,7 +448,7 @@
       const password = document.getElementById('supPassword').value;
       if (!name||!email||!username||!password) return showToast('يرجاء تعبئة جميع الحقول','error');
       try {
-        const cred = await createUserWithEmailAndPassword(auth2, email, password);
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
         await setDoc(doc(db,'users',cred.user.uid),{fullName:name,email,username,role:'supervisor',createdAt:new Date().toISOString()});
         showToast('تم إضافة المشرف ✅','success');
         ['supName','supEmail','supUsername','supPassword'].forEach(id=>document.getElementById(id).value='');
@@ -996,15 +996,19 @@
         showToast('تم حفظ القنوات ✅','success');
       } catch(e) { showToast('خطأ: ' + e.message, 'error'); }
     };
-      await setDoc(doc(db,'contactInfo','main'), {
-        phone:    document.getElementById('ct_phone').value.trim(),
-        whatsapp: document.getElementById('ct_whatsapp').value.trim(),
-        email:    document.getElementById('ct_email').value.trim(),
-        telegram: document.getElementById('ct_telegram').value.trim(),
-        updatedAt: new Date().toISOString(),
-        updatedBy: currentAdmin?.fullName || ''
-      }, { merge: true });
-      showToast('تم حفظ معلومات التواصل ✅','success');
+
+    window.saveContactInfo = async function() {
+      try {
+        await setDoc(doc(db,'contactInfo','main'), {
+          phone:    document.getElementById('ct_phone').value.trim(),
+          whatsapp: document.getElementById('ct_whatsapp').value.trim(),
+          email:    document.getElementById('ct_email').value.trim(),
+          telegram: document.getElementById('ct_telegram').value.trim(),
+          updatedAt: new Date().toISOString(),
+          updatedBy: currentAdmin?.fullName || ''
+        }, { merge: true });
+        showToast('تم حفظ معلومات التواصل ✅','success');
+      } catch(e) { showToast('خطأ: ' + e.message, 'error'); }
     };
 
     window.savePrivateChannel = async function() {
