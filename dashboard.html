@@ -301,6 +301,98 @@
       .mobile-menu-toggle { display: none; }
       .sidebar-overlay { display: none !important; }
     }
+
+    /* ===== CERTIFICATES ===== */
+    .cert-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+      margin-top: 8px;
+    }
+    .cert-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(59,27,64,0.08);
+      transition: transform 0.2s, box-shadow 0.2s;
+      position: relative;
+    }
+    .cert-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(59,27,64,0.14); }
+    .cert-card-top {
+      background: linear-gradient(135deg, #3b1b40 0%, #5a2d6b 100%);
+      padding: 24px 20px 20px;
+      text-align: center;
+      position: relative;
+    }
+    .cert-icon {
+      font-size: 2.8rem;
+      display: block;
+      margin-bottom: 10px;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3));
+    }
+    .cert-title {
+      font-size: 1rem;
+      font-weight: bold;
+      color: white;
+      line-height: 1.4;
+    }
+    .cert-ijaza-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 10px;
+      padding: 4px 12px;
+      background: linear-gradient(135deg, #d4b48e, #c49a6c);
+      border-radius: 100px;
+      font-size: 0.72rem;
+      font-weight: bold;
+      color: #3b1b40;
+    }
+    .cert-card-body {
+      padding: 18px 20px;
+    }
+    .cert-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .cert-meta-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.82rem;
+      color: var(--text-soft);
+    }
+    .cert-meta-row span:first-child { flex-shrink: 0; }
+    .cert-meta-row strong { color: var(--text); font-weight: 600; }
+    .cert-download-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 10px;
+      background: linear-gradient(135deg, #3b1b40, #5a2d6b);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.88rem;
+      font-weight: bold;
+      cursor: pointer;
+      text-decoration: none;
+      transition: opacity 0.2s;
+    }
+    .cert-download-btn:hover { opacity: 0.88; }
+    .cert-empty {
+      text-align: center;
+      padding: 60px 24px;
+      color: var(--text-soft);
+    }
+    .cert-empty .cert-empty-icon { font-size: 3.5rem; margin-bottom: 16px; display: block; }
+    .cert-empty p { font-size: 0.95rem; line-height: 1.7; }
   </style>
 </head>
 <body>
@@ -336,6 +428,7 @@
             <button class="sidebar-nav-item active" onclick="showPanel('welcome')"><span class="ico">🏠</span> الرئيسية</button>
             <button class="sidebar-nav-item" onclick="showPanel('progress')"><span class="ico">📊</span> تقرير الإنجاز</button>
             <button class="sidebar-nav-item" onclick="showPanel('curriculum')"><span class="ico">📚</span> خطة الدراسة</button>
+            <button class="sidebar-nav-item" onclick="showPanel('certificates')"><span class="ico">🎓</span> شهاداتي</button>
           </div>
           <!-- Supervisor nav -->
           <div id="supervisorNav" style="display:none;">
@@ -433,6 +526,20 @@
           <div class="progress-card" id="curriculumChecklistContainer">
             <h3>✅ قائمة المتون — ضع علامة على ما أتممته</h3>
             <div id="curriculumChecklist"></div>
+          </div>
+        </div>
+
+        <!-- ===== STUDENT: CERTIFICATES ===== -->
+        <div class="panel" id="panel-certificates">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px;">
+            <h2 style="font-size:1.4rem;color:var(--purple);margin:0;">🎓 شهاداتي</h2>
+            <span style="font-size:0.82rem;color:var(--text-soft);">الشهادات الصادرة باسمك من المعهد</span>
+          </div>
+          <div id="certificatesContainer">
+            <div class="cert-empty">
+              <span class="cert-empty-icon">⏳</span>
+              <p>جارٍ تحميل الشهادات...</p>
+            </div>
           </div>
         </div>
 
@@ -798,6 +905,7 @@
       event.target.closest('.sidebar-nav-item').classList.add('active');
 
       if (panelId === 'supStudents') loadStudentsList();
+      if (panelId === 'certificates') loadCertificates();
     };
 
     // ===== BUILD CURRICULUM CHECKLIST =====
@@ -921,6 +1029,90 @@
           </td>
         </tr>`;
       }).join('');
+    }
+
+    // ===== CERTIFICATES =====
+    let certLoaded = false;
+    async function loadCertificates() {
+      if (certLoaded) return; // لا تعيد التحميل في كل نقرة
+      certLoaded = true;
+      const container = document.getElementById('certificatesContainer');
+
+      try {
+        // جلب شهادات الطالب الحالي فقط
+        const allCertsSnap = await getDocs(collection(db, 'certificates'));
+        const snap = { empty: true, docs: [] };
+        allCertsSnap.forEach(d => {
+          if (d.data().studentId === currentUser.uid) {
+            snap.docs.push(d);
+            snap.empty = false;
+          }
+        });
+
+        if (snap.empty) {
+          container.innerHTML = `
+            <div class="cert-empty">
+              <span class="cert-empty-icon">🎓</span>
+              <p>لا توجد شهادات بعد.<br>ستظهر هنا شهاداتك عند إصدارها من المعهد.</p>
+            </div>`;
+          return;
+        }
+
+        const certs = [];
+        snap.docs.forEach(d => certs.push({ id: d.id, ...d.data() }));
+        // ترتيب من الأحدث للأقدم
+        certs.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+        container.innerHTML = `<div class="cert-grid">${certs.map(c => renderCertCard(c)).join('')}</div>`;
+
+      } catch(e) {
+        container.innerHTML = `
+          <div class="cert-empty">
+            <span class="cert-empty-icon">⚠️</span>
+            <p>حدث خطأ أثناء تحميل الشهادات.<br><small style="color:var(--text-soft);">${e.message}</small></p>
+          </div>`;
+      }
+    }
+
+    function renderCertCard(c) {
+      const isIjaza = c.type === 'إجازة';
+      const dateFormatted = c.date
+        ? new Date(c.date).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })
+        : '—';
+
+      return `
+        <div class="cert-card">
+          <div class="cert-card-top">
+            <span class="cert-icon">${isIjaza ? '📜' : '🏅'}</span>
+            <div class="cert-title">${c.title || 'شهادة'}</div>
+            ${isIjaza ? `<div><span class="cert-ijaza-badge">⛓️ إجازة بالسند المتصل</span></div>` : ''}
+          </div>
+          <div class="cert-card-body">
+            <div class="cert-meta">
+              <div class="cert-meta-row">
+                <span>👨‍🏫</span>
+                <span>المشرف: <strong>${c.supervisorName || '—'}</strong></span>
+              </div>
+              <div class="cert-meta-row">
+                <span>📅</span>
+                <span>التاريخ: <strong>${dateFormatted}</strong></span>
+              </div>
+              ${c.type ? `
+              <div class="cert-meta-row">
+                <span>🏷️</span>
+                <span>النوع: <strong>${c.type}</strong></span>
+              </div>` : ''}
+            </div>
+            ${c.pdfUrl
+              ? `<a href="${c.pdfUrl}" target="_blank" class="cert-download-btn">
+                   ⬇️ تحميل الشهادة PDF
+                 </a>`
+              : `<button class="cert-download-btn" style="opacity:0.5;cursor:not-allowed;" disabled>
+                   📄 PDF غير متوفر بعد
+                 </button>`
+            }
+          </div>
+        </div>`;
     }
 
     // ===== LOGOUT =====
