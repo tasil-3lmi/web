@@ -3,1147 +3,1458 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>الرئيسية — معهد التأصيل العلمي</title>
+  <title>لوحة الإدارة — معهد التأصيل العلمي</title>
   <link rel="stylesheet" href="styles.css">
   <style>
     body { background: #f7f5fa; }
-
-    /* ===== LOADING ===== */
-    .loading-screen {
-      position: fixed; inset: 0;
-      background: var(--white);
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      z-index: 9999; gap: 16px;
-      transition: opacity 0.4s;
+    .admin-header { background: linear-gradient(135deg,var(--purple),var(--purple-light)); padding: 110px 0 40px; }
+    .admin-header h1 { color: white; font-size: 1.8rem; }
+    .admin-header p { color: rgba(255,255,255,0.65); font-size: 0.9rem; margin-top: 6px; }
+    .admin-body { padding: 40px 0; }
+    .panel-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; box-shadow: var(--shadow); margin-bottom: 24px; }
+    .panel-card h3 { font-size: 1rem; font-weight: bold; color: var(--purple); margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .answer-textarea { width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-family: inherit; font-size: 0.88rem; resize: vertical; min-height: 80px; outline: none; transition: var(--transition); }
+    .answer-textarea:focus { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(59,27,64,0.08); }
+    .q-row { padding: 20px; background: rgba(59,27,64,0.02); border-radius: var(--radius-sm); margin-bottom: 12px; border: 1px solid var(--border); }
+    .q-row-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; gap: 12px; flex-wrap: wrap; }
+    .schedule-day-editor { margin-bottom: 20px; }
+    .schedule-day-editor h4 { font-size: 0.92rem; font-weight: bold; color: var(--purple); margin-bottom: 10px; padding: 8px 12px; background: rgba(59,27,64,0.05); border-radius: 6px; }
+    .time-slot-row { display: grid; grid-template-columns: 100px 1fr 1fr auto; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .time-slot-row input, .time-slot-row select { padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 0.82rem; outline: none; }
+    .time-slot-row input:focus, .time-slot-row select:focus { border-color: var(--purple); }
+    .del-btn { width: 30px; height: 30px; border-radius: 50%; border: none; background: rgba(185,45,58,0.1); color: #b92d3a; cursor: pointer; font-size: 0.9rem; transition: var(--transition); }
+    .del-btn:hover { background: #b92d3a; color: white; }
+    .add-slot-btn { font-size: 0.8rem; padding: 6px 14px; }
+    /* Course editor */
+    .course-editor-row { display: grid; grid-template-columns: 1fr 80px 80px 80px; gap: 12px; align-items: center; padding: 14px 16px; background: rgba(59,27,64,0.02); border-radius: var(--radius-sm); margin-bottom: 10px; border: 1px solid var(--border); }
+    .course-editor-row:hover { background: rgba(212,180,142,0.06); }
+    .toggle-switch { position: relative; width: 44px; height: 24px; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .toggle-slider { position: absolute; inset: 0; background: rgba(59,27,64,0.15); border-radius: 12px; cursor: pointer; transition: var(--transition); }
+    .toggle-slider::before { content: ''; position: absolute; width: 18px; height: 18px; border-radius: 50%; background: white; top: 3px; right: 3px; transition: var(--transition); box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
+    .toggle-switch input:checked + .toggle-slider { background: var(--purple); }
+    .toggle-switch input:checked + .toggle-slider::before { transform: translateX(-20px); }
+    .lesson-admin-row { display: grid; grid-template-columns: 1fr 1fr 60px 60px 80px; gap: 8px; align-items: center; padding: 10px 14px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 6px; font-size: 0.82rem; }
+    .exam-admin-block { border: 1px solid rgba(212,180,142,0.3); border-radius: var(--radius-sm); padding: 16px; background: rgba(212,180,142,0.04); margin-bottom: 12px; }
+    .question-admin-row { background: rgba(59,27,64,0.03); border: 1px solid var(--border); border-radius: 6px; padding: 14px; margin-bottom: 10px; }
+    .options-admin { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+    .option-admin-row { display: flex; align-items: center; gap: 8px; }
+    .option-admin-row input[type=text] { flex: 1; padding: 6px 10px; border: 1.5px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 0.82rem; outline: none; }
+    .option-admin-row input[type=text]:focus { border-color: var(--purple); }
+    .correct-check { accent-color: #1a7a4a; }
+    .notif-compose { display: flex; gap: 12px; flex-wrap: wrap; }
+    .notif-compose textarea { flex: 1; min-width: 200px; padding: 12px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-family: inherit; font-size: 0.88rem; resize: none; height: 80px; outline: none; }
+    .notif-compose textarea:focus { border-color: var(--purple); }
+    @media (max-width: 768px) {
+      .course-editor-row { grid-template-columns: 1fr 1fr; }
+      .time-slot-row { grid-template-columns: 1fr 1fr; }
+      .lesson-admin-row { grid-template-columns: 1fr; }
     }
-    .loading-screen.hidden { opacity: 0; pointer-events: none; }
-    .loading-screen img { width: 80px; height: 80px; object-fit: contain; animation: float 2s ease-in-out infinite; }
-    .loading-screen p { font-size: 0.9rem; color: var(--text-soft); }
-
-    /* ===== DASHBOARD LAYOUT ===== */
-    .dash-wrapper {
-      display: grid;
-      grid-template-columns: 260px 1fr;
-      min-height: 100vh;
-      padding-top: 80px;
-    }
-
-    /* SIDEBAR */
-    .dash-sidebar {
-      background: var(--white);
-      border-left: 1px solid var(--border);
-      padding: 32px 0;
-      position: sticky;
-      top: 80px;
-      height: calc(100vh - 80px);
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-    }
-    .sidebar-user {
-      padding: 0 24px 24px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 16px;
-    }
-    .user-avatar {
-      width: 56px; height: 56px;
-      background: linear-gradient(135deg, var(--purple), var(--purple-light));
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.4rem; color: white;
-      margin-bottom: 12px;
-    }
-    .user-name { font-size: 0.95rem; font-weight: bold; color: var(--purple); margin-bottom: 4px; }
-    .user-role-badge { display: inline-block; padding: 3px 10px; border-radius: 100px; font-size: 0.72rem; font-weight: bold; }
-    .role-student { background: rgba(59,27,64,0.08); color: var(--purple); }
-    .role-admin { background: rgba(212,180,142,0.2); color: var(--gold-dark); }
-
-    .sidebar-nav { padding: 0 12px; flex: 1; }
-    .sidebar-nav-item {
-      display: flex; align-items: center; gap: 12px;
-      padding: 12px 16px;
-      border-radius: var(--radius-sm);
-      font-size: 0.9rem;
-      color: var(--text-soft);
-      cursor: pointer;
-      transition: var(--transition);
-      border: none; background: none; width: 100%;
-      text-align: right; font-family: inherit;
-    }
-    .sidebar-nav-item:hover, .sidebar-nav-item.active {
-      background: rgba(59,27,64,0.07);
-      color: var(--purple);
-      font-weight: bold;
-    }
-    .sidebar-nav-item .ico { font-size: 1.1rem; flex-shrink: 0; }
-
-    .sidebar-logout {
-      padding: 16px 24px 0;
-      border-top: 1px solid var(--border);
-      margin-top: auto;
-    }
-    .logout-btn {
-      width: 100%; padding: 12px; border-radius: var(--radius-sm);
-      border: 1.5px solid rgba(185,45,58,0.2);
-      background: rgba(185,45,58,0.05);
-      color: #b92d3a;
-      font-family: inherit; font-size: 0.88rem; font-weight: bold;
-      cursor: pointer; transition: var(--transition);
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-    }
-    .logout-btn:hover { background: #b92d3a; color: white; }
-
-    /* MAIN CONTENT */
-    .dash-main {
-      padding: 40px;
-      max-width: 960px;
-    }
-
-    /* WELCOME */
-    .welcome-banner {
-      background: linear-gradient(135deg, var(--purple), var(--purple-light));
-      border-radius: 20px;
-      padding: 36px 40px;
-      margin-bottom: 32px;
-      position: relative;
-      overflow: hidden;
-    }
-    .welcome-banner::after {
-      content: '';
-      position: absolute;
-      top: -60px; left: -60px;
-      width: 280px; height: 280px;
-      background: radial-gradient(circle, rgba(255,255,255,0.06), transparent 70%);
-      border-radius: 50%;
-    }
-    .welcome-banner .greeting { font-size: 0.85rem; color: rgba(255,255,255,0.65); margin-bottom: 6px; }
-    .welcome-banner h2 { font-size: 1.6rem; color: var(--white); margin-bottom: 6px; }
-    .welcome-banner h2 span { color: var(--gold); }
-    .welcome-banner p { font-size: 0.88rem; color: rgba(255,255,255,0.6); }
-
-    /* STATS ROW */
-    .student-stats {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 16px;
-      margin-bottom: 32px;
-    }
-    .stat-box {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 22px 20px;
-      box-shadow: 0 2px 12px rgba(59,27,64,0.06);
-    }
-    .stat-box .s-num { font-size: 2rem; font-weight: bold; color: var(--purple); display: block; line-height: 1; margin-bottom: 6px; }
-    .stat-box .s-lbl { font-size: 0.78rem; color: var(--text-soft); }
-
-    /* PROGRESS CARD */
-    .progress-card {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 28px;
-      margin-bottom: 24px;
-      box-shadow: 0 2px 12px rgba(59,27,64,0.06);
-    }
-    .progress-card h3 { font-size: 1.05rem; font-weight: bold; color: var(--purple); margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
-    .overall-progress { margin-bottom: 28px; }
-    .op-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
-    .op-label { font-size: 0.9rem; font-weight: bold; color: var(--purple); }
-    .op-pct { font-size: 1.2rem; font-weight: bold; color: var(--gold-dark); }
-    .progress-bar-bg { height: 10px; background: rgba(59,27,64,0.08); border-radius: 5px; overflow: hidden; }
-    .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--purple), var(--gold)); border-radius: 5px; transition: width 1s cubic-bezier(0.4,0,0.2,1); }
-
-    /* CURRICULUM CHECKLIST */
-    .curriculum-section { margin-bottom: 16px; }
-    .cs-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 14px 18px;
-      background: linear-gradient(135deg, rgba(59,27,64,0.06), rgba(212,180,142,0.06));
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      user-select: none;
-      transition: var(--transition);
-    }
-    .cs-header:hover { background: rgba(59,27,64,0.09); }
-    .cs-header-left { display: flex; align-items: center; gap: 12px; }
-    .cs-num {
-      width: 32px; height: 32px;
-      background: var(--purple);
-      color: white;
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.8rem; font-weight: bold; flex-shrink: 0;
-    }
-    .cs-title { font-size: 0.92rem; font-weight: bold; color: var(--purple); }
-    .cs-count { font-size: 0.78rem; color: var(--text-soft); margin-top: 2px; }
-    .cs-progress-mini { font-size: 0.82rem; color: var(--gold-dark); font-weight: bold; }
-    .cs-toggle { color: var(--purple); transition: transform 0.3s; font-size: 1rem; }
-    .curriculum-section.open .cs-toggle { transform: rotate(180deg); }
-    .cs-items { display: none; padding: 8px 0 4px; }
-    .curriculum-section.open .cs-items { display: block; }
-
-    .matn-check {
-      display: flex; align-items: center; gap: 14px;
-      padding: 12px 18px;
-      border-radius: var(--radius-sm);
-      transition: var(--transition);
-      cursor: pointer;
-    }
-    .matn-check:hover { background: rgba(59,27,64,0.04); }
-    .matn-check input[type=checkbox] {
-      width: 18px; height: 18px;
-      accent-color: var(--purple);
-      cursor: pointer; flex-shrink: 0;
-    }
-    .matn-check label { font-size: 0.88rem; color: var(--text-main); cursor: pointer; flex: 1; }
-    .matn-check.done label { text-decoration: line-through; color: var(--text-soft); }
-
-    /* SUPERVISOR VIEW */
-    .sup-table-card {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 28px;
-      box-shadow: 0 2px 12px rgba(59,27,64,0.06);
-      margin-bottom: 24px;
-    }
-    .sup-table-card h3 { font-size: 1.05rem; font-weight: bold; color: var(--purple); margin-bottom: 20px; }
-    .students-table { width: 100%; border-collapse: collapse; }
-    .students-table th, .students-table td { padding: 12px 16px; text-align: right; border-bottom: 1px solid var(--border); font-size: 0.88rem; }
-    .students-table th { font-weight: bold; color: var(--purple); background: rgba(59,27,64,0.03); }
-    .students-table tr:hover td { background: rgba(212,180,142,0.05); }
-    .prog-mini { height: 6px; background: rgba(59,27,64,0.08); border-radius: 3px; overflow: hidden; width: 80px; display: inline-block; vertical-align: middle; }
-    .prog-mini-fill { height: 100%; background: linear-gradient(90deg, var(--purple), var(--gold)); border-radius: 3px; }
-
-    /* مقرر اليوم */
-    .today-lesson-item {
-      display: flex; align-items: flex-start; gap: 14px;
-      padding: 14px 16px;
-      background: rgba(59,27,64,0.03);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      margin-bottom: 10px;
-      transition: var(--transition);
-    }
-    .today-lesson-item:last-child { margin-bottom: 0; }
-    .today-lesson-item:hover { background: rgba(59,27,64,0.06); border-color: rgba(59,27,64,0.15); }
-    .today-lesson-time {
-      background: var(--purple);
-      color: white;
-      border-radius: 100px;
-      padding: 3px 10px;
-      font-size: 0.72rem;
-      font-weight: bold;
-      white-space: nowrap;
-      flex-shrink: 0;
-      margin-top: 2px;
-    }
-    .today-lesson-info { flex: 1; }
-    .today-lesson-title { font-size: 0.9rem; font-weight: bold; color: var(--purple); margin-bottom: 3px; }
-    .today-lesson-period { font-size: 0.75rem; color: var(--text-soft); }
-    .today-lesson-note { font-size: 0.75rem; color: var(--gold-dark); margin-top: 3px; }
-    .today-empty {
-      text-align: center; padding: 28px 16px;
-      color: var(--text-soft); font-size: 0.85rem;
-    }
-    .today-empty span { font-size: 2.2rem; display: block; margin-bottom: 8px; opacity: 0.5; }
-
-    /* PANEL VISIBILITY */
-    .panel { display: none; }
-    .panel.active { display: block; animation: fadeIn 0.3s ease; }
-
-    @media (max-width: 860px) {
-      .dash-wrapper { grid-template-columns: 1fr; }
-      .dash-main { padding: 24px 20px; }
-      .welcome-banner { padding: 24px; }
-
-      /* Sidebar كـ Drawer في الجوال */
-      .dash-sidebar {
-        position: fixed;
-        top: 80px; right: -280px;
-        width: 260px;
-        height: calc(100vh - 80px);
-        z-index: 900;
-        transition: right 0.28s cubic-bezier(.4,0,.2,1);
-        box-shadow: -4px 0 24px rgba(59,27,64,0.18);
-      }
-      .dash-sidebar.open { right: 0; }
-      .sidebar-overlay {
-        display: none;
-        position: fixed; inset: 0;
-        background: rgba(59,27,64,0.35);
-        z-index: 850;
-        backdrop-filter: blur(2px);
-      }
-      .sidebar-overlay.show { display: block; }
-      .mobile-menu-toggle {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        position: fixed;
-        bottom: 24px; right: 20px;
-        width: 52px; height: 52px;
-        border-radius: 50%;
-        background: var(--purple);
-        color: white;
-        border: none;
-        box-shadow: 0 4px 20px rgba(59,27,64,0.4);
-        cursor: pointer;
-        font-size: 1.3rem;
-        z-index: 800;
-        transition: var(--transition);
-      }
-      .mobile-menu-toggle:hover { background: var(--purple-dark); transform: scale(1.05); }
-    }
-    @media (min-width: 861px) {
-      .mobile-menu-toggle { display: none; }
-      .sidebar-overlay { display: none !important; }
-    }
-
-    /* ===== CERTIFICATES ===== */
-    .cert-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 20px;
-      margin-top: 8px;
-    }
-    .cert-card {
-      background: white;
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 2px 12px rgba(59,27,64,0.08);
-      transition: transform 0.2s, box-shadow 0.2s;
-      position: relative;
-    }
-    .cert-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(59,27,64,0.14); }
-    .cert-card-top {
-      background: linear-gradient(135deg, #3b1b40 0%, #5a2d6b 100%);
-      padding: 24px 20px 20px;
-      text-align: center;
-      position: relative;
-    }
-    .cert-icon {
-      font-size: 2.8rem;
-      display: block;
-      margin-bottom: 10px;
-      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3));
-    }
-    .cert-title {
-      font-size: 1rem;
-      font-weight: bold;
-      color: white;
-      line-height: 1.4;
-    }
-    .cert-ijaza-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      margin-top: 10px;
-      padding: 4px 12px;
-      background: linear-gradient(135deg, #d4b48e, #c49a6c);
-      border-radius: 100px;
-      font-size: 0.72rem;
-      font-weight: bold;
-      color: #3b1b40;
-    }
-    .cert-card-body {
-      padding: 18px 20px;
-    }
-    .cert-meta {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-    .cert-meta-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.82rem;
-      color: var(--text-soft);
-    }
-    .cert-meta-row span:first-child { flex-shrink: 0; }
-    .cert-meta-row strong { color: var(--text); font-weight: 600; }
-    .cert-download-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      width: 100%;
-      padding: 10px;
-      background: linear-gradient(135deg, #3b1b40, #5a2d6b);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-family: inherit;
-      font-size: 0.88rem;
-      font-weight: bold;
-      cursor: pointer;
-      text-decoration: none;
-      transition: opacity 0.2s;
-    }
-    .cert-download-btn:hover { opacity: 0.88; }
-    .cert-empty {
-      text-align: center;
-      padding: 60px 24px;
-      color: var(--text-soft);
-    }
-    .cert-empty .cert-empty-icon { font-size: 3.5rem; margin-bottom: 16px; display: block; }
-    .cert-empty p { font-size: 0.95rem; line-height: 1.7; }
   </style>
 </head>
 <body>
-
-  <!-- Loading -->
-  <div class="loading-screen" id="loadingScreen">
-    <div class="spinner" style="border-color:rgba(59,27,64,0.2);border-top-color:var(--purple);width:40px;height:40px;border-width:3px;"></div>
-  </div>
-
   <div id="headerPlaceholder"></div>
-
-  <!-- Sidebar overlay (جوال) -->
-  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
-
-  <!-- زر فتح الـ sidebar في الجوال -->
-  <button class="mobile-menu-toggle" id="mobileSidebarToggle" onclick="toggleSidebar()" title="القائمة" aria-label="القائمة">
-    ☰
-  </button>
-
   <div class="page-content">
-    <div class="dash-wrapper" id="dashWrapper" style="display:none;">
+    <div class="admin-header">
+      <div class="container">
+        <h1>🛠️ لوحة الإدارة</h1>
+        <p>إدارة شاملة للمعهد — للمشرفين فقط</p>
+      </div>
+    </div>
 
-      <!-- SIDEBAR -->
-      <aside class="dash-sidebar">
-        <div class="sidebar-user">
-          <div class="user-avatar" id="sideAvatar">👤</div>
-          <div class="user-name" id="sideUserName">...</div>
-          <span class="user-role-badge" id="sideRoleBadge">طالب</span>
+    <div id="accessDenied" style="display:none;">
+      <div class="container" style="padding-top:60px;text-align:center;">
+        <div style="font-size:4rem;margin-bottom:16px;">🚫</div>
+        <h2 style="color:var(--purple);">غير مصرح لك بالدخول</h2>
+        <p style="color:var(--text-soft);margin-bottom:24px;">هذه الصفحة للمشرفين فقط</p>
+        <a href="index.html" class="btn btn-primary">العودة للرئيسية</a>
+      </div>
+    </div>
+
+    <div id="adminContent" class="admin-body" style="display:none;">
+      <div class="container">
+        <!-- TABS -->
+        <div class="admin-tabs">
+          <button class="admin-tab-btn active" onclick="showAdminTab('questions', this)">💬 الأسئلة</button>
+          <button class="admin-tab-btn" onclick="showAdminTab('students', this)">👥 الطلاب</button>
+          <button class="admin-tab-btn" onclick="showAdminTab('supervisors', this)">👨‍💼 المشرفون</button>
+          <button class="admin-tab-btn" onclick="showAdminTab('schedule', this)">📅 الجدول</button>
+          <button class="admin-tab-btn" onclick="showAdminTab('courses', this)">📚 المقررات</button>
+          <button class="admin-tab-btn" onclick="showAdminTab('announcements', this)">📢 الإعلانات</button>
+          <button class="admin-tab-btn" onclick="showAdminTab('contact', this)">📞 التواصل</button>
+          <button class="admin-tab-btn" onclick="showAdminTab('certificates', this)">🎓 الشهادات</button>
         </div>
-        <nav class="sidebar-nav" id="sidebarNav">
-          <!-- Student nav -->
-          <div id="studentNav">
-            <button class="sidebar-nav-item active" onclick="showPanel('welcome')"><span class="ico">🏠</span> الرئيسية</button>
-            <button class="sidebar-nav-item" onclick="showPanel('progress')"><span class="ico">📊</span> تقرير الإنجاز</button>
-            <button class="sidebar-nav-item" onclick="showPanel('curriculum')"><span class="ico">📚</span> خطة الدراسة</button>
-            <button class="sidebar-nav-item" onclick="showPanel('certificates')"><span class="ico">🎓</span> شهاداتي</button>
-          </div>
-          <!-- Supervisor nav -->
-          <div id="supervisorNav" style="display:none;">
-            <button class="sidebar-nav-item active" onclick="showPanel('supWelcome')"><span class="ico">🏠</span> الرئيسية</button>
-            <button class="sidebar-nav-item" onclick="showPanel('supStudents')"><span class="ico">👥</span> الطلاب</button>
-          </div>
-        </nav>
-        <div class="sidebar-logout">
-          <button class="logout-btn" onclick="handleLogout()">🚪 تسجيل الخروج</button>
-        </div>
-      </aside>
 
-      <!-- MAIN -->
-      <main class="dash-main">
-
-        <!-- ===== STUDENT: WELCOME ===== -->
-        <div class="panel active" id="panel-welcome">
-          <div class="welcome-banner">
-            <div class="greeting">مرحباً بك في</div>
-            <h2>معهد التأصيل العلمي 🕌<br><span id="welcomeName">...</span></h2>
-            <p>نتمنى لك رحلة علمية مثمرة ومباركة</p>
-          </div>
-          <div class="student-stats">
-            <div class="stat-box"><span class="s-num" id="stat-done">٠</span><span class="s-lbl">متن مكتمل</span></div>
-            <div class="stat-box"><span class="s-num" id="stat-remain">٢٠+</span><span class="s-lbl">متن متبقٍ</span></div>
-            <div class="stat-box"><span class="s-num" id="stat-pct">٠٪</span><span class="s-lbl">نسبة الإنجاز</span></div>
-            <div class="stat-box"><span class="s-num">١</span><span class="s-lbl">سنة دراسية</span></div>
-          </div>
-
-          <!-- ===== مقرر اليوم ===== -->
-          <div class="progress-card" id="todayScheduleCard" style="margin-bottom:24px;">
-            <h3 style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;">
-              <span>📅 دروس اليوم</span>
-              <a href="schedule.html" style="font-size:0.78rem;font-weight:normal;color:var(--gold-dark);text-decoration:none;">عرض الجدول الكامل ←</a>
-            </h3>
-            <div id="todayLessonsContainer">
-              <div style="text-align:center;padding:20px;color:var(--text-soft);font-size:0.85rem;">
-                <span style="font-size:1.8rem;display:block;margin-bottom:8px;">⏳</span>
-                جارٍ تحميل جدول اليوم...
-              </div>
+        <!-- QUESTIONS TAB -->
+        <div id="tab-questions" class="admin-panel-content">
+          <div class="panel-card">
+            <h3>💬 الأسئلة والاستفسارات <span id="pendingCount" class="badge badge-gold"></span></h3>
+            <div class="filter-row" style="display:flex;gap:8px;margin-bottom:20px;">
+              <button class="filter-btn active" onclick="filterQs('all',this)">الكل</button>
+              <button class="filter-btn" onclick="filterQs('pending',this)">بانتظار الرد</button>
+              <button class="filter-btn" onclick="filterQs('answered',this)">تم الرد</button>
             </div>
-          </div>
-          <!-- Quick progress -->
-          <div class="progress-card">
-            <h3>📈 نظرة سريعة على تقدمك</h3>
-            <div class="overall-progress">
-              <div class="op-header">
-                <span class="op-label">الإنجاز الكلي</span>
-                <span class="op-pct" id="overallPct">٠٪</span>
-              </div>
-              <div class="progress-bar-bg"><div class="progress-bar-fill" id="overallBar" style="width:0%"></div></div>
-            </div>
-            <div style="margin-top:16px;">
-              <button class="btn btn-primary" onclick="showPanel('curriculum')" style="font-size:0.88rem;padding:12px 24px;">
-                📚 عرض خطة الدراسة
-              </button>
-            </div>
+            <div id="adminQsList"><p style="color:var(--text-soft);text-align:center;padding:24px;">جارٍ التحميل...</p></div>
           </div>
         </div>
 
-        <!-- ===== STUDENT: PROGRESS ===== -->
-        <div class="panel" id="panel-progress">
-          <h2 style="font-size:1.4rem;color:var(--purple);margin-bottom:24px;">📊 تقرير الإنجاز</h2>
-          <div class="progress-card">
-            <h3>📈 الإنجاز الكلي</h3>
-            <div class="overall-progress">
-              <div class="op-header">
-                <span class="op-label">نسبة إتمام المنهج</span>
-                <span class="op-pct" id="overallPct2">٠٪</span>
-              </div>
-              <div class="progress-bar-bg"><div class="progress-bar-fill" id="overallBar2" style="width:0%"></div></div>
+        <!-- STUDENTS TAB -->
+        <div id="tab-students" class="admin-panel-content" style="display:none;">
+          <div class="panel-card">
+            <h3>👥 إدارة الطلاب <span id="pendingStudentsCount" class="badge badge-gold" style="font-size:0.75rem;"></span></h3>
+            <div class="filter-row" style="display:flex;gap:8px;margin-bottom:16px;">
+              <button class="filter-btn active" onclick="filterStudents('all',this)">الكل</button>
+              <button class="filter-btn" onclick="filterStudents('pending',this)">⏳ قيد المراجعة</button>
+              <button class="filter-btn" onclick="filterStudents('accepted',this)">✅ مقبول</button>
+              <button class="filter-btn" onclick="filterStudents('rejected',this)">🚫 مرفوض</button>
             </div>
-          </div>
-          <!-- Phase by phase progress -->
-          <div class="progress-card" id="phaseProgressContainer">
-            <h3>📋 تفصيل المراحل</h3>
-            <div id="phaseProgressList"></div>
-          </div>
-        </div>
-
-        <!-- ===== STUDENT: CURRICULUM ===== -->
-        <div class="panel" id="panel-curriculum">
-          <h2 style="font-size:1.4rem;color:var(--purple);margin-bottom:24px;">📚 خطة الدراسة</h2>
-          <div class="progress-card">
-            <h3>🎯 إجمالي التقدم</h3>
-            <div class="overall-progress">
-              <div class="op-header">
-                <span class="op-label">الإنجاز</span>
-                <span class="op-pct" id="overallPct3">٠٪</span>
-              </div>
-              <div class="progress-bar-bg"><div class="progress-bar-fill" id="overallBar3" style="width:0%"></div></div>
-            </div>
-          </div>
-
-          <div class="progress-card" id="curriculumChecklistContainer">
-            <h3>✅ قائمة المتون — ضع علامة على ما أتممته</h3>
-            <div id="curriculumChecklist"></div>
-          </div>
-        </div>
-
-        <!-- ===== STUDENT: CERTIFICATES ===== -->
-        <div class="panel" id="panel-certificates">
-          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px;">
-            <h2 style="font-size:1.4rem;color:var(--purple);margin:0;">🎓 شهاداتي</h2>
-            <span style="font-size:0.82rem;color:var(--text-soft);">الشهادات الصادرة باسمك من المعهد</span>
-          </div>
-          <div id="certificatesContainer">
-            <div class="cert-empty">
-              <span class="cert-empty-icon">⏳</span>
-              <p>جارٍ تحميل الشهادات...</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- ===== SUPERVISOR: WELCOME ===== -->
-        <div class="panel" id="panel-supWelcome">
-          <div class="welcome-banner">
-            <div class="greeting">مرحباً بك أيها المشرف في</div>
-            <h2>معهد التأصيل العلمي 🕌<br><span id="supWelcomeName">...</span></h2>
-            <p>إدارة الطلاب ومتابعة تقدمهم</p>
-          </div>
-          <div class="student-stats">
-            <div class="stat-box"><span class="s-num" id="sup-stat-students">٠</span><span class="s-lbl">طالب مسجل</span></div>
-          </div>
-        </div>
-
-        <!-- ===== SUPERVISOR: STUDENTS ===== -->
-        <div class="panel" id="panel-supStudents">
-          <h2 style="font-size:1.4rem;color:var(--purple);margin-bottom:24px;">👥 قائمة الطلاب</h2>
-          <div class="sup-table-card">
-            <h3>الطلاب المسجلون</h3>
             <div style="overflow-x:auto;">
-              <table class="students-table">
-                <thead>
-                  <tr>
-                    <th>الاسم</th>
-                    <th>البريد</th>
-                    <th>المرحلة</th>
-                    <th>نسبة الإنجاز</th>
-                  </tr>
-                </thead>
-                <tbody id="studentsTableBody">
-                  <tr><td colspan="4" style="text-align:center;color:var(--text-soft);padding:24px;">جارٍ التحميل...</td></tr>
-                </tbody>
+              <table class="data-table" id="studentsAdminTable">
+                <thead><tr><th>الاسم</th><th>البريد</th><th>المرحلة</th><th>الجنس</th><th>الإنجاز</th><th>الحالة</th><th>الإجراءات</th></tr></thead>
+                <tbody id="studentsAdminBody"><tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-soft);">جارٍ التحميل...</td></tr></tbody>
               </table>
             </div>
           </div>
         </div>
 
-      </main>
+        <!-- SUPERVISORS TAB -->
+        <div id="tab-supervisors" class="admin-panel-content" style="display:none;">
+          <div class="panel-card">
+            <h3>👨‍💼 إضافة مشرف جديد <span style="font-size:0.75rem;color:var(--text-soft);font-weight:normal;">(للمشرف العام فقط)</span></h3>
+            <div id="supAddForm">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="form-group"><label class="form-label">الاسم الثلاثي <span class="req">*</span></label><input type="text" class="form-control" id="supName" placeholder="أدخل الاسم"></div>
+                <div class="form-group"><label class="form-label">البريد الإلكتروني <span class="req">*</span></label><input type="email" class="form-control" id="supEmail" placeholder="email@example.com"></div>
+                <div class="form-group"><label class="form-label">اسم المستخدم <span class="req">*</span></label><input type="text" class="form-control" id="supUsername" placeholder="username"></div>
+                <div class="form-group"><label class="form-label">كلمة المرور <span class="req">*</span></label><input type="password" class="form-control" id="supPassword" placeholder="••••••••" minlength="6"></div>
+              </div>
+              <button class="btn btn-primary" onclick="addSupervisor()">إضافة المشرف</button>
+            </div>
+          </div>
+          <div class="panel-card">
+            <h3>قائمة المشرفين</h3>
+            <div id="supervisorsList"><p style="color:var(--text-soft);text-align:center;padding:24px;">جارٍ التحميل...</p></div>
+          </div>
+        </div>
+
+        <!-- SCHEDULE TAB -->
+        <div id="tab-schedule" class="admin-panel-content" style="display:none;">
+          <div class="panel-card">
+            <h3>📅 تعديل الجدول الأسبوعي
+              <button class="btn btn-gold btn-sm" onclick="saveSchedule()">💾 حفظ الجدول</button>
+            </h3>
+            <div class="filter-row" style="margin-bottom:20px;">
+              <button class="week-nav-btn" style="padding:8px 16px;background:var(--white);border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.82rem;cursor:pointer;" onclick="changeAdminWeek(-1)">→ السابق</button>
+              <span id="adminWeekLabel" style="font-size:0.9rem;font-weight:bold;color:var(--purple);padding:0 12px;"></span>
+              <button class="week-nav-btn" style="padding:8px 16px;background:var(--white);border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.82rem;cursor:pointer;" onclick="changeAdminWeek(1)">القادم ←</button>
+            </div>
+            <div id="scheduleEditor"></div>
+          </div>
+        </div>
+
+        <!-- COURSES TAB -->
+        <div id="tab-courses" class="admin-panel-content" style="display:none;">
+          <div class="panel-card">
+            <h3>📚 إدارة المقررات</h3>
+            <div id="coursesAdminList"><p style="color:var(--text-soft);text-align:center;padding:24px;">جارٍ التحميل...</p></div>
+          </div>
+        </div>
+
+        <!-- ANNOUNCEMENTS TAB -->
+        <div id="tab-announcements" class="admin-panel-content" style="display:none;">
+          <div class="panel-card">
+            <h3>📢 نشر إعلان جديد</h3>
+            <div class="form-group"><label class="form-label">عنوان الإعلان</label><input type="text" class="form-control" id="annTitle" placeholder="عنوان الإعلان..."></div>
+            <div class="form-group"><label class="form-label">نص الإعلان</label><textarea class="answer-textarea" id="annBody" rows="4" placeholder="اكتب نص الإعلان..."></textarea></div>
+            <button class="btn btn-primary" onclick="publishAnnouncement()">نشر الإعلان 📢</button>
+          </div>
+          <div class="panel-card">
+            <h3>الإعلانات السابقة</h3>
+            <div id="announcementsList"><p style="color:var(--text-soft);text-align:center;padding:24px;">جارٍ التحميل...</p></div>
+          </div>
+        </div>
+
+
+        <!-- CONTACT TAB -->
+        <div id="tab-contact" class="admin-panel-content" style="display:none;">
+          <div class="panel-card">
+            <h3>📞 معلومات التواصل العامة
+              <button class="btn btn-gold btn-sm" onclick="saveContactInfo()">💾 حفظ</button>
+            </h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+              <div class="form-group">
+                <label class="form-label">رقم الهاتف</label>
+                <input type="tel" class="form-control" id="ct_phone" placeholder="+968 XXXX XXXX">
+              </div>
+              <div class="form-group">
+                <label class="form-label">واتساب</label>
+                <input type="tel" class="form-control" id="ct_whatsapp" placeholder="+968 XXXX XXXX">
+              </div>
+              <div class="form-group">
+                <label class="form-label">البريد الإلكتروني</label>
+                <input type="email" class="form-control" id="ct_email" placeholder="info@taseel.com">
+              </div>
+              <div class="form-group">
+                <label class="form-label">تليجرام (رابط مباشر)</label>
+                <input type="url" class="form-control" id="ct_telegram" placeholder="https://t.me/...">
+              </div>
+            </div>
+          </div>
+
+          <div class="panel-card">
+            <h3>📢 القنوات والحسابات
+              <button class="btn btn-gold btn-sm" onclick="addChannel()">+ إضافة قناة</button>
+            </h3>
+            <div style="font-size:0.72rem;color:var(--text-soft);margin-bottom:12px;display:grid;grid-template-columns:120px 50px 1fr 1fr auto;gap:8px;padding:0 4px;">
+              <span>النوع</span><span>أيقونة</span><span>الاسم</span><span>الرابط</span><span></span>
+            </div>
+            <div id="channelsList"></div>
+            <button class="btn btn-primary" style="margin-top:16px;" onclick="saveChannels()">💾 حفظ القنوات</button>
+          </div>
+
+          <div class="panel-card">
+            <h3>🔒 القناة الخاصة بطلاب المعهد
+              <span style="font-size:0.75rem;color:var(--text-soft);font-weight:normal;">تظهر للطلاب المسجّلين فقط</span>
+            </h3>
+            <div class="form-group" style="max-width:500px;">
+              <label class="form-label">رابط القناة الخاصة</label>
+              <input type="url" class="form-control" id="ct_private" placeholder="https://t.me/...">
+            </div>
+            <div style="padding:14px 18px;background:rgba(212,180,142,0.08);border:1px solid rgba(212,180,142,0.25);border-radius:var(--radius-sm);font-size:0.82rem;color:var(--gold-dark);margin-bottom:16px;">
+              ⚠️ هذا الرابط يظهر فقط للطلاب المسجّلين في صفحة الملف الشخصي مع تحذير واضح بعدم المشاركة.
+            </div>
+            <button class="btn btn-primary" onclick="savePrivateChannel()">💾 حفظ الرابط الخاص</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+        <!-- CERTIFICATES TAB -->
+        <div id="tab-certificates" class="admin-panel-content" style="display:none;">
+
+          <!-- إضافة شهادة جديدة -->
+          <div class="panel-card">
+            <h3>🎓 إصدار شهادة جديدة</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+              <div class="form-group">
+                <label class="form-label">الطالب <span class="req">*</span></label>
+                <select class="form-control" id="cert_student">
+                  <option value="">— اختر الطالب —</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">عنوان الشهادة <span class="req">*</span></label>
+                <input type="text" class="form-control" id="cert_title" placeholder="مثال: إتمام المرحلة التمهيدية">
+              </div>
+              <div class="form-group">
+                <label class="form-label">نوع الشهادة <span class="req">*</span></label>
+                <select class="form-control" id="cert_type">
+                  <option value="شهادة إتمام">شهادة إتمام</option>
+                  <option value="إجازة">إجازة بالسند المتصل</option>
+                  <option value="تقدير">شهادة تقدير</option>
+                  <option value="مشاركة">شهادة مشاركة</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">اسم المشرف <span class="req">*</span></label>
+                <input type="text" class="form-control" id="cert_supervisor" placeholder="الشيخ / الأستاذ...">
+              </div>
+              <div class="form-group">
+                <label class="form-label">تاريخ الإصدار <span class="req">*</span></label>
+                <input type="date" class="form-control" id="cert_date">
+              </div>
+              <div class="form-group">
+                <label class="form-label">رابط PDF (Firebase Storage)</label>
+                <input type="url" class="form-control" id="cert_pdf" placeholder="https://firebasestorage...">
+              </div>
+            </div>
+            <div class="form-error" id="cert_error" style="margin-bottom:8px;"></div>
+            <button class="btn btn-primary" onclick="issueCertificate()">📜 إصدار الشهادة</button>
+          </div>
+
+          <!-- قائمة الشهادات المصدرة -->
+          <div class="panel-card">
+            <h3>📋 الشهادات المصدرة</h3>
+            <div id="allCertsList"><p style="color:var(--text-soft);text-align:center;padding:24px;">جارٍ التحميل...</p></div>
+          </div>
+        </div>
+
+  <!-- Lesson Edit Modal -->
+  <div class="modal-overlay" id="lessonModal">
+    <div class="modal-box">
+      <div class="modal-title">تعديل الدرس <button class="modal-close" onclick="closeModal('lessonModal')">✕</button></div>
+      <div id="lessonModalBody"></div>
+    </div>
+  </div>
+
+  <!-- Exam Edit Modal -->
+  <div class="modal-overlay" id="examModal">
+    <div class="modal-box" style="max-width:780px;">
+      <div class="modal-title">إدارة الاختبار <button class="modal-close" onclick="closeModal('examModal')">✕</button></div>
+      <div id="examModalBody"></div>
     </div>
   </div>
 
   <div id="footerPlaceholder"></div>
 
-    <script type="module">
-    console.log("Dashboard Script Loaded ✅");
+  <script type="module">
+    // ── كل الـ imports أولاً (ES modules تتطلب ذلك) ──
+    // ── تعريف renderHeader و renderFooter مباشرة (بدون استيراد خارجي) ──
+    const LOGO_SRC = 'data:image/png;base64,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';
 
-    import { renderHeader, renderFooter, initSharedBehavior } from './components.js';
-    import {
-      auth, db,
-      signOut, onAuthStateChanged,
-      doc, getDoc, updateDoc, collection, getDocs
-    } from './firebase.js';
+    function renderHeader(activePage = '', userData = null) {
+  const isLoggedIn = !!userData;
+  const isAdmin    = userData && (userData.role === 'superAdmin' || userData.role === 'supervisor');
 
-    // ===== GLOBAL STATE =====
-    let currentUser     = null;
-    let currentUserData = null;
-    let userProgress    = {};
+  /* ── GUEST nav ── */
+  const guestNav = [
+    { href: 'index.html',      label: 'الرئيسية' },
+    { href: 'curriculum.html', label: 'المنهج' },
+    { href: 'about.html',      label: 'من نحن' },
+  ];
 
-    // ===== CURRICULUM DATA =====
-    const CURRICULUM = [
-      {
-        id: 'phase0', label: 'المرحلة التمهيدية',
-        items: [
-          { id: 'mtn01', label: 'الأربعون النووية' },
-          { id: 'mtn02', label: 'عمدة الأحكام' },
-          { id: 'mtn03', label: 'ثلاثة الأصول' },
-          { id: 'mtn04', label: 'القواعد الأربع' },
-          { id: 'mtn05', label: 'كشف الشبهات' },
-          { id: 'mtn06', label: 'الآجرومية' },
-        ]
-      },
-      {
-        id: 'phase1', label: 'المرحلة الأولى',
-        items: [
-          { id: 'mtn07', label: 'بلوغ المرام (المختصر)' },
-          { id: 'mtn08', label: 'الورقات في أصول الفقه' },
-          { id: 'mtn09', label: 'كتاب التوحيد' },
-          { id: 'mtn10', label: 'الواسطية' },
-          { id: 'mtn11', label: 'قطر الندى' },
-        ]
-      },
-      {
-        id: 'phase2', label: 'المرحلة الثانية',
-        items: [
-          { id: 'mtn12', label: 'زاد المستقنع' },
-          { id: 'mtn13', label: 'الرحبية في الفرائض' },
-          { id: 'mtn14', label: 'الحموية الكبرى' },
-          { id: 'mtn15', label: 'ألفية ابن مالك' },
-          { id: 'mtn16', label: 'نزهة النظر' },
-        ]
-      },
-      {
-        id: 'phase3', label: 'المرحلة الثالثة',
-        items: [
-          { id: 'mtn17', label: 'منهاج الطالبين' },
-          { id: 'mtn18', label: 'روضة الناظر' },
-          { id: 'mtn19', label: 'التدمرية' },
-          { id: 'mtn20', label: 'مختصر المنتهى' },
-          { id: 'mtn21', label: 'الكافية الشافية' },
-        ]
-      },
-    ];
-    const TOTAL_ITEMS = CURRICULUM.reduce((sum, p) => sum + p.items.length, 0);
+  /* ── STUDENT nav ── */
+  const studentNav = [
+    { href: 'dashboard.html',  label: 'الرئيسية' },
+    { href: 'courses.html',    label: 'المقررات' },
+    { href: 'schedule.html',   label: 'الجدول' },
+    { href: 'questions.html',  label: 'الأسئلة' },
+    { href: 'curriculum.html', label: 'المنهج' },
+  ];
 
-    // ─── تحسين الأداء: إزالة جميع مصادر التأخير ───
-    //
-    // 1. onAuthStateChanged يُعيد حالة الجلسة من cache المتصفح فوراً
-    // 2. userDoc + contactInfo يُحمَّلان بالتوازي (Promise.all)
-    // 3. الهيدر يُرسم فوراً بمجرد معرفة المستخدم — قبل انتظار contactInfo
-    // 4. شاشة التحميل تختفي بعد رسم الهيدر مباشرةً
-    // ────────────────────────────────────────────
+  /* ── SUPERVISOR nav ── */
+  const supervisorNav = [
+    { href: 'dashboard.html',  label: 'الرئيسية' },
+    { href: 'courses.html',    label: 'المقررات' },
+    { href: 'schedule.html',   label: 'الجدول' },
+    { href: 'questions.html',  label: 'الأسئلة' },
+    { href: 'admin.html',      label: '🛠️ الإدارة', special: true },
+    { href: 'curriculum.html', label: 'المنهج' },
+  ];
 
-    // ── Timeout: إذا لم يرد Firebase خلال 15 ثانية → أظهر زر إعادة المحاولة ──
-    // لا نُحوّل لـ index.html لأن ذلك يسبب حلقة لا نهاية لها (index → dashboard → index)
-    const authFallback = setTimeout(() => {
-      const screen = document.getElementById('loadingScreen');
-      if (screen && !screen.classList.contains('hidden')) {
-        screen.innerHTML = `
-          <div style="text-align:center;padding:24px;">
-            <p style="color:var(--text-soft);margin-bottom:20px;font-size:0.95rem;">
-              تعذّر الاتصال بالخادم
-            </p>
-            <button onclick="window.location.reload()"
-              style="background:var(--purple);color:white;border:none;padding:12px 28px;
-                     border-radius:100px;font-size:1rem;font-family:inherit;cursor:pointer;
-                     box-shadow:0 4px 16px rgba(59,27,64,0.3);">
-              إعادة المحاولة
-            </button>
-            <br><br>
-            <a href="index.html" style="color:var(--text-soft);font-size:0.85rem;">
-              العودة للرئيسية
-            </a>
-          </div>`;
+  const navPages = isLoggedIn ? (isAdmin ? supervisorNav : studentNav) : guestNav;
+
+  const navLinks = navPages.map(p => {
+    const isActive = activePage === p.href;
+    const cls = 'nav-link' + (isActive ? ' active' : '') + (p.special ? ' nav-admin-link' : '');
+    return `<a href="${p.href}" class="${cls}">${p.label}</a>`;
+  }).join('');
+
+  const mobileLinks = navPages.map(p => {
+    const isActive = activePage === p.href;
+    const cls = 'nav-link' + (isActive ? ' active' : '') + (p.special ? ' nav-admin-link' : '');
+    return `<a href="${p.href}" class="${cls}">${p.label}</a>`;
+  }).join('');
+
+  /* ── Right side — على الجوال: نخفي كل شيء إلا زر الـ hamburger ── */
+  const rightSide = isLoggedIn ? `
+    <div class="header-controls">
+      <button class="notif-bell" id="notifBell" onclick="toggleNotifPanel()" title="الإشعارات" aria-label="الإشعارات" style="display:none;">
+        🔔<span class="notif-count" id="notifCount" style="display:none;">0</span>
+      </button>
+      <div class="user-menu-wrap" id="userMenuWrap">
+        <button class="user-menu-btn" id="userMenuBtn" onclick="toggleUserMenu()" aria-haspopup="true">
+          <div class="user-avatar-mini">${userData.fullName ? userData.fullName.charAt(0) : '؟'}</div>
+          <span class="user-menu-name" id="headerUserName">${userData.fullName || ''}</span>
+          <span class="user-menu-arrow">▾</span>
+        </button>
+        <div class="user-dropdown" id="userDropdown" style="display:none;" role="menu">
+          <a href="profile.html" class="user-dropdown-item">👤 ملفي الشخصي</a>
+          ${isAdmin ? '<a href="admin.html" class="user-dropdown-item">🛠️ لوحة الإدارة</a>' : ''}
+          <div class="user-dropdown-divider"></div>
+          <button class="user-dropdown-item danger" onclick="handleHeaderLogout()">🚪 تسجيل الخروج</button>
+        </div>
+      </div>
+      <button class="hamburger" id="hamburger" aria-label="القائمة">
+        <span></span><span></span><span></span>
+      </button>
+    </div>` : `
+    <div class="header-controls">
+      <a href="register.html" class="nav-link nav-btn">تسجيل الدخول</a>
+      <button class="hamburger" id="hamburger" aria-label="القائمة">
+        <span></span><span></span><span></span>
+      </button>
+    </div>`;
+
+  return `
+  <header class="site-header" id="siteHeader">
+    <div class="header-inner">
+      <a href="${isLoggedIn ? 'dashboard.html' : 'index.html'}" class="logo-area">
+        <img src="${LOGO_SRC}" alt="شعار معهد التأصيل العلمي" class="logo-img">
+        <span class="site-name">معهد التأصيل العلمي</span>
+      </a>
+      <nav class="main-nav" id="mainNav">
+        ${navLinks}
+      </nav>
+      ${rightSide}
+    </div>
+
+    <!-- ══ MOBILE MENU — يظهر عند الضغط على ☰ ══ -->
+    <div class="mobile-menu" id="mobileMenu">
+
+      ${isLoggedIn ? `
+      <!-- بيانات المستخدم في أعلى القائمة -->
+      <div class="mobile-menu-user">
+        <div class="mob-avatar">${userData.fullName ? userData.fullName.charAt(0) : '؟'}</div>
+        <div class="mob-info">
+          <div class="mob-name">${userData.fullName || 'مستخدم'}</div>
+          <div class="mob-role">${isAdmin ? 'مشرف' : 'طالب'}</div>
+        </div>
+        <button onclick="toggleNotifPanel()" title="الإشعارات"
+          style="background:rgba(255,255,255,0.1);border:none;border-radius:50%;width:38px;height:38px;color:white;font-size:1.1rem;cursor:pointer;flex-shrink:0;position:relative;">
+          🔔
+          <span id="notifBadgeMob" style="display:none;position:absolute;top:2px;right:2px;background:#e07000;color:white;border-radius:50%;width:16px;height:16px;font-size:0.6rem;display:flex;align-items:center;justify-content:center;"></span>
+        </button>
+      </div>` : ''}
+
+      <!-- روابط التنقل -->
+      ${mobileLinks}
+
+      ${isLoggedIn ? `
+      <div class="mobile-menu-divider"></div>
+      <a href="profile.html" class="nav-link" style="color:rgba(255,255,255,0.7);">👤 ملفي الشخصي</a>
+      ${isAdmin ? '<a href="admin.html" class="nav-link nav-admin-link">🛠️ لوحة الإدارة</a>' : ''}
+      <button class="mob-logout" onclick="handleHeaderLogout()">🚪 تسجيل الخروج</button>
+      ` : ''}
+
+    </div>
+
+    <!-- Notification Panel -->
+    <div class="notif-panel" id="notifPanel" style="display:none;">
+      <div class="notif-header">
+        <span>الإشعارات</span>
+        <button onclick="markAllRead()" style="font-size:0.75rem;background:none;border:none;color:var(--gold);cursor:pointer;">تحديد الكل كمقروء</button>
+      </div>
+      <div class="notif-list" id="notifList">
+        <div style="text-align:center;padding:24px;color:rgba(255,255,255,0.5);font-size:0.85rem;">لا توجد إشعارات</div>
+      </div>
+    </div>
+  </header>`;
+}
+
+// ──────────────────────────────────────────────────
+// FOOTER — dynamic contact info
+// ──────────────────────────────────────────────────
+function renderFooter(contactData = null) {
+  const phone    = contactData?.phone    || '+968 9000 0000';
+  const email    = contactData?.email    || 'info@taseel.com';
+  const telegram = contactData?.telegram || 'https://t.me/musabsalah';
+  const channels = contactData?.channels || [];
+
+  const channelLinks = channels.length
+    ? channels.map(ch => `<a href="${ch.url}" target="_blank"><span>${ch.icon||'🔗'}</span><span>${ch.name}</span></a>`).join('')
+    : `<a href="${telegram}" target="_blank"><span class="icon">✈️</span><span>تليجرام المشرف</span></a>`;
+
+  return `
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <img src="${LOGO_SRC}" alt="شعار معهد التأصيل العلمي" class="logo-img-footer">
+        <div class="brand-name">معهد التأصيل العلمي</div>
+        <p>برنامج علمي ميسر يُعين طالب العلم على بناء قوته العلمية والعملية</p>
+      </div>
+      <div class="footer-col">
+        <h4>التواصل</h4>
+        <a href="tel:${phone}"><span class="icon">📞</span><span>${phone}</span></a>
+        <a href="mailto:${email}"><span class="icon">✉️</span><span>${email}</span></a>
+        ${channelLinks}
+      </div>
+
+    </div>
+    <div class="footer-bottom container">
+      <p>© جميع الحقوق محفوظة لمعهد التأصيل العلمي</p>
+
+    </div>
+  </footer>`;
+}
+
+// ──────────────────────────────────────────────────
+// SHARED INIT — called on every page
+// ──────────────────────────────────────────────────
+function initSharedBehavior() {
+  // Header scroll
+  const header = document.getElementById('siteHeader');
+  window.addEventListener('scroll', () => {
+    header?.classList.toggle('scrolled', window.scrollY > 40);
+  });
+
+  // Hamburger — يفتح/يغلق القائمة المنسدلة ويحوّل الأيقونة إلى X
+  const hamburger  = document.getElementById('hamburger');
+  const mobileMenu = document.getElementById('mobileMenu');
+  hamburger?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = mobileMenu?.classList.toggle('open');
+    hamburger.classList.toggle('open', isOpen);
+  });
+
+  // إغلاق القائمة عند الضغط خارجها
+  document.addEventListener('click', e => {
+    if (mobileMenu?.classList.contains('open')) {
+      if (!mobileMenu.contains(e.target) && !hamburger?.contains(e.target)) {
+        mobileMenu.classList.remove('open');
+        hamburger?.classList.remove('open');
       }
-    }, 15000);
+    }
+  });
 
-    onAuthStateChanged(auth, async (user) => {
-      try {
-      clearTimeout(authFallback);
-      if (!user) { window.location.href = 'index.html'; return; }
-
-      // ── الخطوة 1: أخفِ الـ spinner فوراً وأظهر المحتوى ببيانات مبدئية ──
-      // هذا يضمن أن الصفحة لن تتجمد أبداً بغض النظر عن سرعة الشبكة
-      currentUser = user;
-      const quickData = {
-        fullName: user.displayName || user.email?.split('@')[0] || 'مستخدم',
-        email: user.email || '',
-        role: 'student'
-      };
-      document.getElementById('headerPlaceholder').innerHTML = renderHeader('dashboard.html', quickData);
-      document.getElementById('footerPlaceholder').innerHTML = renderFooter(null);
-      initSharedBehavior();
-      document.getElementById('loadingScreen').classList.add('hidden');
-      document.getElementById('dashWrapper').style.display = '';
-
-      // ── الخطوة 2: جلب البيانات الكاملة من Firestore في الخلفية ──
-      // بدون timeout — نصبر حتى يرد Firestore مهما طال الوقت
-      getDoc(doc(db, 'users', user.uid))
-        .then(async (userSnap) => {
-          // حماية race condition: إذا لم يوجد المستند بعد (تسجيل جديد) → انتظر
-          let finalSnap = userSnap;
-          if (!userSnap.exists()) {
-            await new Promise(r => setTimeout(r, 2000));
-            finalSnap = await getDoc(doc(db, 'users', user.uid));
-            if (!finalSnap.exists()) return; // لا نُحوّل، فقط نبقى
-          }
-
-          const userData = finalSnap.data();
-
-          // ── التحقق من حالة الحساب — pending أو rejected لا يدخل ──
-          if (userData.role === 'student' && userData.status !== 'accepted') {
-            await signOut(auth);
-            document.getElementById('loadingScreen').classList.add('hidden');
-            document.getElementById('dashWrapper').style.display = 'none';
-            document.body.innerHTML = `
-              <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f7f5fa;font-family:inherit;direction:rtl;text-align:center;padding:24px;">
-                <div style="background:white;border-radius:16px;padding:48px 40px;box-shadow:0 4px 24px rgba(59,27,64,0.10);max-width:480px;width:100%;">
-                  <div style="font-size:3.5rem;margin-bottom:16px;">${userData.status === 'rejected' ? '🚫' : '⏳'}</div>
-                  <h2 style="color:#3b1b40;margin-bottom:12px;font-size:1.4rem;">
-                    ${userData.status === 'rejected' ? 'تم رفض طلبك' : 'حسابك قيد المراجعة'}
-                  </h2>
-                  <p style="color:#666;line-height:1.7;margin-bottom:28px;">
-                    ${userData.status === 'rejected'
-                      ? 'عذراً، تم رفض طلب تسجيلك. يرجى التواصل مع إدارة المعهد لمزيد من المعلومات.'
-                      : 'شكراً لتسجيلك في معهد التأصيل العلمي. سيتم مراجعة طلبك من قِبل المشرفين وسيتم إعلامك عند القبول.'}
-                  </p>
-                  <a href="index.html" style="display:inline-block;padding:12px 32px;background:linear-gradient(135deg,#3b1b40,#5a2d6b);color:white;border-radius:8px;text-decoration:none;font-weight:bold;">
-                    العودة للرئيسية
-                  </a>
-                </div>
-              </div>`;
-            return;
-          }
-
-          userProgress    = userData.progress || {};
-          currentUserData = userData;
-
-          // ── تحديث الرأس بالبيانات الكاملة ──
-          document.getElementById('headerPlaceholder').innerHTML = renderHeader('dashboard.html', userData);
-          initSharedBehavior();
-
-          // ── تحديث الـ sidebar ──
-          const isAdmin = userData.role === 'superAdmin' || userData.role === 'supervisor';
-          document.getElementById('sideUserName').textContent = userData.fullName || 'مستخدم';
-          document.getElementById('sideRoleBadge').textContent = isAdmin ? 'مشرف' : 'طالب';
-          document.getElementById('sideRoleBadge').className = 'user-role-badge ' + (isAdmin ? 'role-admin' : 'role-student');
-
-          if (isAdmin) {
-            document.getElementById('studentNav').style.display = 'none';
-            document.getElementById('supervisorNav').style.display = '';
-            document.getElementById('panel-welcome').classList.remove('active');
-            document.getElementById('panel-supWelcome').classList.add('active');
-            document.getElementById('supWelcomeName').textContent = userData.fullName;
-            loadStudentsList();
-          } else {
-            document.getElementById('welcomeName').textContent = userData.fullName;
-            buildCurriculum();
-            updateAllProgress();
-            loadTodaySchedule(); // ← جدول اليوم
-          }
-
-          // ── جلب معلومات التواصل في الخلفية ──
-          getDoc(doc(db, 'contactInfo', 'main'))
-            .then(contactSnap => {
-              if (!contactSnap.exists()) return;
-              const contactData = contactSnap.data();
-              document.getElementById('footerPlaceholder').innerHTML = renderFooter(contactData);
-              getDocs(collection(db, 'contactInfo', 'main', 'channels'))
-                .then(ch => {
-                  const channels = [];
-                  ch.forEach(d => channels.push(d.data()));
-                  contactData.channels = channels.sort((a,b) => (a.order||0)-(b.order||0));
-                  document.getElementById('footerPlaceholder').innerHTML = renderFooter(contactData);
-                }).catch(() => {});
-            }).catch(() => {});
-
-          // ── الإشعارات في الخلفية ──
-          loadNotifications(user.uid);
-        })
-        .catch(err => {
-          // Firestore فشل نهائياً — الصفحة تعمل بالبيانات المبدئية
-          console.error('Firestore error:', err);
-        });
-      } catch (err) {
-        console.error('Dashboard auth error:', err);
-        // أخفِ شاشة التحميل حتى لا تتجمد الصفحة
-        const screen = document.getElementById('loadingScreen');
-        if (screen) screen.classList.add('hidden');
-        const wrapper = document.getElementById('dashWrapper');
-        if (wrapper) wrapper.style.display = '';
-      }
+  // إغلاق القائمة عند اختيار رابط داخلها
+  mobileMenu?.querySelectorAll('a').forEach(a => {
+    a.addEventListener('click', () => {
+      mobileMenu.classList.remove('open');
+      hamburger?.classList.remove('open');
     });
+  });
 
-    // ===== جدول اليوم =====
-    async function loadTodaySchedule() {
-      const container = document.getElementById('todayLessonsContainer');
-      if (!container) return;
-
-      try {
-        // حساب مفتاح الأسبوع (يبدأ من السبت)
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const todayKey = today.toISOString().slice(0, 10);
-
-        const day = today.getDay(); // 0=أحد, 6=سبت
-        const diffToSat = (day === 6) ? 0 : (day + 1);
-        const weekStart = new Date(today);
-        weekStart.setDate(weekStart.getDate() - diffToSat);
-        const wKey = 'week_' + weekStart.toISOString().slice(0, 10);
-
-        const snap = await getDoc(doc(db, 'schedule', wKey));
-        if (!snap.exists()) { renderTodayEmpty(container, today); return; }
-
-        const scheduleData = snap.data();
-        const todayData = scheduleData.days?.[todayKey];
-
-        if (!todayData) { renderTodayEmpty(container, today); return; }
-
-        // جمع كل الدروس من جميع أوقات اليوم
-        const TIMES = ['الفجر','الصباح','الظهر','العصر','المغرب','العشاء'];
-        const allLessons = [];
-        TIMES.forEach(time => {
-          const lessons = todayData[time] || [];
-          lessons.forEach(l => allLessons.push({ ...l, period: time }));
-        });
-
-        if (!allLessons.length) { renderTodayEmpty(container, today); return; }
-
-        const dayName = today.toLocaleDateString('ar', { weekday: 'long' });
-        const dateStr = today.toLocaleDateString('ar-SA', { day: 'numeric', month: 'long' });
-
-        container.innerHTML = `
-          <div style="font-size:0.75rem;color:var(--text-soft);margin-bottom:12px;display:flex;align-items:center;gap:6px;">
-            📆 <strong style="color:var(--purple);">${dayName}</strong> — ${dateStr}
-          </div>
-          ${allLessons.map(l => `
-            <div class="today-lesson-item">
-              <span class="today-lesson-time">${l.period}</span>
-              <div class="today-lesson-info">
-                <div class="today-lesson-title">${l.title || 'درس'}</div>
-                ${l.time ? `<div class="today-lesson-period">🕐 ${l.time}</div>` : ''}
-                ${l.note ? `<div class="today-lesson-note">📝 ${l.note}</div>` : ''}
-              </div>
-            </div>`).join('')}`;
-
-      } catch(e) {
-        console.warn('loadTodaySchedule error:', e.message);
-        const container2 = document.getElementById('todayLessonsContainer');
-        if (container2) renderTodayEmpty(container2, new Date());
-      }
+  // Close dropdowns on outside click
+  document.addEventListener('click', e => {
+    const wrap = document.getElementById('userMenuWrap');
+    if (wrap && !wrap.contains(e.target)) {
+      const dropdown = document.getElementById('userDropdown');
+      if (dropdown) dropdown.style.display = 'none';
     }
-
-    function renderTodayEmpty(container, today) {
-      const dayName = today.toLocaleDateString('ar', { weekday: 'long' });
-      const isWeekend = [5, 6].includes(today.getDay()); // جمعة أو سبت
-      container.innerHTML = `
-        <div class="today-empty">
-          <span>${isWeekend ? '🌙' : '📭'}</span>
-          ${isWeekend
-            ? 'يوم إجازة — استرح وأعد شحن طاقتك 🌿'
-            : `لا توجد دروس مجدولة ليوم <strong>${dayName}</strong>`}
-        </div>`;
+    const notifPanel = document.getElementById('notifPanel');
+    const bell = document.getElementById('notifBell');
+    if (notifPanel && !notifPanel.contains(e.target) && !(bell && bell.contains(e.target))) {
+      notifPanel.style.display = 'none';
     }
+  });
 
-    async function loadNotifications(uid) {
-      try {
-        const snap = await getDocs(collection(db,'notifications',uid,'items'));
-        const items = [];
-        snap.forEach(d => items.push({id:d.id,...d.data()}));
-        items.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
-        const unread = items.filter(n=>!n.read).length;
-        const bell = document.getElementById('notifBell');
-        const count = document.getElementById('notifCount');
-        if (bell) bell.style.display = 'flex';
-        if (count) { count.textContent = unread; count.style.display = unread > 0 ? 'flex' : 'none'; }
-        const list = document.getElementById('notifList');
-        if (list && items.length) {
-          const icons = { exam:'📝', course:'📚', lesson:'📖', announcement:'📢', answer:'💬', unlock:'🔓' };
-          list.innerHTML = items.slice(0,15).map(n => `
-            <div class="notif-item ${n.read?'':'unread'}" onclick="markNotifRead('${n.id}','${uid}')">
-              <span class="n-ico">${icons[n.type]||'🔔'}</span>
-              <div class="n-body">
-                <div class="n-msg">${n.title||n.message}</div>
-                <div class="n-time">${n.createdAt ? new Date(n.createdAt).toLocaleDateString('ar-SA',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : ''}</div>
-              </div>
-              ${!n.read ? '<span class="n-dot"></span>' : ''}
-            </div>`).join('');
-        }
-      } catch(e){}
-    }
+  // Scroll reveal
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+  }, { threshold: 0.08 });
+  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+}
 
-    window.markNotifRead = async function(nId, uid) {
-      try { await updateDoc(doc(db,'notifications',uid,'items',nId),{read:true}); } catch(e){}
-    };
+// ──────────────────────────────────────────────────
+// GLOBAL FUNCTIONS (window)
+// ──────────────────────────────────────────────────
+// [global helpers handled below]
 
+    import { auth, db, onAuthStateChanged, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs, addDoc, createUserWithEmailAndPassword } from './firebase.js';
+    import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // ===== PANEL SWITCHER =====
-    window.showPanel = function(panelId) {
-      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-      document.getElementById('panel-' + panelId).classList.add('active');
-      document.querySelectorAll('.sidebar-nav-item').forEach(b => b.classList.remove('active'));
-      event.target.closest('.sidebar-nav-item').classList.add('active');
+    const TOTAL_ITEMS = 23;
+    const CAT_MAP = { inquiry:'استفسار', scientific:'سؤال علمي', complaint:'شكوى', suggestion:'اقتراح' };
+    const DAYS_AR = ['السبت','الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة'];
+    const TIMES = ['الفجر','الصباح','الظهر','العصر','المغرب','العشاء'];
+    const DEFAULT_COURSES = [
+      {id:'prep',title:'المرحلة التمهيدية',phase:'تمهيدية',phaseNum:0},
+      {id:'p1',title:'العقيدة والتوحيد',phase:'الأولى',phaseNum:1},
+      {id:'p2',title:'علوم الآلة والسنة',phase:'الثانية',phaseNum:2},
+      {id:'p3',title:'الفقه المالكي',phase:'الثالثة',phaseNum:3},
+      {id:'p4',title:'أصول التفسير والعقيدة',phase:'الرابعة',phaseNum:4},
+      {id:'p5',title:'المقاصد والآداب',phase:'الخامسة',phaseNum:5},
+      {id:'p6',title:'فقه الدعوة والمناظرة',phase:'السادسة',phaseNum:6},
+    ];
 
-      if (panelId === 'supStudents') loadStudentsList();
-      if (panelId === 'certificates') loadCertificates();
-    };
+    let currentAdmin = null, isSuperAdmin = false;
+    let allQuestions = [], allStudents = [], allSupervisors = [];
+    let adminWeekStart;  // سيُهيَّئ بعد تعريف getWeekStart
+    let scheduleData = {};
+    let activeTab = 'questions';
 
-    // ===== BUILD CURRICULUM CHECKLIST =====
-    function buildCurriculum() {
-      const container = document.getElementById('curriculumChecklist');
-      container.innerHTML = '';
-      CURRICULUM.forEach((phase, pi) => {
-        const doneCount = phase.items.filter(item => userProgress[item.id]).length;
-        const section = document.createElement('div');
-        section.className = 'curriculum-section';
-        section.id = 'cs-' + phase.id;
-        section.innerHTML = `
-          <div class="cs-header" onclick="toggleCS('cs-${phase.id}')">
-            <div class="cs-header-left">
-              <div class="cs-num">${pi === 0 ? '٠' : pi}</div>
-              <div>
-                <div class="cs-title">${phase.label}</div>
-                <div class="cs-count">${phase.items.length} متن</div>
-              </div>
-            </div>
-            <div style="display:flex;align-items:center;gap:12px;">
-              <span class="cs-progress-mini" id="csp-${phase.id}">${doneCount}/${phase.items.length}</span>
-              <span class="cs-toggle">▾</span>
-            </div>
-          </div>
-          <div class="cs-items">
-            ${phase.items.map(item => `
-              <label class="matn-check ${userProgress[item.id] ? 'done' : ''}" id="mc-${item.id}">
-                <input type="checkbox" ${userProgress[item.id] ? 'checked' : ''}
-                  onchange="toggleItem('${item.id}', '${phase.id}', this.checked)">
-                <span>${item.label}</span>
-              </label>
-            `).join('')}
-          </div>
-        `;
-        container.appendChild(section);
-      });
-
-      // Build phase progress list
-      const phaseList = document.getElementById('phaseProgressList');
-      if (phaseList) {
-        phaseList.innerHTML = '';
-        CURRICULUM.forEach((phase, pi) => {
-          const doneCount = phase.items.filter(item => userProgress[item.id]).length;
-          const pct = Math.round((doneCount / phase.items.length) * 100);
-          const div = document.createElement('div');
-          div.style.cssText = 'margin-bottom:20px;';
-          div.innerHTML = `
-            <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-              <span style="font-size:0.88rem;color:var(--text-main);">${phase.label}</span>
-              <span style="font-size:0.82rem;color:var(--gold-dark);font-weight:bold;">${doneCount}/${phase.items.length}</span>
-            </div>
-            <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
-          `;
-          phaseList.appendChild(div);
-        });
-      }
-    }
-
-    window.toggleCS = function(id) {
-      document.getElementById(id).classList.toggle('open');
-    };
-
-    window.toggleItem = async function(itemId, phaseId, checked) {
-      userProgress[itemId] = checked;
-      const el = document.getElementById('mc-' + itemId);
-      if (el) el.classList.toggle('done', checked);
-      // Save to Firestore
-      await updateDoc(doc(db, 'users', currentUser.uid), { progress: userProgress });
-      updateAllProgress();
-      buildCurriculum();
-    };
-
-    function updateAllProgress() {
-      const done = Object.values(userProgress).filter(Boolean).length;
-      const pct = Math.round((done / TOTAL_ITEMS) * 100);
-      const pctAr = pct + '٪';
-
-      // Stat boxes
-      const el = document.getElementById('stat-done');
-      if (el) el.textContent = done;
-      const el2 = document.getElementById('stat-remain');
-      if (el2) el2.textContent = TOTAL_ITEMS - done;
-      const el3 = document.getElementById('stat-pct');
-      if (el3) el3.textContent = pctAr;
-
-      // Progress bars
-      ['overallPct','overallPct2','overallPct3'].forEach(id => {
-        const e = document.getElementById(id);
-        if (e) e.textContent = pctAr;
-      });
-      ['overallBar','overallBar2','overallBar3'].forEach(id => {
-        const e = document.getElementById(id);
-        if (e) setTimeout(() => e.style.width = pct + '%', 200);
-      });
-    }
-
-    // ===== SUPERVISOR: LOAD STUDENTS =====
-    async function loadStudentsList() {
-      const tbody = document.getElementById('studentsTableBody');
-      if (!tbody) return;
-      const snapshot = await getDocs(collection(db, 'users'));
-      const students = [];
-      snapshot.forEach(d => { if (d.data().role === 'student') students.push(d.data()); });
-      document.getElementById('sup-stat-students').textContent = students.length;
-      if (students.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-soft);padding:24px;">لا يوجد طلاب مسجلون بعد</td></tr>';
+    onAuthStateChanged(auth, async user => {
+      if (!user) { window.location.href = 'register.html'; return; }
+      const snap = await getDoc(doc(db, 'users', user.uid));
+      if (!snap.exists()) { window.location.href = 'register.html'; return; }
+      const data = snap.data();
+      if (data.role !== 'superAdmin' && data.role !== 'supervisor') {
+        document.getElementById('accessDenied').style.display = '';
         return;
       }
+      currentAdmin = { uid: user.uid, ...data };
+      isSuperAdmin = data.role === 'superAdmin';
+
+      // ── رسم الرأس بعد التحقق من الدور ──
+      let contactData = null;
+      try {
+        const cs = await getDoc(doc(db,'contactInfo','main'));
+        if (cs.exists()) {
+          contactData = cs.data();
+          getDocs(collection(db,'contactInfo','main','channels')).then(ch => {
+            const chs = []; ch.forEach(d => chs.push(d.data()));
+            contactData.channels = chs.sort((a,b)=>(a.order||0)-(b.order||0));
+            document.getElementById('footerPlaceholder').innerHTML = renderFooter(contactData);
+          }).catch(()=>{});
+        }
+      } catch(e) {}
+      document.getElementById('headerPlaceholder').innerHTML = renderHeader('admin.html', data);
+      document.getElementById('footerPlaceholder').innerHTML = renderFooter(contactData);
+      initSharedBehavior();
+
+      document.getElementById('adminContent').style.display = '';
+      if (!isSuperAdmin) {
+        const supBtn = document.querySelector('[onclick*="supervisors"]');
+        if (supBtn) supBtn.style.opacity = '0.4';
+      }
+      loadQuestions();
+      loadStudents();
+      loadSupervisors();
+      loadAdminSchedule();
+      loadCoursesAdmin();
+      loadAnnouncements();
+      loadContactInfo();
+    });
+
+    // ===== TAB SWITCHER =====
+    window.showAdminTab = function(tab, btn) {
+      document.querySelectorAll('.admin-panel-content').forEach(p => p.style.display = 'none');
+      document.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('tab-' + tab).style.display = '';
+      btn.classList.add('active');
+      activeTab = tab;
+      if (tab === 'certificates') {
+        populateCertStudents();
+        loadAllCertificates();
+      }
+    };
+
+    // ===== QUESTIONS =====
+    async function loadQuestions() {
+      const snap = await getDocs(collection(db, 'questions'));
+      allQuestions = [];
+      snap.forEach(d => allQuestions.push({ id: d.id, ...d.data() }));
+      allQuestions.sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
+      const pending = allQuestions.filter(q => q.status === 'pending').length;
+      document.getElementById('pendingCount').textContent = pending > 0 ? `${pending} جديد` : '';
+      renderAdminQuestions(allQuestions);
+    }
+
+    function renderAdminQuestions(list) {
+      const el = document.getElementById('adminQsList');
+      if (!list.length) { el.innerHTML = '<p style="text-align:center;padding:24px;color:var(--text-soft);">لا توجد أسئلة</p>'; return; }
+      el.innerHTML = list.map(q => `
+        <div class="q-row" id="qrow_${q.id}">
+          <div class="q-row-header">
+            <div>
+              <span class="badge ${q.status==='answered'?'badge-green':'badge-gold'}">${CAT_MAP[q.category]||q.category}</span>
+              <strong style="display:block;margin-top:6px;color:var(--purple);">${q.title}</strong>
+              <small style="color:var(--text-soft);">بقلم: ${q.studentName||'—'} | ${formatDate(q.createdAt)}</small>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+              <span class="q-status-badge ${q.status==='answered'?'q-status-answered':'q-status-pending'}">${q.status==='answered'?'✅ تم الرد':'⏳ بانتظار'}</span>
+              <button class="btn btn-sm btn-danger" onclick="deleteQuestion('${q.id}')" title="حذف السؤال" style="padding:4px 10px;">🗑️</button>
+            </div>
+          </div>
+          <p style="font-size:0.85rem;color:var(--text-soft);margin-bottom:14px;line-height:1.7;">${q.body}</p>
+          ${q.status==='answered' ? `<div class="q-answer-box"><div class="ans-label">الرد — ${q.answeredBy||'المشرف'}</div><div class="ans-text">${q.answer}</div></div>` : `
+          <div>
+            <textarea class="answer-textarea" id="ans_${q.id}" placeholder="اكتب الرد هنا..."></textarea>
+            <button class="btn btn-success btn-sm" style="margin-top:8px;" onclick="submitAnswer('${q.id}', '${q.studentId}')">إرسال الرد ✓</button>
+          </div>`}
+        </div>`).join('');
+    }
+
+    window.deleteQuestion = async function(qId) {
+      if (!confirm('هل تريد حذف هذا السؤال نهائياً؟ لا يمكن التراجع.')) return;
+      try {
+        await deleteDoc(doc(db, 'questions', qId));
+        // حذف من القائمة المحلية وتحديث العرض فوراً
+        allQuestions = allQuestions.filter(q => q.id !== qId);
+        const pending = allQuestions.filter(q => q.status === 'pending').length;
+        document.getElementById('pendingCount').textContent = pending > 0 ? `${pending} جديد` : '';
+        const row = document.getElementById('qrow_' + qId);
+        if (row) {
+          row.style.transition = 'opacity 0.3s';
+          row.style.opacity = '0';
+          setTimeout(() => row.remove(), 300);
+        }
+        showToast('تم حذف السؤال ✅', 'success');
+      } catch(e) {
+        showToast('حدث خطأ: ' + e.message, 'error');
+      }
+    };
+
+    window.filterQs = function(status, btn) {
+      document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      renderAdminQuestions(status==='all'?allQuestions:allQuestions.filter(q=>q.status===status));
+    };
+
+    window.submitAnswer = async function(qId, studentId) {
+      const answer = document.getElementById('ans_'+qId)?.value.trim();
+      if (!answer) return showToast('الرجاء كتابة الرد', 'error');
+      await updateDoc(doc(db, 'questions', qId), {
+        answer, status: 'answered',
+        answeredBy: currentAdmin.fullName,
+        answeredAt: new Date().toISOString()
+      });
+      // Send notification to student
+      await sendNotification(studentId, '💬 تم الرد على سؤالك', 'تم الرد على استفسارك في معهد التأصيل العلمي', 'answer');
+      showToast('تم إرسال الرد ✅', 'success');
+      loadQuestions();
+    };
+
+    // ===== STUDENTS =====
+    async function loadStudents() {
+      const snap = await getDocs(collection(db, 'users'));
+      allStudents = [];
+      snap.forEach(d => { if(d.data().role==='student') allStudents.push({uid:d.id,...d.data()}); });
+      renderStudents();
+    }
+
+    window.filterStudents = function(status, btn) {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const filtered = status === 'all' ? allStudents : allStudents.filter(s => (s.status || 'pending') === status);
+      renderStudents(filtered);
+    };
+
+    function renderStudents(students) {
+      students = students || allStudents;
+      const tbody = document.getElementById('studentsAdminBody');
+      const levelMap = {primary:'ابتدائي',middle:'متوسط',high:'ثانوي',bachelor:'بكالوريوس',master:'ماجستير',phd:'دكتوراه',work:'وظيفة'};
+      // Update pending count badge
+      const pendingCount = allStudents.filter(s => (s.status || 'pending') === 'pending').length;
+      const pendingEl = document.getElementById('pendingStudentsCount');
+      if (pendingEl) pendingEl.textContent = pendingCount > 0 ? `${pendingCount} بانتظار المراجعة` : '';
+      if (!students.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-soft);">لا يوجد طلاب</td></tr>'; return; }
       tbody.innerHTML = students.map(s => {
-        const done = Object.values(s.progress || {}).filter(Boolean).length;
-        const pct = Math.round((done / TOTAL_ITEMS) * 100);
-        const levelMap = { primary:'ابتدائي', middle:'متوسط', high:'ثانوي', bachelor:'بكالوريوس', master:'ماجستير', phd:'دكتوراه', work:'وظيفة' };
+        const done = Object.values(s.progress||{}).filter(Boolean).length;
+        const pct = Math.round((done/TOTAL_ITEMS)*100);
         return `<tr>
-          <td><strong>${s.fullName || '—'}</strong></td>
-          <td>${s.email || '—'}</td>
-          <td>${levelMap[s.level] || '—'}</td>
+          <td><strong>${s.fullName||'—'}</strong><br><small style="color:var(--text-soft);">${s.username||''}</small></td>
+          <td style="direction:ltr;">${s.email||'—'}</td>
+          <td>${levelMap[s.level]||'—'}</td>
+          <td>${s.gender==='female'?'أنثى':'ذكر'}</td>
           <td>
-            <span style="font-weight:bold;color:var(--purple);margin-left:8px;">${pct}٪</span>
-            <div class="prog-mini" style="display:inline-block;"><div class="prog-mini-fill" style="width:${pct}%"></div></div>
+            <span style="font-weight:bold;color:var(--purple);">${pct}٪</span>
+            <div style="height:4px;background:rgba(59,27,64,0.08);border-radius:2px;margin-top:4px;"><div style="height:100%;background:linear-gradient(90deg,var(--purple),var(--gold));width:${pct}%;border-radius:2px;"></div></div>
+          </td>
+          <td>
+            ${s.status==='accepted'
+              ? '<span class="badge badge-green">مقبول</span>'
+              : s.status==='rejected'
+                ? '<span class="badge badge-danger" style="background:rgba(185,45,58,0.12);color:#b92d3a;">مرفوض</span>'
+                : '<span class="badge badge-gold">⏳ قيد المراجعة</span>'}
+          </td>
+          <td>
+            <div class="actions">
+              ${s.status==='accepted'
+                ? `<button class="btn btn-sm btn-warn" onclick="rejectStudent('${s.uid}')">رفض</button>`
+                : `<button class="btn btn-sm btn-success" onclick="acceptStudent('${s.uid}')">قبول</button>`}
+              <button class="btn btn-sm btn-danger" onclick="deleteStudent('${s.uid}','${s.fullName}')">حذف</button>
+            </div>
           </td>
         </tr>`;
       }).join('');
     }
 
-    // ===== CERTIFICATES =====
-    let certLoaded = false;
-    async function loadCertificates() {
-      if (certLoaded) return; // لا تعيد التحميل في كل نقرة
-      certLoaded = true;
-      const container = document.getElementById('certificatesContainer');
+    window.rejectStudent = async function(uid) {
+      await updateDoc(doc(db,'users',uid),{status:'rejected'});
+      showToast('تم رفض الطالب','success'); loadStudents();
+    };
+    window.acceptStudent = async function(uid) {
+      await updateDoc(doc(db,'users',uid),{status:'accepted'});
+      showToast('تم قبول الطالب','success'); loadStudents();
+    };
+    window.deleteStudent = async function(uid, name) {
+      if (!confirm(`هل تريد حذف حساب "${name}"؟ لا يمكن التراجع.`)) return;
+      await deleteDoc(doc(db,'users',uid));
+      showToast('تم حذف الحساب','success'); loadStudents();
+    };
 
+    // ===== SUPERVISORS =====
+    async function loadSupervisors() {
+      const snap = await getDocs(collection(db,'users'));
+      allSupervisors = [];
+      snap.forEach(d => { if(['supervisor','superAdmin'].includes(d.data().role)) allSupervisors.push({uid:d.id,...d.data()}); });
+      const el = document.getElementById('supervisorsList');
+      el.innerHTML = allSupervisors.map(s => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:rgba(59,27,64,0.03);border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:8px;">
+          <div>
+            <strong style="color:var(--purple);">${s.fullName}</strong>
+            <span class="badge ${s.role==='superAdmin'?'badge-gold':'badge-purple'}" style="margin-right:8px;">${s.role==='superAdmin'?'مشرف عام':'مشرف'}</span>
+            <div style="font-size:0.75rem;color:var(--text-soft);margin-top:4px;">${s.email}</div>
+          </div>
+          ${isSuperAdmin && s.role!=='superAdmin' ? `<button class="btn btn-sm btn-danger" onclick="removeSupervisor('${s.uid}')">إزالة</button>` : ''}
+        </div>`).join('');
+    }
+
+    window.addSupervisor = async function() {
+      if (!isSuperAdmin) return showToast('هذه الميزة للمشرف العام فقط','error');
+      const name = document.getElementById('supName').value.trim();
+      const email = document.getElementById('supEmail').value.trim();
+      const username = document.getElementById('supUsername').value.trim();
+      const password = document.getElementById('supPassword').value;
+      if (!name||!email||!username||!password) return showToast('يرجاء تعبئة جميع الحقول','error');
       try {
-        // جلب شهادات الطالب الحالي فقط
-        const allCertsSnap = await getDocs(collection(db, 'certificates'));
-        const snap = { empty: true, docs: [] };
-        allCertsSnap.forEach(d => {
-          if (d.data().studentId === currentUser.uid) {
-            snap.docs.push(d);
-            snap.empty = false;
-          }
-        });
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        await setDoc(doc(db,'users',cred.user.uid),{fullName:name,email,username,role:'supervisor',createdAt:new Date().toISOString()});
+        showToast('تم إضافة المشرف ✅','success');
+        ['supName','supEmail','supUsername','supPassword'].forEach(id=>document.getElementById(id).value='');
+        loadSupervisors();
+      } catch(e) { showToast('خطأ: '+e.message,'error'); }
+    };
 
-        if (snap.empty) {
-          container.innerHTML = `
-            <div class="cert-empty">
-              <span class="cert-empty-icon">🎓</span>
-              <p>لا توجد شهادات بعد.<br>ستظهر هنا شهاداتك عند إصدارها من المعهد.</p>
+    window.removeSupervisor = async function(uid) {
+      if (!confirm('هل تريد إزالة صلاحية هذا المشرف؟')) return;
+      await updateDoc(doc(db,'users',uid),{role:'student'});
+      showToast('تم إزالة المشرف','success'); loadSupervisors();
+    };
+
+    // ===== SCHEDULE =====
+    // تهيئة adminWeekStart هنا بعد تعريف الدالة
+    function getWeekStart(date) {
+      const d=new Date(date); const day=d.getDay();
+      const diff=day===6?0:day+1; d.setDate(d.getDate()-diff); d.setHours(0,0,0,0); return d;
+    }
+    adminWeekStart = getWeekStart(new Date());
+    function weekKey(d) { return 'week_'+d.toISOString().slice(0,10); }
+    function toHijri(date) { return date.toLocaleDateString('ar-SA-u-ca-islamic-umalqura',{month:'short',day:'numeric'}); }
+
+    async function loadAdminSchedule() {
+      const wk = weekKey(adminWeekStart);
+      try {
+        const snap = await getDoc(doc(db,'schedule',wk));
+        scheduleData = snap.exists() ? snap.data() : { days:{} };
+      } catch(e) { scheduleData = { days:{} }; }
+      if (!scheduleData.days) scheduleData.days = {};
+      renderScheduleEditor();
+    }
+
+    function renderScheduleEditor() {
+      const wk = weekKey(adminWeekStart);
+      const end = new Date(adminWeekStart); end.setDate(end.getDate()+6);
+      document.getElementById('adminWeekLabel').textContent =
+        adminWeekStart.toLocaleDateString('ar',{month:'short',day:'numeric'}) + ' — ' + end.toLocaleDateString('ar',{month:'short',day:'numeric'});
+      const el = document.getElementById('scheduleEditor');
+      el.innerHTML = DAYS_AR.map((dayName,i) => {
+        const d = new Date(adminWeekStart); d.setDate(d.getDate()+i);
+        const dateKey = d.toISOString().slice(0,10);
+        const dayData = scheduleData.days[dateKey] || {};
+        return `<div class="schedule-day-editor">
+          <h4>${dayName} — ${d.toLocaleDateString('ar',{month:'long',day:'numeric'})} | ${toHijri(d)}</h4>
+          ${TIMES.map(time => {
+            const lessons = dayData[time] || [];
+            return `<div style="margin-bottom:8px;">
+              <div style="font-size:0.78rem;color:var(--text-soft);margin-bottom:4px;">${time}</div>
+              <div id="slots_${dateKey}_${time}">
+                ${lessons.map((l,li)=>`
+                  <div class="time-slot-row" id="slot_${dateKey}_${time}_${li}">
+                    <input type="text" value="${l.time||''}" placeholder="الوقت" onchange="updateSlot('${dateKey}','${time}',${li},'time',this.value)">
+                    <input type="text" value="${l.title||''}" placeholder="عنوان الدرس" onchange="updateSlot('${dateKey}','${time}',${li},'title',this.value)">
+                    <input type="text" value="${l.note||''}" placeholder="ملاحظة" onchange="updateSlot('${dateKey}','${time}',${li},'note',this.value)">
+                    <button class="del-btn" onclick="removeSlot('${dateKey}','${time}',${li})">✕</button>
+                  </div>`).join('')}
+              </div>
+              <button class="btn btn-outline add-slot-btn" onclick="addSlot('${dateKey}','${time}')">+ إضافة</button>
             </div>`;
+          }).join('')}
+        </div>`;
+      }).join('');
+    }
+
+    window.addSlot = function(dateKey, time) {
+      if (!scheduleData.days[dateKey]) scheduleData.days[dateKey] = {};
+      if (!scheduleData.days[dateKey][time]) scheduleData.days[dateKey][time] = [];
+      scheduleData.days[dateKey][time].push({ title:'', time:'', note:'' });
+      renderScheduleEditor();
+    };
+    window.removeSlot = function(dateKey, time, idx) {
+      scheduleData.days[dateKey][time].splice(idx,1);
+      renderScheduleEditor();
+    };
+    window.updateSlot = function(dateKey, time, idx, field, val) {
+      scheduleData.days[dateKey][time][idx][field] = val;
+    };
+    window.changeAdminWeek = function(dir) {
+      adminWeekStart = new Date(adminWeekStart);
+      adminWeekStart.setDate(adminWeekStart.getDate()+dir*7);
+      loadAdminSchedule();
+    };
+    window.saveSchedule = async function() {
+      const wk = weekKey(adminWeekStart);
+      await setDoc(doc(db,'schedule',wk), scheduleData);
+      showToast('تم حفظ الجدول ✅','success');
+    };
+
+    // ===== COURSES ADMIN =====
+    async function loadCoursesAdmin() {
+      let courses = [...DEFAULT_COURSES];
+      try {
+        const snap = await getDocs(collection(db,'courses'));
+        snap.forEach(d => {
+          const idx = courses.findIndex(c=>c.id===d.id);
+          if (idx>=0) courses[idx]={...courses[idx],...d.data(),id:d.id};
+        });
+      } catch(e) {}
+      renderCoursesAdmin(courses);
+    }
+
+    function renderCoursesAdmin(courses) {
+      const el = document.getElementById('coursesAdminList');
+      el.innerHTML = courses.map(c => `
+        <div style="border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:16px;overflow:hidden;">
+          <div class="course-editor-row" style="background:rgba(59,27,64,0.04);">
+            <strong style="color:var(--purple);">${c.title}</strong>
+            <div style="text-align:center;">
+              <div style="font-size:0.72rem;color:var(--text-soft);margin-bottom:4px;">ظاهر</div>
+              <label class="toggle-switch"><input type="checkbox" ${c.visible!==false?'checked':''} onchange="toggleCourse('${c.id}','visible',this.checked)"><span class="toggle-slider"></span></label>
+            </div>
+            <div style="text-align:center;">
+              <div style="font-size:0.72rem;color:var(--text-soft);margin-bottom:4px;">مقفل</div>
+              <label class="toggle-switch"><input type="checkbox" ${c.locked?'checked':''} onchange="toggleCourse('${c.id}','locked',this.checked)"><span class="toggle-slider"></span></label>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="toggleLessonsAdmin('${c.id}')">الدروس ▾</button>
+          </div>
+          <div id="lessons_admin_${c.id}" style="display:none;padding:16px;">
+            <div id="lessons_list_${c.id}"><p style="color:var(--text-soft);font-size:0.85rem;text-align:center;">جارٍ التحميل...</p></div>
+            <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:16px;">
+              <strong style="font-size:0.9rem;color:var(--purple);display:block;margin-bottom:12px;">🔒 الاختبارات</strong>
+              <div id="exams_list_${c.id}"></div>
+              <button class="btn btn-gold btn-sm" onclick="openNewExamModal('${c.id}')">+ إضافة اختبار</button>
+            </div>
+          </div>
+        </div>`).join('');
+    }
+
+    window.toggleCourse = async function(courseId, field, value) {
+      await setDoc(doc(db,'courses',courseId),{[field]:value},{merge:true});
+      if (field==='visible' && value) {
+        await notifyAllStudents('📚 مقرر جديد!', 'تم إتاحة مقرر جديد في معهد التأصيل العلمي', 'course');
+      }
+    };
+
+    window.toggleLessonsAdmin = async function(courseId) {
+      const el = document.getElementById('lessons_admin_'+courseId);
+      if (el.style.display==='none') {
+        el.style.display='';
+        await loadLessonsAdmin(courseId);
+        await loadExamsAdmin(courseId);
+      } else { el.style.display='none'; }
+    };
+
+    async function loadLessonsAdmin(courseId) {
+      let lessons = [];
+      try {
+        const snap = await getDocs(collection(db,'courses',courseId,'lessons'));
+        snap.forEach(d=>lessons.push({id:d.id,...d.data()}));
+        lessons.sort((a,b)=>(a.order||0)-(b.order||0));
+      } catch(e) {}
+      if (!lessons.length) {
+        for (let i=1;i<=50;i++) lessons.push({id:'l'+i,title:'الدرس '+i,order:i,visible:true,locked:false});
+      }
+      const el = document.getElementById('lessons_list_'+courseId);
+      el.innerHTML = `<div style="font-size:0.72rem;color:var(--text-soft);margin-bottom:6px;display:grid;grid-template-columns:1fr 1fr 60px 60px 80px;gap:8px;padding:0 4px;">
+        <span>عنوان الدرس</span><span>رابط الفيديو</span><span style="text-align:center;">ظاهر</span><span style="text-align:center;">مقفل</span><span></span></div>` +
+      lessons.map(l=>`
+        <div class="lesson-admin-row">
+          <input type="text" value="${l.title||''}" placeholder="عنوان الدرس" style="padding:6px 10px;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.82rem;outline:none;" onblur="saveLesson('${courseId}','${l.id}','title',this.value)">
+          <input type="text" value="${l.videoUrl||''}" placeholder="رابط يوتيوب" style="padding:6px 10px;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.82rem;outline:none;" onblur="saveLesson('${courseId}','${l.id}','videoUrl',this.value)">
+          <div style="text-align:center;"><label class="toggle-switch"><input type="checkbox" ${l.visible!==false?'checked':''} onchange="saveLesson('${courseId}','${l.id}','visible',this.checked)"><span class="toggle-slider"></span></label></div>
+          <div style="text-align:center;"><label class="toggle-switch"><input type="checkbox" ${l.locked?'checked':''} onchange="saveLessonLock('${courseId}','${l.id}',this.checked)"><span class="toggle-slider"></span></label></div>
+          <button class="btn btn-outline btn-sm" onclick="openLessonDetails('${courseId}','${l.id}')">تفاصيل</button>
+        </div>`).join('');
+    }
+
+    window.saveLesson = async function(courseId, lessonId, field, value) {
+      await setDoc(doc(db,'courses',courseId,'lessons',lessonId),{[field]:value},{merge:true});
+      if (field==='visible'&&value) {
+        await notifyAllStudents('📖 درس جديد!','تم إضافة درس جديد في أحد المقررات','lesson');
+      }
+    };
+    window.saveLessonLock = async function(courseId, lessonId, locked) {
+      await setDoc(doc(db,'courses',courseId,'lessons',lessonId),{locked},{merge:true});
+      if (!locked) await notifyAllStudents('🔓 تم فتح درس','تم فتح درس جديد، يمكنك الاطلاع عليه الآن','unlock');
+    };
+
+    window.openLessonDetails = async function(courseId, lessonId) {
+      let lesson = {};
+      try { const s=await getDoc(doc(db,'courses',courseId,'lessons',lessonId)); if(s.exists()) lesson=s.data(); } catch(e) {}
+      let exercises = [];
+      try {
+        const es = await getDocs(collection(db,'courses',courseId,'lessons',lessonId,'exercises'));
+        es.forEach(d=>exercises.push({id:d.id,...d.data()}));
+        exercises.sort((a,b)=>(a.order||0)-(b.order||0));
+      } catch(e) {}
+      window._editCourse = courseId; window._editLesson = lessonId;
+      window._exercises = exercises;
+      document.getElementById('lessonModalBody').innerHTML = `
+        <div class="form-group"><label class="form-label">رابط الصوت</label><input type="text" class="form-control" id="lm_audio" value="${lesson.audioUrl||''}" placeholder="https://..."></div>
+        <div class="form-group"><label class="form-label">رابط PDF</label><input type="text" class="form-control" id="lm_pdf" value="${lesson.pdfUrl||''}" placeholder="https://..."></div>
+        <div class="form-group"><label class="form-label">وصف الدرس</label><textarea class="answer-textarea" id="lm_desc">${lesson.desc||''}</textarea></div>
+        <button class="btn btn-primary btn-sm" style="margin-bottom:24px;" onclick="saveLessonDetails()">حفظ التفاصيل</button>
+        <hr style="margin-bottom:20px;border-color:var(--border);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <strong style="color:var(--purple);">✏️ التمارين (${exercises.length})</strong>
+          <button class="btn btn-gold btn-sm" onclick="addExerciseQ()">+ إضافة سؤال</button>
+        </div>
+        <div id="exercisesAdmin">${renderExercisesAdmin(exercises, courseId, lessonId)}</div>
+        <button class="btn btn-primary" onclick="saveExercises()" style="margin-top:16px;">حفظ التمارين</button>`;
+      openModal('lessonModal');
+    };
+
+    window.saveLessonDetails = async function() {
+      const courseId=window._editCourse, lessonId=window._editLesson;
+      await setDoc(doc(db,'courses',courseId,'lessons',lessonId),{
+        audioUrl:document.getElementById('lm_audio').value.trim(),
+        pdfUrl:document.getElementById('lm_pdf').value.trim(),
+        desc:document.getElementById('lm_desc').value.trim(),
+      },{merge:true});
+      showToast('تم الحفظ ✅','success');
+    };
+
+    function renderExercisesAdmin(exercises) {
+      const letters=['أ','ب','ج','د','هـ','و','ز','ح','ط','ي'];
+      return exercises.map((q,qi)=>`
+        <div class="question-admin-row" id="eq_${qi}">
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+            <strong style="font-size:0.85rem;color:var(--purple);">سؤال ${qi+1}</strong>
+            <button class="btn btn-sm btn-danger" onclick="removeExerciseQ(${qi})">حذف</button>
+          </div>
+          <input type="text" value="${q.question||''}" placeholder="نص السؤال" class="form-control" style="margin-bottom:10px;" oninput="window._exercises[${qi}].question=this.value">
+          <div style="margin-bottom:6px;font-size:0.78rem;color:var(--text-soft);">الخيارات (ضع ✓ على الصحيح)</div>
+          <div class="options-admin" id="opts_${qi}">
+            ${(q.options||['','']).map((opt,oi)=>`
+              <div class="option-admin-row">
+                <span class="option-letter" style="width:28px;height:28px;min-width:28px;">${letters[oi]}</span>
+                <input type="text" value="${opt}" placeholder="الخيار ${oi+1}" oninput="window._exercises[${qi}].options[${oi}]=this.value">
+                <input type="checkbox" class="correct-check" ${(q.correctIndexes||[]).includes(oi)?'checked':''} title="إجابة صحيحة" onchange="toggleCorrect(${qi},${oi},this.checked)">
+                ${oi>=2?`<button class="del-btn" style="width:24px;height:24px;font-size:0.75rem;" onclick="removeOption(${qi},${oi})">✕</button>`:''}
+              </div>`).join('')}
+          </div>
+          ${(q.options||[]).length < 10 ? `<button class="btn btn-outline add-slot-btn" style="margin-top:8px;" onclick="addOption(${qi})">+ خيار</button>` : ''}
+          <div style="margin-top:10px;display:flex;gap:12px;">
+            <label style="font-size:0.78rem;color:var(--text-soft);">ظاهر <input type="checkbox" ${q.visible!==false?'checked':''} onchange="window._exercises[${qi}].visible=this.checked"></label>
+            <label style="font-size:0.78rem;color:var(--text-soft);">مقفل <input type="checkbox" ${q.locked?'checked':''} onchange="window._exercises[${qi}].locked=this.checked"></label>
+          </div>
+        </div>`).join('');
+    }
+
+    window.addExerciseQ = function() {
+      window._exercises.push({question:'',options:['',''],correctIndexes:[],visible:true,locked:false});
+      document.getElementById('exercisesAdmin').innerHTML = renderExercisesAdmin(window._exercises);
+    };
+    window.removeExerciseQ = function(qi) {
+      window._exercises.splice(qi,1);
+      document.getElementById('exercisesAdmin').innerHTML = renderExercisesAdmin(window._exercises);
+    };
+    window.addOption = function(qi) {
+      window._exercises[qi].options.push('');
+      document.getElementById('exercisesAdmin').innerHTML = renderExercisesAdmin(window._exercises);
+    };
+    window.removeOption = function(qi, oi) {
+      window._exercises[qi].options.splice(oi,1);
+      window._exercises[qi].correctIndexes = (window._exercises[qi].correctIndexes||[]).filter(i=>i!==oi).map(i=>i>oi?i-1:i);
+      document.getElementById('exercisesAdmin').innerHTML = renderExercisesAdmin(window._exercises);
+    };
+    window.toggleCorrect = function(qi, oi, checked) {
+      if (!window._exercises[qi].correctIndexes) window._exercises[qi].correctIndexes=[];
+      if (checked) { if(!window._exercises[qi].correctIndexes.includes(oi)) window._exercises[qi].correctIndexes.push(oi); }
+      else window._exercises[qi].correctIndexes = window._exercises[qi].correctIndexes.filter(i=>i!==oi);
+    };
+
+    window.saveExercises = async function() {
+      const courseId=window._editCourse, lessonId=window._editLesson;
+      for (let i=0;i<window._exercises.length;i++) {
+        const ex=window._exercises[i];
+        const exId = ex.id || ('ex_'+Date.now()+'_'+i);
+        await setDoc(doc(db,'courses',courseId,'lessons',lessonId,'exercises',exId),{...ex,order:i,id:exId});
+      }
+      showToast('تم حفظ التمارين ✅','success');
+    };
+
+    // ===== EXAMS ADMIN =====
+    async function loadExamsAdmin(courseId) {
+      let exams=[];
+      try {
+        const snap=await getDocs(collection(db,'courses',courseId,'exams'));
+        snap.forEach(d=>exams.push({id:d.id,...d.data()}));
+      } catch(e){}
+      const el = document.getElementById('exams_list_'+courseId);
+      el.innerHTML = exams.map(ex=>`
+        <div class="exam-admin-block">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+            <div>
+              <strong style="color:var(--purple);">${ex.title||'اختبار'}</strong>
+              <span class="badge badge-gold" style="margin-right:8px;">${ex.timeLimit?ex.timeLimit+'د':'بلا حد'}</span>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <label style="font-size:0.78rem;color:var(--text-soft);">ظاهر <label class="toggle-switch" style="display:inline-block;vertical-align:middle;"><input type="checkbox" ${ex.visible!==false?'checked':''} onchange="toggleExam('${courseId}','${ex.id}','visible',this.checked)"><span class="toggle-slider"></span></label></label>
+              <label style="font-size:0.78rem;color:var(--text-soft);">مقفل <label class="toggle-switch" style="display:inline-block;vertical-align:middle;"><input type="checkbox" ${ex.locked?'checked':''} onchange="toggleExam('${courseId}','${ex.id}','locked',this.checked)"><span class="toggle-slider"></span></label></label>
+              <button class="btn btn-outline btn-sm" onclick="openExamEdit('${courseId}','${ex.id}')">تعديل</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteExam('${courseId}','${ex.id}')">حذف</button>
+            </div>
+          </div>
+        </div>`).join('');
+    }
+
+    window.toggleExam = async function(courseId, examId, field, value) {
+      await setDoc(doc(db,'courses',courseId,'exams',examId),{[field]:value},{merge:true});
+      if (field==='visible'&&value) await notifyAllStudents('📝 اختبار جديد!','تم إضافة اختبار جديد في أحد المقررات','exam');
+      if (field==='locked'&&!value) await notifyAllStudents('🔓 تم فتح اختبار','يمكنك الآن أداء الاختبار','unlock');
+    };
+    window.deleteExam = async function(courseId, examId) {
+      if(!confirm('حذف الاختبار؟')) return;
+      await deleteDoc(doc(db,'courses',courseId,'exams',examId));
+      loadExamsAdmin(courseId); showToast('تم حذف الاختبار','success');
+    };
+
+    window.openNewExamModal = function(courseId) {
+      window._examCourse = courseId; window._examId = null; window._examQs = [];
+      renderExamModal({title:'',desc:'',timeLimit:0,passingScore:60},[]);
+      openModal('examModal');
+    };
+    window.openExamEdit = async function(courseId, examId) {
+      window._examCourse = courseId; window._examId = examId; window._examQs = [];
+      let exam={},qs=[];
+      try {
+        const s=await getDoc(doc(db,'courses',courseId,'exams',examId)); if(s.exists()) exam=s.data();
+        const qsnap=await getDocs(collection(db,'courses',courseId,'exams',examId,'questions'));
+        qsnap.forEach(d=>qs.push({id:d.id,...d.data()}));
+        qs.sort((a,b)=>(a.order||0)-(b.order||0));
+      } catch(e){}
+      window._examQs = qs;
+      renderExamModal(exam, qs);
+      openModal('examModal');
+    };
+
+    function renderExamModal(exam, qs) {
+      document.getElementById('examModalBody').innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+          <div class="form-group"><label class="form-label">اسم الاختبار <span class="req">*</span></label><input type="text" class="form-control" id="em_title" value="${exam.title||''}" placeholder="اسم الاختبار"></div>
+          <div class="form-group"><label class="form-label">وصف الاختبار</label><input type="text" class="form-control" id="em_desc" value="${exam.desc||''}" placeholder="وصف اختياري"></div>
+          <div class="form-group"><label class="form-label">المدة (دقائق) — 0 = بلا حد</label><input type="number" class="form-control" id="em_time" value="${exam.timeLimit||0}" min="0"></div>
+          <div class="form-group"><label class="form-label">درجة النجاح (%)</label><input type="number" class="form-control" id="em_pass" value="${exam.passingScore||60}" min="0" max="100"></div>
+        </div>
+        <hr style="margin-bottom:20px;border-color:var(--border);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <strong style="color:var(--purple);">📝 الأسئلة (${qs.length})</strong>
+          <button class="btn btn-gold btn-sm" onclick="addExamQ()">+ إضافة سؤال</button>
+        </div>
+        <div id="examQsAdmin">${renderExamQsAdmin(qs)}</div>
+        <button class="btn btn-primary" onclick="saveExamFull()" style="margin-top:20px;width:100%;">💾 حفظ الاختبار</button>`;
+    }
+
+    function renderExamQsAdmin(qs) {
+      const letters=['أ','ب','ج','د','هـ','و','ز','ح','ط','ي'];
+      return qs.map((q,qi)=>`
+        <div class="question-admin-row" id="emq_${qi}">
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+            <strong style="font-size:0.85rem;color:var(--purple);">سؤال ${qi+1}</strong>
+            <div style="display:flex;gap:8px;">
+              <input type="number" value="${q.points||1}" min="1" style="width:60px;padding:4px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:0.82rem;" placeholder="نقاط" oninput="window._examQs[${qi}].points=+this.value">
+              <button class="btn btn-sm btn-danger" onclick="removeExamQ(${qi})">حذف</button>
+            </div>
+          </div>
+          <input type="text" value="${q.question||''}" placeholder="نص السؤال" class="form-control" style="margin-bottom:10px;" oninput="window._examQs[${qi}].question=this.value">
+          <div style="margin-bottom:6px;font-size:0.78rem;color:var(--text-soft);">الخيارات (ضع ✓ على الصحيح/الصحيحة)</div>
+          <div class="options-admin">
+            ${(q.options||['','']).map((opt,oi)=>`
+              <div class="option-admin-row">
+                <span class="option-letter" style="width:28px;height:28px;min-width:28px;">${letters[oi]}</span>
+                <input type="text" value="${opt}" placeholder="الخيار ${oi+1}" oninput="window._examQs[${qi}].options[${oi}]=this.value">
+                <input type="checkbox" class="correct-check" ${(q.correctIndexes||[]).includes(oi)?'checked':''} title="إجابة صحيحة" onchange="toggleExamCorrect(${qi},${oi},this.checked)">
+                ${oi>=2?`<button class="del-btn" style="width:24px;height:24px;font-size:0.75rem;" onclick="removeExamOption(${qi},${oi})">✕</button>`:''}
+              </div>`).join('')}
+          </div>
+          ${(q.options||[]).length<10?`<button class="btn btn-outline add-slot-btn" style="margin-top:8px;" onclick="addExamOption(${qi})">+ خيار</button>`:''}
+        </div>`).join('');
+    }
+
+    window.addExamQ = function() { window._examQs.push({question:'',options:['',''],correctIndexes:[],points:1}); document.getElementById('examQsAdmin').innerHTML=renderExamQsAdmin(window._examQs); };
+    window.removeExamQ = function(qi) { window._examQs.splice(qi,1); document.getElementById('examQsAdmin').innerHTML=renderExamQsAdmin(window._examQs); };
+    window.addExamOption = function(qi) { window._examQs[qi].options.push(''); document.getElementById('examQsAdmin').innerHTML=renderExamQsAdmin(window._examQs); };
+    window.removeExamOption = function(qi,oi) { window._examQs[qi].options.splice(oi,1); window._examQs[qi].correctIndexes=(window._examQs[qi].correctIndexes||[]).filter(i=>i!==oi).map(i=>i>oi?i-1:i); document.getElementById('examQsAdmin').innerHTML=renderExamQsAdmin(window._examQs); };
+    window.toggleExamCorrect = function(qi,oi,checked) { if(!window._examQs[qi].correctIndexes)window._examQs[qi].correctIndexes=[]; if(checked){if(!window._examQs[qi].correctIndexes.includes(oi))window._examQs[qi].correctIndexes.push(oi);}else window._examQs[qi].correctIndexes=window._examQs[qi].correctIndexes.filter(i=>i!==oi); };
+
+    window.saveExamFull = async function() {
+      const courseId=window._examCourse;
+      const examId=window._examId||'exam_'+Date.now();
+      await setDoc(doc(db,'courses',courseId,'exams',examId),{
+        title:document.getElementById('em_title').value.trim(),
+        desc:document.getElementById('em_desc').value.trim(),
+        timeLimit:+document.getElementById('em_time').value,
+        passingScore:+document.getElementById('em_pass').value,
+        visible:true, locked:false
+      },{merge:true});
+      for(let i=0;i<window._examQs.length;i++){
+        const q=window._examQs[i];
+        const qId=q.id||'q_'+Date.now()+'_'+i;
+        await setDoc(doc(db,'courses',courseId,'exams',examId,'questions',qId),{...q,order:i,id:qId});
+      }
+      if (!window._examId) await notifyAllStudents('📝 اختبار جديد!','تم إضافة اختبار جديد في أحد المقررات','exam');
+      closeModal('examModal');
+      showToast('تم حفظ الاختبار ✅','success');
+      loadExamsAdmin(courseId);
+    };
+
+    // ===== ANNOUNCEMENTS =====
+    async function loadAnnouncements() {
+      const el = document.getElementById('announcementsList');
+      try {
+        const snap = await getDocs(collection(db,'announcements'));
+        let anns=[]; snap.forEach(d=>anns.push({id:d.id,...d.data()}));
+        anns.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+        el.innerHTML = anns.length ? anns.map(a=>`
+          <div class="q-row">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <strong style="color:var(--purple);">${a.title}</strong>
+              <small style="color:var(--text-soft);">${formatDate(a.createdAt)}</small>
+            </div>
+            <p style="font-size:0.88rem;color:var(--text-soft);">${a.body}</p>
+          </div>`).join('')
+        : '<p style="text-align:center;padding:24px;color:var(--text-soft);">لا توجد إعلانات بعد</p>';
+      } catch(e){ el.innerHTML='<p style="color:var(--text-soft);text-align:center;">حدث خطأ</p>'; }
+    }
+
+    window.publishAnnouncement = async function() {
+      const title=document.getElementById('annTitle').value.trim();
+      const body=document.getElementById('annBody').value.trim();
+      if(!title||!body) return showToast('يرجاء ملء جميع الحقول','error');
+      const annId='ann_'+Date.now();
+      await setDoc(doc(db,'announcements',annId),{title,body,createdBy:currentAdmin.fullName,createdAt:new Date().toISOString()});
+      await notifyAllStudents('📢 '+title, body, 'announcement');
+      document.getElementById('annTitle').value='';
+      document.getElementById('annBody').value='';
+      showToast('تم نشر الإعلان ✅','success');
+      loadAnnouncements();
+      loadContactInfo();
+    };
+
+    // ===== NOTIFICATIONS =====
+    async function sendNotification(uid, title, msg, type) {
+      const nId='n_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+      await setDoc(doc(db,'notifications',uid,'items',nId),{title,message:msg,type,read:false,createdAt:new Date().toISOString()});
+    }
+
+    async function notifyAllStudents(title, msg, type) {
+      const snap = await getDocs(collection(db,'users'));
+      const proms=[];
+      snap.forEach(d=>{ if(d.data().role==='student') proms.push(sendNotification(d.id,title,msg,type)); });
+      await Promise.all(proms);
+    }
+
+    // ===== MODAL =====
+    window.openModal = function(id) { document.getElementById(id).classList.add('open'); };
+    window.closeModal = function(id) { document.getElementById(id).classList.remove('open'); };
+    document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if(e.target===m) m.classList.remove('open'); }));
+
+    // ===== HELPERS =====
+    function formatDate(iso) {
+      if(!iso) return '';
+      return new Date(iso).toLocaleDateString('ar-SA',{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    }
+    function showToast(msg,type='') {
+      let t=document.getElementById('globalToast');
+      if(!t){t=document.createElement('div');t.id='globalToast';t.className='toast';document.body.appendChild(t);}
+      t.textContent=msg; t.className='toast '+type;
+      setTimeout(()=>t.classList.add('show'),50); setTimeout(()=>t.classList.remove('show'),3200);
+    }
+    // initSharedBehavior() handles header behavior
+
+    // ===== CONTACT INFO =====
+    let contactChannels = [];
+
+    async function loadContactInfo() {
+      try {
+        const snap = await getDoc(doc(db,'contactInfo','main'));
+        if (snap.exists()) {
+          const d = snap.data();
+          document.getElementById('ct_phone').value    = d.phone    || '';
+          document.getElementById('ct_whatsapp').value = d.whatsapp || '';
+          document.getElementById('ct_email').value    = d.email    || '';
+          document.getElementById('ct_telegram').value = d.telegram || '';
+          document.getElementById('ct_private').value  = d.privateChannelUrl || '';
+        }
+        // Load channels
+        const chSnap = await getDocs(collection(db,'contactInfo','main','channels'));
+        contactChannels = [];
+        chSnap.forEach(d => contactChannels.push({id:d.id,...d.data()}));
+        contactChannels.sort((a,b)=>(a.order||0)-(b.order||0));
+        renderChannels();
+      } catch(e){ console.log(e); }
+    }
+
+    function renderChannels() {
+      const el = document.getElementById('channelsList');
+      if (!el) return;
+      const types = ['تليجرام','يوتيوب','تويتر','انستغرام','فيسبوك','واتساب','أخرى'];
+      el.innerHTML = contactChannels.map((ch, i) => `
+        <div class="channel-admin-row" data-idx="${i}">
+          <select class="ch-type">
+            ${types.map(t => `<option value="${t}" ${ch.type===t?'selected':''}>${t}</option>`).join('')}
+          </select>
+          <input type="text" class="ch-icon" value="${ch.icon||'🔗'}" placeholder="أيقونة" style="width:50px;text-align:center;">
+          <input type="text" class="ch-name" value="${ch.name||''}" placeholder="الاسم">
+          <input type="url"  class="ch-url"  value="${ch.url||''}"  placeholder="https://...">
+          <button class="del-btn" onclick="removeChannel(${i})">✕</button>
+        </div>`).join('');
+    }
+
+    // قراءة جميع القنوات من الـ DOM قبل الحفظ
+    function collectChannelsFromDOM() {
+      const rows = document.querySelectorAll('#channelsList .channel-admin-row');
+      rows.forEach((row, i) => {
+        if (!contactChannels[i]) return;
+        contactChannels[i].type = row.querySelector('.ch-type')?.value || '';
+        contactChannels[i].icon = row.querySelector('.ch-icon')?.value || '';
+        contactChannels[i].name = row.querySelector('.ch-name')?.value || '';
+        contactChannels[i].url  = row.querySelector('.ch-url')?.value  || '';
+      });
+    }
+
+    window.addChannel = function() {
+      collectChannelsFromDOM();
+      contactChannels.push({ type:'تليجرام', icon:'✈️', name:'', url:'', order: contactChannels.length });
+      renderChannels();
+    };
+    window.removeChannel = function(i) {
+      collectChannelsFromDOM();
+      contactChannels.splice(i, 1);
+      renderChannels();
+    };
+
+    window.saveChannels = async function() {
+      collectChannelsFromDOM();
+      try {
+        // حذف القنوات المحذوفة من Firestore أولاً
+        const oldSnap = await getDocs(collection(db,'contactInfo','main','channels'));
+        const oldIds  = new Set(); oldSnap.forEach(d => oldIds.add(d.id));
+        const newIds  = new Set(contactChannels.map(ch => ch.id).filter(Boolean));
+        const delProms = [...oldIds].filter(id => !newIds.has(id))
+          .map(id => deleteDoc(doc(db,'contactInfo','main','channels',id)));
+        await Promise.all(delProms);
+
+        // حفظ القنوات الحالية
+        for (let i = 0; i < contactChannels.length; i++) {
+          const ch = contactChannels[i];
+          const id = ch.id || 'ch_' + Date.now() + '_' + i;
+          contactChannels[i].id = id;
+          await setDoc(doc(db,'contactInfo','main','channels',id), { ...ch, id, order: i });
+        }
+        showToast('تم حفظ القنوات ✅','success');
+      } catch(e) { showToast('خطأ: ' + e.message, 'error'); }
+    };
+
+    window.saveContactInfo = async function() {
+      try {
+        await setDoc(doc(db,'contactInfo','main'), {
+          phone:    document.getElementById('ct_phone').value.trim(),
+          whatsapp: document.getElementById('ct_whatsapp').value.trim(),
+          email:    document.getElementById('ct_email').value.trim(),
+          telegram: document.getElementById('ct_telegram').value.trim(),
+          updatedAt: new Date().toISOString(),
+          updatedBy: currentAdmin?.fullName || ''
+        }, { merge: true });
+        showToast('تم حفظ معلومات التواصل ✅','success');
+      } catch(e) { showToast('خطأ: ' + e.message, 'error'); }
+    };
+
+    window.savePrivateChannel = async function() {
+      const url = document.getElementById('ct_private').value.trim();
+      await setDoc(doc(db,'contactInfo','main'), { privateChannelUrl: url }, { merge:true });
+      showToast('تم حفظ رابط القناة الخاصة ✅','success');
+    };
+
+    // ===== CERTIFICATES ADMIN =====
+    async function loadAllCertificates() {
+      const el = document.getElementById('allCertsList');
+      try {
+        const snap = await getDocs(collection(db, 'certificates'));
+        if (snap.empty) {
+          el.innerHTML = '<p style="text-align:center;padding:24px;color:var(--text-soft);">لا توجد شهادات مصدرة بعد</p>';
           return;
         }
-
-        const certs = [];
-        snap.docs.forEach(d => certs.push({ id: d.id, ...d.data() }));
-        // ترتيب من الأحدث للأقدم
-        certs.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-
-        container.innerHTML = `<div class="cert-grid">${certs.map(c => renderCertCard(c)).join('')}</div>`;
-
+        let certs = [];
+        snap.forEach(d => certs.push({ id: d.id, ...d.data() }));
+        certs.sort((a, b) => (b.issuedAt || '').localeCompare(a.issuedAt || ''));
+        el.innerHTML = certs.map(c => `
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:14px 16px;background:rgba(59,27,64,0.02);border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:8px;">
+            <div>
+              <strong style="color:var(--purple);">${c.title || '—'}</strong>
+              ${c.type === 'إجازة' ? '<span class="badge badge-gold" style="margin-right:6px;font-size:0.7rem;">إجازة بالسند المتصل</span>' : ''}
+              <div style="font-size:0.78rem;color:var(--text-soft);margin-top:4px;">
+                👤 ${c.studentName || '—'} &nbsp;|&nbsp; 👨‍🏫 ${c.supervisorName || '—'} &nbsp;|&nbsp; 📅 ${c.date || '—'}
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              ${c.pdfUrl ? `<a href="${c.pdfUrl}" target="_blank" class="btn btn-sm btn-outline">📄 PDF</a>` : ''}
+              <button class="btn btn-sm btn-danger" onclick="deleteCertificate('${c.id}')">حذف</button>
+            </div>
+          </div>`).join('');
       } catch(e) {
-        container.innerHTML = `
-          <div class="cert-empty">
-            <span class="cert-empty-icon">⚠️</span>
-            <p>حدث خطأ أثناء تحميل الشهادات.<br><small style="color:var(--text-soft);">${e.message}</small></p>
-          </div>`;
+        el.innerHTML = `<p style="color:#b92d3a;text-align:center;padding:24px;">خطأ: ${e.message}</p>`;
       }
     }
 
-    function renderCertCard(c) {
-      const isIjaza = c.type === 'إجازة';
-      const dateFormatted = c.date
-        ? new Date(c.date).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })
-        : '—';
-
-      return `
-        <div class="cert-card">
-          <div class="cert-card-top">
-            <span class="cert-icon">${isIjaza ? '📜' : '🏅'}</span>
-            <div class="cert-title">${c.title || 'شهادة'}</div>
-            ${isIjaza ? `<div><span class="cert-ijaza-badge">⛓️ إجازة بالسند المتصل</span></div>` : ''}
-          </div>
-          <div class="cert-card-body">
-            <div class="cert-meta">
-              <div class="cert-meta-row">
-                <span>👨‍🏫</span>
-                <span>المشرف: <strong>${c.supervisorName || '—'}</strong></span>
-              </div>
-              <div class="cert-meta-row">
-                <span>📅</span>
-                <span>التاريخ: <strong>${dateFormatted}</strong></span>
-              </div>
-              ${c.type ? `
-              <div class="cert-meta-row">
-                <span>🏷️</span>
-                <span>النوع: <strong>${c.type}</strong></span>
-              </div>` : ''}
-            </div>
-            ${c.pdfUrl
-              ? `<a href="${c.pdfUrl}" target="_blank" class="cert-download-btn">
-                   ⬇️ تحميل الشهادة PDF
-                 </a>`
-              : `<button class="cert-download-btn" style="opacity:0.5;cursor:not-allowed;" disabled>
-                   📄 PDF غير متوفر بعد
-                 </button>`
-            }
-          </div>
-        </div>`;
+    // تعبئة قائمة الطلاب في فورم الشهادة
+    async function populateCertStudents() {
+      const sel = document.getElementById('cert_student');
+      if (sel.options.length > 1) return; // مُعبّأة مسبقاً
+      try {
+        const snap = await getDocs(collection(db, 'users'));
+        snap.forEach(d => {
+          const data = d.data();
+          if (data.role === 'student' && data.status === 'accepted') {
+            const opt = document.createElement('option');
+            opt.value = d.id;
+            opt.textContent = data.fullName || data.email;
+            opt.dataset.name = data.fullName || '';
+            sel.appendChild(opt);
+          }
+        });
+      } catch(e) {}
     }
 
-    // ===== LOGOUT =====
-    window.handleLogout = async function() {
-      await signOut(auth);
-      window.location.href = 'index.html';
+    window.issueCertificate = async function() {
+      const errEl = document.getElementById('cert_error');
+      errEl.textContent = ''; errEl.classList.remove('show');
+
+      const studentSel    = document.getElementById('cert_student');
+      const studentId     = studentSel.value;
+      const studentName   = studentSel.options[studentSel.selectedIndex]?.dataset.name || '';
+      const title         = document.getElementById('cert_title').value.trim();
+      const type          = document.getElementById('cert_type').value;
+      const supervisorName = document.getElementById('cert_supervisor').value.trim();
+      const date          = document.getElementById('cert_date').value;
+      const pdfUrl        = document.getElementById('cert_pdf').value.trim();
+
+      if (!studentId || !title || !supervisorName || !date) {
+        errEl.textContent = 'يرجى تعبئة جميع الحقول المطلوبة.';
+        errEl.classList.add('show'); return;
+      }
+
+      try {
+        const certId = 'cert_' + Date.now();
+        await setDoc(doc(db, 'certificates', certId), {
+          studentId, studentName, title, type,
+          supervisorName, date, pdfUrl,
+          issuedBy: currentAdmin?.fullName || 'المشرف',
+          issuedAt: new Date().toISOString()
+        });
+        // إشعار للطالب
+        await sendNotification(studentId, '🎓 شهادة جديدة!', `تم إصدار شهادة "${title}" باسمك`, 'certificate');
+        showToast('تم إصدار الشهادة ✅', 'success');
+        // مسح الحقول
+        ['cert_title','cert_supervisor','cert_date','cert_pdf'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('cert_student').value = '';
+        // تحديث القائمة
+        loadAllCertificates();
+      } catch(e) {
+        errEl.textContent = 'خطأ: ' + e.message;
+        errEl.classList.add('show');
+      }
     };
 
-    // ===== MOBILE SIDEBAR TOGGLE =====
-    window.toggleSidebar = function() {
-      const sidebar = document.querySelector('.dash-sidebar');
-      const overlay = document.getElementById('sidebarOverlay');
-      const btn     = document.getElementById('mobileSidebarToggle');
-      sidebar?.classList.toggle('open');
-      overlay?.classList.toggle('show');
-      if (btn) btn.textContent = sidebar?.classList.contains('open') ? '✕' : '☰';
+    window.deleteCertificate = async function(certId) {
+      if (!confirm('هل تريد حذف هذه الشهادة نهائياً؟')) return;
+      try {
+        await deleteDoc(doc(db, 'certificates', certId));
+        showToast('تم حذف الشهادة', 'success');
+        loadAllCertificates();
+      } catch(e) {
+        showToast('خطأ: ' + e.message, 'error');
+      }
     };
-    window.closeSidebar = function() {
-      const sidebar = document.querySelector('.dash-sidebar');
-      const overlay = document.getElementById('sidebarOverlay');
-      const btn     = document.getElementById('mobileSidebarToggle');
-      sidebar?.classList.remove('open');
-      overlay?.classList.remove('show');
-      if (btn) btn.textContent = '☰';
-    };
-    // أغلق الـ sidebar عند اختيار لوحة
-    const origShowPanel = window.showPanel;
-    window.showPanel = function(panelId) {
-      origShowPanel && origShowPanel(panelId);
-      if (window.innerWidth <= 860) closeSidebar();
-    };
+
+    window.toggleNotifPanel=function(){const p=document.getElementById('notifPanel');if(p)p.style.display=p.style.display==='none'?'block':'none';};
+    window.markAllRead=function(){};
   </script>
 </body>
 </html>
