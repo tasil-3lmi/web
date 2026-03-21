@@ -148,9 +148,12 @@ export function renderFooter(contactData = null) {
   const telegram = contactData?.telegram || 'https://t.me/ibnsalah';
   const channels = contactData?.channels || [];
 
+  // رابط قناة الشيخ مصعب — يظهر دائماً
+  const sheikhLink = `<a href="https://t.me/ibnsalah" target="_blank"><span class="icon">✈️</span><span>قناة الشيخ مصعب بن صلاح</span></a>`;
+
   const channelLinks = channels.length
-    ? channels.map(ch => `<a href="${ch.url}" target="_blank"><span>${ch.icon||'⛓️‍💥'}</span><span>${ch.name}</span></a>`).join('')
-    : `<a href="${telegram}" target="_blank"><span class="icon">👤</span><span>قناة الشيخ مصعب بن صلاح</span></a>`;
+    ? channels.map(ch => `<a href="${ch.url}" target="_blank"><span>${ch.icon||'⛓️‍💥'}</span><span>${ch.name}</span></a>`).join('') + sheikhLink
+    : sheikhLink;
 
   return `
   <footer class="site-footer">
