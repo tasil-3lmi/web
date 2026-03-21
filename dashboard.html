@@ -393,6 +393,86 @@
     }
     .cert-empty .cert-empty-icon { font-size: 3.5rem; margin-bottom: 16px; display: block; }
     .cert-empty p { font-size: 0.95rem; line-height: 1.7; }
+
+    /* ===== نفحات علمية ===== */
+    @import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&display=swap');
+
+    .nafadat-card {
+      position: relative;
+      background: linear-gradient(135deg, rgba(212,180,142,0.10) 0%, rgba(255,253,247,0.95) 60%, rgba(212,180,142,0.08) 100%);
+      border: 1.5px solid rgba(212,180,142,0.55);
+      border-radius: 18px;
+      padding: 28px 32px;
+      margin-bottom: 24px;
+      overflow: hidden;
+      box-shadow: 0 2px 16px rgba(59,27,64,0.07), inset 0 0 0 1px rgba(255,255,255,0.6);
+    }
+    .nafadat-card::before {
+      content: '';
+      position: absolute;
+      top: -40px; right: -40px;
+      width: 160px; height: 160px;
+      background: radial-gradient(circle, rgba(212,180,142,0.18) 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .nafadat-card::after {
+      content: '';
+      position: absolute;
+      bottom: -30px; left: -30px;
+      width: 120px; height: 120px;
+      background: radial-gradient(circle, rgba(59,27,64,0.07) 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .nafadat-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .nafadat-tag {
+      font-size: 0.72rem;
+      font-weight: bold;
+      letter-spacing: 0.04em;
+      color: var(--gold-dark);
+      background: rgba(212,180,142,0.18);
+      border: 1px solid rgba(212,180,142,0.4);
+      padding: 3px 12px;
+      border-radius: 100px;
+    }
+    .nafadat-ornament {
+      color: rgba(212,180,142,0.6);
+      font-size: 1.1rem;
+      line-height: 1;
+    }
+    .nafadat-quote {
+      font-family: 'Amiri', 'Traditional Arabic', serif;
+      font-size: 1.18rem;
+      line-height: 2;
+      color: #2d1a30;
+      text-align: center;
+      padding: 4px 0 12px;
+      position: relative;
+      z-index: 1;
+    }
+    .nafadat-divider {
+      width: 60px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      margin: 0 auto 12px;
+      border-radius: 2px;
+    }
+    .nafadat-speaker {
+      font-family: 'Amiri', serif;
+      font-size: 0.9rem;
+      color: var(--purple);
+      text-align: center;
+      font-style: italic;
+      opacity: 0.85;
+      position: relative;
+      z-index: 1;
+    }
   </style>
 </head>
 <body>
@@ -451,6 +531,18 @@
             <h2>معهد التأصيل العلمي 🕌<br><span id="welcomeName">...</span></h2>
             <p>نتمنى لك رحلة علمية مثمرة ومباركة</p>
           </div>
+          <!-- ===== نفحات علمية ===== -->
+          <div class="nafadat-card" id="nafadatCard">
+            <div class="nafadat-header">
+              <span class="nafadat-ornament">✦</span>
+              <span class="nafadat-tag">نفحات علمية</span>
+              <span class="nafadat-ornament">✦</span>
+            </div>
+            <div class="nafadat-quote" id="nafadatQuote">﹏</div>
+            <div class="nafadat-divider"></div>
+            <div class="nafadat-speaker" id="nafadatSpeaker"></div>
+          </div>
+
           <div class="student-stats">
             <div class="stat-box"><span class="s-num" id="stat-done">٠</span><span class="s-lbl">متن مكتمل</span></div>
             <div class="stat-box"><span class="s-num" id="stat-remain">٢٠+</span><span class="s-lbl">متن متبقٍ</span></div>
@@ -1144,6 +1236,124 @@
       origShowPanel && origShowPanel(panelId);
       if (window.innerWidth <= 860) closeSidebar();
     };
+
+    // ===== نفحات علمية =====
+    (function() {
+      const QUOTES = [
+        {
+          text: "مَن يُرِدِ اللهُ به خَيرًا يُفَقِّهْه في الدِّينِ",
+          speaker: "قال رسول الله ﷺ"
+        },
+        {
+          text: "إِنَّمَا يَخْشَى اللَّهَ مِنْ عِبَادِهِ الْعُلَمَاءُ إِنَّ اللَّهَ عَزِيزٌ غَفُورٌ",
+          speaker: "قال الله تعالى ﴿فاطر: ٢٨﴾"
+        },
+        {
+          text: "العلم لا يعدله شيء لمن صحت نيته",
+          speaker: "قال الإمام أحمد رحمه الله"
+        },
+        {
+          text: "إن من أفضل العبادة التفقه في دين الله، والتفكر في خلق الله",
+          speaker: "قال سعيد بن المسيب رحمه الله"
+        },
+        {
+          text: "ما عُبِد الله بشيء أفضل من فقه في دين، ولفقيه أشد على الشيطان من ألف عابد",
+          speaker: "قال رسول الله ﷺ"
+        },
+        {
+          text: "طلب العلم فريضة على كل مسلم",
+          speaker: "قال رسول الله ﷺ"
+        },
+        {
+          text: "من سلك طريقاً يطلب فيه علماً سهّل الله له طريقاً إلى الجنة",
+          speaker: "قال رسول الله ﷺ"
+        },
+        {
+          text: "من عمل بما يعلم وفّقه الله لعلم ما لم يعلم",
+          speaker: "روي عن الحسن البصري رحمه الله"
+        },
+        {
+          text: "إن الله أمر نبيه أن يسأله مزيد العلم، وكفى بهذا شرفاً للعلم أن أمر نبيه أن يسأله المزيد منه",
+          speaker: "قال ابن القيم رحمه الله"
+        },
+        {
+          text: "العاطفة إذا لم تقيّد بالعلم صارت عاصفة، ليست عاصفة لغيرك بل عاصفة تعصف بدينك واتّباعك",
+          speaker: "قال الشيخ مصعب بن صلاح حفظه الله"
+        },
+        {
+          text: "من طلب العلم على غير المنهجية التي سار عليها العلماء أصابته ثلاثة أضرار: الوقوع في المهالك، والأخذ بما لا يجوز الأخذ به، وترك ما يجب العمل به",
+          speaker: "قال الشيخ مصعب بن صلاح حفظه الله"
+        },
+        {
+          text: "من أسباب التوبة سماع قصص التائبين وتكرارها",
+          speaker: "قال الشيخ مصعب بن صلاح حفظه الله"
+        },
+        {
+          text: "مذاكرة العلم ساعة خير من قيام ليلة",
+          speaker: "روي عن أبي الدرداء رضي الله عنه"
+        },
+        {
+          text: "تذاكر العلم بعض الليل أحب إليّ من إحيائه",
+          speaker: "قال ابن عباس رضي الله عنهما"
+        },
+        {
+          text: "لأن أفقه ساعة أحب إليّ من أن أحيي ليلة أصليها حتى أصبح",
+          speaker: "قال أبو هريرة رضي الله عنه"
+        },
+        {
+          text: "لأن أتعلم باباً من العلم في أمر ونهي أحب إليّ من سبعين غزوة في سبيل الله",
+          speaker: "قال أبو هريرة رضي الله عنه"
+        },
+        {
+          text: "العلم من أفضل القربات، ومن أسباب الفوز بالجنة والكرامة لمن عمل به",
+          speaker: "قال ابن باز رحمه الله"
+        },
+        {
+          text: "اعنوا بكتاب الله تلاوةً وحفظاً وتدبراً وتعقلاً ومراجعةً للتفاسير المفيدة، ثم العناية بسنة رسول الله ﷺ",
+          speaker: "قال ابن باز رحمه الله"
+        },
+        {
+          text: "إخلاص النية لله في طلب العلم، بأن يكون قصده وجه الله والدار الآخرة",
+          speaker: "قال ابن عثيمين رحمه الله"
+        },
+        {
+          text: "من تعلّم علماً يبتغي به وجه الله لا يتعلمه إلا ليصيب به عرضاً من الدنيا لم يجد عرف الجنة يوم القيامة",
+          speaker: "قال رسول الله ﷺ"
+        },
+        {
+          text: "لا يتجر في سوقنا إلا من فقه، وإلا أكل الربا",
+          speaker: "قال عمر بن الخطاب رضي الله عنه"
+        },
+        {
+          text: "إذا أراد الله بعبد خيراً فقّهه في الدين، وزهّده في الدنيا، وبصّره عيوبه",
+          speaker: "قال محمد بن كعب القرظي رحمه الله"
+        },
+        {
+          text: "هل يستوي الذين يعلمون ربَّهم ويعلمون دينه الشرعي والذين لا يعلمون؟ كما لا يستوي الليل والنهار والضياء والظلام",
+          speaker: "قال ابن السعدي رحمه الله"
+        },
+        {
+          text: "من جاء مسجدي هذا لم يأته إلا لخير يتعلمه أو يعلمه، فهو بمنزلة المجاهد في سبيل الله",
+          speaker: "قال رسول الله ﷺ"
+        },
+        {
+          text: "لا حسد إلا في اثنتين: رجل آتاه الله القرآن فهو يقوم به آناء الليل وآناء النهار",
+          speaker: "قال رسول الله ﷺ"
+        }
+      ];
+
+      // اختيار القول بناءً على تاريخ اليوم — ثابت لجميع المستخدمين طوال اليوم
+      const today = new Date();
+      const dayIndex = Math.floor(today.getFullYear() * 365.25 + today.getMonth() * 30.44 + today.getDate());
+      const chosen = QUOTES[dayIndex % QUOTES.length];
+
+      const quoteEl   = document.getElementById('nafadatQuote');
+      const speakerEl = document.getElementById('nafadatSpeaker');
+      if (quoteEl && speakerEl) {
+        quoteEl.textContent   = chosen.text;
+        speakerEl.textContent = chosen.speaker;
+      }
+    })();
   </script>
 </body>
 </html>
