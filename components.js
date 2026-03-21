@@ -143,14 +143,14 @@ export function renderHeader(activePage = '', userData = null) {
 // FOOTER — dynamic contact info
 // ──────────────────────────────────────────────────
 export function renderFooter(contactData = null) {
-  const phone    = contactData?.phone    || '+968 9000 0000';
+  const phone    = contactData?.phone    || '+966 5000000000';
   const email    = contactData?.email    || 'info@taseel.com';
-  const telegram = contactData?.telegram || 'https://t.me/musabsalah';
+  const telegram = contactData?.telegram || 'https://t.me/ibnsalah';
   const channels = contactData?.channels || [];
 
   const channelLinks = channels.length
-    ? channels.map(ch => `<a href="${ch.url}" target="_blank"><span>${ch.icon||'🔗'}</span><span>${ch.name}</span></a>`).join('')
-    : `<a href="${telegram}" target="_blank"><span class="icon">✈️</span><span>تليجرام المشرف</span></a>`;
+    ? channels.map(ch => `<a href="${ch.url}" target="_blank"><span>${ch.icon||'⛓️‍💥'}</span><span>${ch.name}</span></a>`).join('')
+    : `<a href="${telegram}" target="_blank"><span class="icon">👤</span><span>قناة الشيخ مصعب بن صلاح</span></a>`;
 
   return `
   <footer class="site-footer">
