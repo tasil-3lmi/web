@@ -172,17 +172,26 @@
           const lessons = (scheduleData.days && scheduleData.days[dateKey] && scheduleData.days[dateKey][time]) || [];
           return `<td>
             ${lessons.length ? lessons.map(l => {
-              const hasLink = l.courseId && l.lessonId;
+              const isExam   = l.slotType === 'exam';
+              const hasLesson = !isExam && l.courseId && l.lessonId;
+              const hasExam   = isExam && l.courseId && l.examId;
+              const hasLink   = hasLesson || hasExam;
+              const icon      = isExam ? '📝' : (l.icon || '📚');
+              const linkHref  = hasLesson
+                ? `course.html?id=${l.courseId}&lesson=${l.lessonId}`
+                : hasExam
+                  ? `exam.html?course=${l.courseId}&exam=${l.examId}`
+                  : '#';
               const inner = `
-                <span style="font-size:1.1rem;">${l.icon||'📚'}</span>
+                <span style="font-size:1.1rem;">${icon}</span>
                 <div style="flex:1;min-width:0;">
-                  <div style="font-size:0.82rem;font-weight:bold;color:var(--purple);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${l.title||''}</div>
+                  <div style="font-size:0.82rem;font-weight:bold;color:${isExam?'var(--gold-dark)':'var(--purple)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${l.title||''}</div>
                   ${l.time ? `<div class="schedule-time">${l.time}</div>` : ''}
                   ${l.note ? `<div style="font-size:0.72rem;color:var(--text-soft);">${l.note}</div>` : ''}
-                  ${hasLink ? `<div class="lesson-arrow">افتح الدرس ←</div>` : ''}
+                  ${hasLink ? `<div class="lesson-arrow">${isExam ? 'ابدأ الاختبار ←' : 'افتح الدرس ←'}</div>` : ''}
                 </div>`;
               return hasLink
-                ? `<a href="course.html?id=${l.courseId}&lesson=${l.lessonId}" class="schedule-lesson-link">${inner}</a>`
+                ? `<a href="${linkHref}" class="schedule-lesson-link" style="${isExam?'border-color:rgba(212,180,142,0.4);background:rgba(212,180,142,0.06);':''}">${inner}</a>`
                 : `<div class="schedule-lesson-item">${inner}</div>`;
             }).join('')
             : `<span class="no-lessons">—</span>`}
