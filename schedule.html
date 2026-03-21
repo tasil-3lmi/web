@@ -14,6 +14,26 @@
     .today-badge { padding: 4px 12px; background: rgba(212,180,142,0.2); color: var(--gold-dark); border-radius: 100px; font-size: 0.75rem; font-weight: bold; border: 1px solid rgba(212,180,142,0.3); }
     .schedule-empty { text-align: center; padding: 40px; color: var(--text-soft); font-size: 0.9rem; }
     .no-lessons { color: rgba(59,27,64,0.3); font-size: 0.8rem; text-align: center; padding: 8px; }
+    .schedule-lesson-link {
+      display: flex; align-items: flex-start; gap: 10px;
+      text-decoration: none;
+      padding: 10px 12px;
+      background: rgba(59,27,64,0.03);
+      border-radius: 8px;
+      border: 1px solid rgba(212,180,142,0.2);
+      margin-bottom: 4px;
+      transition: background 0.2s, border-color 0.2s;
+      cursor: pointer;
+    }
+    .schedule-lesson-link:hover {
+      background: rgba(212,180,142,0.12);
+      border-color: rgba(212,180,142,0.45);
+    }
+    .schedule-lesson-link .lesson-arrow {
+      font-size: 0.68rem;
+      color: var(--gold-dark);
+      margin-top: 3px;
+    }
     .current-day td { background: rgba(212,180,142,0.06) !important; }
     .schedule-table th.today-col { background: var(--gold-dark) !important; }
   </style>
@@ -151,15 +171,20 @@
           const dateKey = d.date.toISOString().slice(0,10);
           const lessons = (scheduleData.days && scheduleData.days[dateKey] && scheduleData.days[dateKey][time]) || [];
           return `<td>
-            ${lessons.length ? lessons.map(l => `
-              <div class="schedule-lesson-item">
-                <span>${l.icon||'📚'}</span>
-                <div>
-                  <div style="font-size:0.82rem;font-weight:bold;color:var(--purple);">${l.title||''}</div>
+            ${lessons.length ? lessons.map(l => {
+              const hasLink = l.courseId && l.lessonId;
+              const inner = `
+                <span style="font-size:1.1rem;">${l.icon||'📚'}</span>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:0.82rem;font-weight:bold;color:var(--purple);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${l.title||''}</div>
                   ${l.time ? `<div class="schedule-time">${l.time}</div>` : ''}
                   ${l.note ? `<div style="font-size:0.72rem;color:var(--text-soft);">${l.note}</div>` : ''}
-                </div>
-              </div>`).join('')
+                  ${hasLink ? `<div class="lesson-arrow">افتح الدرس ←</div>` : ''}
+                </div>`;
+              return hasLink
+                ? `<a href="course.html?id=${l.courseId}&lesson=${l.lessonId}" class="schedule-lesson-link">${inner}</a>`
+                : `<div class="schedule-lesson-item">${inner}</div>`;
+            }).join('')
             : `<span class="no-lessons">—</span>`}
           </td>`;
         }).join('');
