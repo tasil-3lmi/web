@@ -73,6 +73,7 @@
 
     const params = new URLSearchParams(location.search);
     const courseId = params.get('id') || 'prep';
+    const autoOpenLesson = params.get('lesson') || null; // من الجدول
 
     const DEFAULT_COURSES = {
       prep: { title:'المرحلة التمهيدية', desc:'المدخل إلى طلب العلم وتذكرة السامع والمتكلم وكتاب الجرد' },
@@ -153,6 +154,20 @@
       document.getElementById('examCountLabel').textContent = exams.filter(e=>e.visible!==false).length;
 
       buildSidebar();
+
+      // ── فتح الدرس تلقائياً إذا جاء من الجدول ──
+      if (autoOpenLesson) {
+        const target = lessons.find(l => l.id === autoOpenLesson);
+        if (target && target.visible !== false && !target.locked) {
+          setTimeout(() => {
+            openLesson(autoOpenLesson);
+            // تمرير للمحتوى بعد فتح الدرس
+            setTimeout(() => {
+              document.getElementById('lessonContent')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 500);
+          }, 300);
+        }
+      }
     }
 
     function buildSidebar() {
