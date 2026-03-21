@@ -597,6 +597,23 @@
       </div>
     </section>
 
+    <!-- ===== VIDEO BEFORE CTA ===== -->
+    <section class="video-section reveal" style="padding: 60px 0;">
+      <div class="video-wrapper">
+        <div class="section-header">
+          <div class="section-tag">شاهد قبل التسجيل</div>
+          <h2 class="section-title">تعرّف على المعهد</h2>
+          <div class="gold-divider"></div>
+        </div>
+        <div class="video-container" id="videoContainer2">
+          <div class="video-placeholder" id="videoPlaceholder2" onclick="loadVideo2()">
+            <div class="play-btn">▶</div>
+            <p>اضغط لمشاهدة المقطع التعريفي</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ===== CTA ===== -->
     <section class="cta-section reveal">
       <div class="container">
@@ -653,9 +670,19 @@
     }
   </script>
   <script>
-    const YOUTUBE_ID = 'VIDEO_ID_HERE'; // ← ضع ID الفيديو هنا
+    const YOUTUBE_ID = 'z1bbUyoasaE';
     function loadVideo() {
       const container = document.getElementById('videoContainer');
+      container.innerHTML = `<iframe
+        src="https://www.youtube.com/embed/${YOUTUBE_ID}?autoplay=1&rel=0"
+        frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen
+        style="position:absolute;top:0;right:0;width:100%;height:100%;border-radius:20px;">
+      </iframe>`;
+    }
+    function loadVideo2() {
+      const container = document.getElementById('videoContainer2');
       container.innerHTML = `<iframe
         src="https://www.youtube.com/embed/${YOUTUBE_ID}?autoplay=1&rel=0"
         frameborder="0"
