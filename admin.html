@@ -814,6 +814,7 @@ function initSharedBehavior() {
     async function preloadAllLessons() {
       for (const course of DEFAULT_COURSES) {
         await fetchLessonsForSchedule(course.id);
+        await fetchExamsForSchedule(course.id);
       }
     }
 
@@ -827,8 +828,9 @@ function initSharedBehavior() {
       renderScheduleEditor();
     }
 
-    // ── cache دروس المقررات للجدول ──
-    let scheduleLessonsCache = {}; // { courseId: [lessons] }
+    // ── cache دروس واختبارات المقررات للجدول ──
+    let scheduleLessonsCache = {};
+    let scheduleExamsCache = {}; // { courseId: [lessons] }
 
     async function fetchLessonsForSchedule(courseId) {
       if (scheduleLessonsCache[courseId]) return scheduleLessonsCache[courseId];
@@ -838,14 +840,59 @@ function initSharedBehavior() {
         snap.forEach(d => lessons.push({ id: d.id, ...d.data() }));
         lessons.sort((a,b) => (a.order||0)-(b.order||0));
         if (!lessons.length) {
-          for (let i=1; i<=10; i++) lessons.push({ id:'l'+i, title:'الدرس '+i, order:i });
+          for (let i=1; i<=50; i++) lessons.push({ id:'l'+i, title:'الدرس '+i, order:i });
         }
       } catch(e) {
-        for (let i=1; i<=10; i++) lessons.push({ id:'l'+i, title:'الدرس '+i, order:i });
+        for (let i=1; i<=50; i++) lessons.push({ id:'l'+i, title:'الدرس '+i, order:i });
       }
       scheduleLessonsCache[courseId] = lessons;
       return lessons;
     }
+
+    async function fetchExamsForSchedule(courseId) {
+      if (scheduleExamsCache[courseId]) return scheduleExamsCache[courseId];
+      let exams = [];
+      try {
+        const snap = await getDocs(collection(db, 'courses', courseId, 'exams'));
+        snap.forEach(d => exams.push({ id: d.id, ...d.data() }));
+        if (!exams.length) exams.push({ id:'exam_1', title:'الاختبار النهائي' });
+      } catch(e) {
+        exams.push({ id:'exam_1', title:'الاختبار النهائي' });
+      }
+      scheduleExamsCache[courseId] = exams;
+      return exams;
+    }
+
+    window.onSlotTypeChange = function(sel, dateKey, time, idx) {
+      const slotType = sel.value;
+      updateSlot(dateKey, time, idx, 'slotType', slotType);
+      updateSlot(dateKey, time, idx, 'courseId', '');
+      updateSlot(dateKey, time, idx, 'lessonId', '');
+      updateSlot(dateKey, time, idx, 'examId', '');
+      updateSlot(dateKey, time, idx, 'title', '');
+      renderScheduleEditor();
+    };
+
+    window.onExamCourseSelect = async function(sel, dateKey, time, idx) {
+      const courseId = sel.value;
+      updateSlot(dateKey, time, idx, 'courseId', courseId);
+      updateSlot(dateKey, time, idx, 'examId', '');
+      updateSlot(dateKey, time, idx, 'title', sel.options[sel.selectedIndex]?.text || '');
+      const examSel = document.getElementById(`examSel_${dateKey}_${time}_${idx}`);
+      if (!examSel) return;
+      examSel.innerHTML = '<option value="">جارٍ التحميل...</option>';
+      if (!courseId) { examSel.innerHTML = '<option value="">— اختر الاختبار —</option>'; return; }
+      const exams = await fetchExamsForSchedule(courseId);
+      examSel.innerHTML = '<option value="">— اختر الاختبار —</option>' +
+        exams.map(ex => `<option value="${ex.id}" data-title="${ex.title||''}">${ex.title||'اختبار'}</option>`).join('');
+    };
+
+    window.onExamSelect = function(sel, dateKey, time, idx) {
+      const examId = sel.value;
+      const examTitle = sel.options[sel.selectedIndex]?.dataset.title || sel.options[sel.selectedIndex]?.text || '';
+      updateSlot(dateKey, time, idx, 'examId', examId);
+      updateSlot(dateKey, time, idx, 'title', '📝 ' + examTitle);
+    };
 
     window.onCourseSelect = async function(sel, dateKey, time, idx) {
       const courseId = sel.value;
@@ -891,18 +938,38 @@ function initSharedBehavior() {
               <div style="font-size:0.78rem;color:var(--text-soft);margin-bottom:4px;">${time}</div>
               <div id="slots_${dateKey}_${time}">
                 ${lessons.map((l,li)=>`
-                  <div class="time-slot-row" id="slot_${dateKey}_${time}_${li}">
-                    <input type="text" value="${l.time||''}" placeholder="الوقت" onchange="updateSlot('${dateKey}','${time}',${li},'time',this.value)">
-                    <select onchange="onCourseSelect(this,'${dateKey}','${time}',${li})" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.8rem;outline:none;">
-                      <option value="">— اختر المقرر —</option>
-                      ${DEFAULT_COURSES.map(c=>`<option value="${c.id}" ${l.courseId===c.id?'selected':''}>${c.title}</option>`).join('')}
-                    </select>
-                    <select id="lessonSel_${dateKey}_${time}_${li}" onchange="onLessonSelect(this,'${dateKey}','${time}',${li})" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.8rem;outline:none;">
-                      <option value="">— اختر الدرس —</option>
-                      ${l.courseId && scheduleLessonsCache[l.courseId] ? scheduleLessonsCache[l.courseId].map(ls=>`<option value="${ls.id}" data-title="${ls.title||''}" ${l.lessonId===ls.id?'selected':''}>${ls.title||'درس '+ls.order}</option>`).join('') : ''}
-                    </select>
-                    <input type="text" value="${l.note||''}" placeholder="ملاحظة" onchange="updateSlot('${dateKey}','${time}',${li},'note',this.value)">
-                    <button class="del-btn" onclick="removeSlot('${dateKey}','${time}',${li})">✕</button>
+                  <div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;background:rgba(59,27,64,0.02);" id="slot_${dateKey}_${time}_${li}">
+                    <div style="display:grid;grid-template-columns:90px 1fr auto;gap:8px;align-items:center;margin-bottom:${(l.slotType||'lesson')==='exam'?'8':'8'}px;">
+                      <input type="text" value="${l.time||''}" placeholder="الوقت" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.8rem;outline:none;" onchange="updateSlot('${dateKey}','${time}',${li},'time',this.value)">
+                      <select onchange="onSlotTypeChange(this,'${dateKey}','${time}',${li})" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.8rem;outline:none;background:white;">
+                        <option value="lesson" ${(l.slotType||'lesson')==='lesson'?'selected':''}>📚 درس</option>
+                        <option value="exam" ${l.slotType==='exam'?'selected':''}>📝 اختبار</option>
+                      </select>
+                      <button class="del-btn" onclick="removeSlot('${dateKey}','${time}',${li})">✕</button>
+                    </div>
+                    <div id="slotBody_${dateKey}_${time}_${li}" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+                      ${(l.slotType||'lesson')==='lesson' ? `
+                        <select onchange="onCourseSelect(this,'${dateKey}','${time}',${li})" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.8rem;outline:none;">
+                          <option value="">— اختر المقرر —</option>
+                          ${DEFAULT_COURSES.map(c=>`<option value="${c.id}" ${l.courseId===c.id?'selected':''}>${c.title}</option>`).join('')}
+                        </select>
+                        <select id="lessonSel_${dateKey}_${time}_${li}" onchange="onLessonSelect(this,'${dateKey}','${time}',${li})" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.8rem;outline:none;">
+                          <option value="">— اختر الدرس —</option>
+                          ${l.courseId && scheduleLessonsCache[l.courseId] ? scheduleLessonsCache[l.courseId].map(ls=>`<option value="${ls.id}" data-title="${ls.title||''}" ${l.lessonId===ls.id?'selected':''}>${ls.title||'درس '+ls.order}</option>`).join('') : ''}
+                        </select>
+                        <input type="text" value="${l.note||''}" placeholder="ملاحظة" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.8rem;outline:none;" onchange="updateSlot('${dateKey}','${time}',${li},'note',this.value)">
+                      ` : `
+                        <select onchange="onExamCourseSelect(this,'${dateKey}','${time}',${li})" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.8rem;outline:none;">
+                          <option value="">— اختر المقرر —</option>
+                          ${DEFAULT_COURSES.map(c=>`<option value="${c.id}" ${l.courseId===c.id?'selected':''}>${c.title}</option>`).join('')}
+                        </select>
+                        <select id="examSel_${dateKey}_${time}_${li}" onchange="onExamSelect(this,'${dateKey}','${time}',${li})" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.8rem;outline:none;">
+                          <option value="">— اختر الاختبار —</option>
+                          ${l.courseId && scheduleExamsCache[l.courseId] ? scheduleExamsCache[l.courseId].map(ex=>`<option value="${ex.id}" data-title="${ex.title||''}" ${l.examId===ex.id?'selected':''}>${ex.title||'اختبار'}</option>`).join('') : ''}
+                        </select>
+                        <input type="text" value="${l.note||''}" placeholder="ملاحظة" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.8rem;outline:none;" onchange="updateSlot('${dateKey}','${time}',${li},'note',this.value)">
+                      `}
+                    </div>
                   </div>`).join('')}
               </div>
               <button class="btn btn-outline add-slot-btn" onclick="addSlot('${dateKey}','${time}')">+ إضافة</button>
@@ -915,7 +982,7 @@ function initSharedBehavior() {
     window.addSlot = function(dateKey, time) {
       if (!scheduleData.days[dateKey]) scheduleData.days[dateKey] = {};
       if (!scheduleData.days[dateKey][time]) scheduleData.days[dateKey][time] = [];
-      scheduleData.days[dateKey][time].push({ title:'', time:'', note:'', courseId:'', lessonId:'' });
+      scheduleData.days[dateKey][time].push({ title:'', time:'', note:'', courseId:'', lessonId:'', examId:'', slotType:'lesson' });
       renderScheduleEditor();
     };
     window.removeSlot = function(dateKey, time, idx) {
