@@ -19,7 +19,7 @@
     .q-row-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; gap: 12px; flex-wrap: wrap; }
     .schedule-day-editor { margin-bottom: 20px; }
     .schedule-day-editor h4 { font-size: 0.92rem; font-weight: bold; color: var(--purple); margin-bottom: 10px; padding: 8px 12px; background: rgba(59,27,64,0.05); border-radius: 6px; }
-    .time-slot-row { display: grid; grid-template-columns: 100px 1fr 1fr auto; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .time-slot-row { display: grid; grid-template-columns: 90px 1fr 1fr 1fr auto; gap: 8px; align-items: center; margin-bottom: 8px; }
     .time-slot-row input, .time-slot-row select { padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 0.82rem; outline: none; }
     .time-slot-row input:focus, .time-slot-row select:focus { border-color: var(--purple); }
     .del-btn { width: 30px; height: 30px; border-radius: 50%; border: none; background: rgba(185,45,58,0.1); color: #b92d3a; cursor: pointer; font-size: 0.9rem; transition: var(--transition); }
@@ -47,7 +47,7 @@
     .notif-compose textarea:focus { border-color: var(--purple); }
     @media (max-width: 768px) {
       .course-editor-row { grid-template-columns: 1fr 1fr; }
-      .time-slot-row { grid-template-columns: 1fr 1fr; }
+      .time-slot-row { grid-template-columns: 1fr 1fr; row-gap: 8px; }
       .lesson-admin-row { grid-template-columns: 1fr; }
     }
   </style>
@@ -611,6 +611,9 @@ function initSharedBehavior() {
         populateCertStudents();
         loadAllCertificates();
       }
+      if (tab === 'schedule') {
+        preloadAllLessons().then(() => renderScheduleEditor());
+      }
     };
 
     // ===== QUESTIONS =====
@@ -807,6 +810,13 @@ function initSharedBehavior() {
     function weekKey(d) { return 'week_'+d.toISOString().slice(0,10); }
     function toHijri(date) { return date.toLocaleDateString('ar-SA-u-ca-islamic-umalqura',{month:'short',day:'numeric'}); }
 
+    // تحميل دروس جميع المقررات مسبقاً عند فتح تبويب الجدول
+    async function preloadAllLessons() {
+      for (const course of DEFAULT_COURSES) {
+        await fetchLessonsForSchedule(course.id);
+      }
+    }
+
     async function loadAdminSchedule() {
       const wk = weekKey(adminWeekStart);
       try {
@@ -816,6 +826,52 @@ function initSharedBehavior() {
       if (!scheduleData.days) scheduleData.days = {};
       renderScheduleEditor();
     }
+
+    // ── cache دروس المقررات للجدول ──
+    let scheduleLessonsCache = {}; // { courseId: [lessons] }
+
+    async function fetchLessonsForSchedule(courseId) {
+      if (scheduleLessonsCache[courseId]) return scheduleLessonsCache[courseId];
+      let lessons = [];
+      try {
+        const snap = await getDocs(collection(db, 'courses', courseId, 'lessons'));
+        snap.forEach(d => lessons.push({ id: d.id, ...d.data() }));
+        lessons.sort((a,b) => (a.order||0)-(b.order||0));
+        if (!lessons.length) {
+          for (let i=1; i<=10; i++) lessons.push({ id:'l'+i, title:'الدرس '+i, order:i });
+        }
+      } catch(e) {
+        for (let i=1; i<=10; i++) lessons.push({ id:'l'+i, title:'الدرس '+i, order:i });
+      }
+      scheduleLessonsCache[courseId] = lessons;
+      return lessons;
+    }
+
+    window.onCourseSelect = async function(sel, dateKey, time, idx) {
+      const courseId = sel.value;
+      updateSlot(dateKey, time, idx, 'courseId', courseId);
+      updateSlot(dateKey, time, idx, 'lessonId', '');
+      updateSlot(dateKey, time, idx, 'title', sel.options[sel.selectedIndex]?.text || '');
+
+      const lessonSel = document.getElementById(`lessonSel_${dateKey}_${time}_${idx}`);
+      if (!lessonSel) return;
+      lessonSel.innerHTML = '<option value="">جارٍ التحميل...</option>';
+
+      if (!courseId) {
+        lessonSel.innerHTML = '<option value="">— اختر الدرس —</option>';
+        return;
+      }
+      const lessons = await fetchLessonsForSchedule(courseId);
+      lessonSel.innerHTML = '<option value="">— اختر الدرس —</option>' +
+        lessons.map(l => `<option value="${l.id}" data-title="${l.title||''}">${l.title||'درس '+l.order}</option>`).join('');
+    };
+
+    window.onLessonSelect = function(sel, dateKey, time, idx) {
+      const lessonId = sel.value;
+      const lessonTitle = sel.options[sel.selectedIndex]?.dataset.title || sel.options[sel.selectedIndex]?.text || '';
+      updateSlot(dateKey, time, idx, 'lessonId', lessonId);
+      updateSlot(dateKey, time, idx, 'title', lessonTitle);
+    };
 
     function renderScheduleEditor() {
       const wk = weekKey(adminWeekStart);
@@ -837,7 +893,14 @@ function initSharedBehavior() {
                 ${lessons.map((l,li)=>`
                   <div class="time-slot-row" id="slot_${dateKey}_${time}_${li}">
                     <input type="text" value="${l.time||''}" placeholder="الوقت" onchange="updateSlot('${dateKey}','${time}',${li},'time',this.value)">
-                    <input type="text" value="${l.title||''}" placeholder="عنوان الدرس" onchange="updateSlot('${dateKey}','${time}',${li},'title',this.value)">
+                    <select onchange="onCourseSelect(this,'${dateKey}','${time}',${li})" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.8rem;outline:none;">
+                      <option value="">— اختر المقرر —</option>
+                      ${DEFAULT_COURSES.map(c=>`<option value="${c.id}" ${l.courseId===c.id?'selected':''}>${c.title}</option>`).join('')}
+                    </select>
+                    <select id="lessonSel_${dateKey}_${time}_${li}" onchange="onLessonSelect(this,'${dateKey}','${time}',${li})" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.8rem;outline:none;">
+                      <option value="">— اختر الدرس —</option>
+                      ${l.courseId && scheduleLessonsCache[l.courseId] ? scheduleLessonsCache[l.courseId].map(ls=>`<option value="${ls.id}" data-title="${ls.title||''}" ${l.lessonId===ls.id?'selected':''}>${ls.title||'درس '+ls.order}</option>`).join('') : ''}
+                    </select>
                     <input type="text" value="${l.note||''}" placeholder="ملاحظة" onchange="updateSlot('${dateKey}','${time}',${li},'note',this.value)">
                     <button class="del-btn" onclick="removeSlot('${dateKey}','${time}',${li})">✕</button>
                   </div>`).join('')}
@@ -852,7 +915,7 @@ function initSharedBehavior() {
     window.addSlot = function(dateKey, time) {
       if (!scheduleData.days[dateKey]) scheduleData.days[dateKey] = {};
       if (!scheduleData.days[dateKey][time]) scheduleData.days[dateKey][time] = [];
-      scheduleData.days[dateKey][time].push({ title:'', time:'', note:'' });
+      scheduleData.days[dateKey][time].push({ title:'', time:'', note:'', courseId:'', lessonId:'' });
       renderScheduleEditor();
     };
     window.removeSlot = function(dateKey, time, idx) {
